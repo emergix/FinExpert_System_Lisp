@@ -1,0 +1,10 @@
+(dernier-cours 345.)
+(date-du-dernier-cours (89 01 31 0 0 0))
+(dernier-dividende 32.)
+(date-du-dernier-dividende (88 07 12 0 0 0))
+(nom "hachette")
+(quotite 100)
+(ponderation-dans-le-cac40 .95)
+(marche reglement-mensuel)(beta 1.)
+
+(code-rga )
