@@ -1,0 +1,18 @@
+defmodule
+vue-sur-voyeur
+files
+(|vue.lh| vue)
+include
+(|image.lh| |application.lh|)
+import
+(application box image translation view elview elcview)
+export
+(#:image:rectangle:application:vue-sur-voyeur:make #:image:rectangle:application:vue-sur-voyeur:titre #:image:rectangle:application:vue-sur-voyeur:voyeur #:image:rectangle:application:vue-sur-voyeur:initialize vue-sur-voyeur vue-sur-h-voyeur 
+vue-sur-v-voyeur vue-sur-f-voyeur)
+cpexport
+((#:image:rectangle:application:vue-sur-voyeur:make subr0 ()) (#:image:rectangle:application:vue-sur-voyeur:titre nsubr ()) (#:image:rectangle:application:vue-sur-voyeur:voyeur nsubr ()) (#:image:rectangle:application:vue-sur-voyeur:initialize nsubr ()) 
+(vue-sur-voyeur nsubr ()) (vue-sur-h-voyeur nsubr ()) (vue-sur-v-voyeur nsubr ()) (vue-sur-f-voyeur nsubr ()))
+cpfunctions
+((#:image:rectangle:application:vue-sur-voyeur:create subr0))
+cpimport
+((view (view . nsubr)) (elview (%view . nsubr)) (box (box . nsubr)) (elcview (%centeredview . nsubr)) (image (rectangle . nsubr)) (translation (translation . subr3)))

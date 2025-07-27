@@ -1,0 +1,28 @@
+(defabbrev beau-cadre {rectangle}:beau-cadre)
+
+(setq #:sys-package:colon '{beau-cadre})
+
+(defstruct {beau-cadre}
+        relief?
+        pattern-fond
+        pattern-ombre
+        pattern-soleil
+        epaisseur-w
+        epaisseur-h)
+
+
+(defvar :v-internal-x (makevector 13 ()))
+(defvar :v-internal-y (makevector 13 ()))
+(defvar :v-external-x (makevector 13 ()))
+(defvar :v-external-y (makevector 13 ()))
+(defvar :v-ombre-x (makevector 13 ()))
+(defvar :v-ombre-y (makevector 13 ()))
+(defvar :v-soleil-x (makevector 13 ()))
+(defvar :v-soleil-y (makevector 13 ()))
+
+(defvar :default-fond 3)
+(defvar :default-soleil 0)
+(defvar :default-ombre 1)
+
+(defvar :default-width 3)
+(defvar :default-height 3)

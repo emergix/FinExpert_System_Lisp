@@ -1,0 +1,10 @@
+(defabbrev presentateur {view}:presentateur)
+
+(defstruct {presentateur}
+        min-x
+        min-y
+        max-x
+        max-y
+        rectangle
+        liste-de-courbes
+        )

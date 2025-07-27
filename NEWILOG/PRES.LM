@@ -1,0 +1,21 @@
+defmodule
+presentateur
+files
+(|pres.lh| pres)
+include
+(image.lh |courbes.lh| view.lh)
+import
+(image)
+export
+(#:image:view:presentateur:make #:image:view:presentateur:min-x #:image:view:presentateur:min-y #:image:view:presentateur:max-x #:image:view:presentateur:max-y #:image:view:presentateur:rectangle #:image:view:presentateur:liste-de-courbes #:image:view:
+presentateur:initialize presentateur #:image:view:presentateur:width #:image:view:presentateur:height #:image:view:presentateur:grow #:image:view:presentateur:inserer-courbe #:image:view:presentateur:modifier-courbe 
+#:image:view:presentateur:is-one-of-my-courbes
+#:image:view:presentateur:retirer-courbe)
+
+;;; Added automatically, don't type beyond this line.
+cpexport
+((#:image:view:presentateur:make subr0 ()) (#:image:view:presentateur:min-x nsubr ()) (#:image:view:presentateur:min-y nsubr ()) (#:image:view:presentateur:max-x nsubr ()) (#:image:view:presentateur:max-y nsubr ()) (#:image:view:presentateur:rectangle nsubr ()) (#:image:view:presentateur:liste-de-courbes nsubr ()) (#:image:view:presentateur:initialize nsubr ()) (presentateur nsubr ()) (#:image:view:presentateur:width subr1 ()) (#:image:view:presentateur:height subr1 ()) (#:image:view:presentateur:grow subr3 ()) (#:image:view:presentateur:inserer-courbe subr2 ()) (#:image:view:presentateur:modifier-courbe subr3 ()) (#:image:view:presentateur:retirer-courbe subr2 ()) (#:image:view:presentateur:is-one-of-my-courbes subr2 ()))
+cpfunctions
+((#:image:view:presentateur:calculer-echelle-des-courbes subr1) (#:image:view:presentateur:positionner-echelles subr3) (#:image:view:presentateur:positionner-une-echelle subr3) (#:image:view:presentateur:positionner-origine nsubr) (#:image:view:presentateur:positionner-une-origine nsubr) (#:image:view:presentateur:create subr0) (#:image:view:presentateur:calculer-echelle-une-courbe subr2))
+cpimport
+((image (#:image:rectangle:make . subr0)))

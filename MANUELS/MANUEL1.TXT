@@ -1,0 +1,1441 @@
+                       Manuel d utilisation de l environnement
+                       logiciel de systeme expert GRAPHICUS
+
+
+
+
+Avertissement
+ 
+ Les concepts logiciels qu il est necessaires de maitriser pour utiliser
+GRAPHICUS sont ceux des paradigmes d intelligence artificielle (langage
+oriente object , chainage de regles , mondes hypothetiques ...).
+Ce manuel s il ne sera pas avare en exemples ne saurait etre un ouvrage
+d introduction aux systemes expert. Il se contentera bien souvent d etre 
+uniquement un document descriptif des possibilite de l environement et de
+fixer les problemes de syntaxe et de terminologie.
+
+
+Philosophie generale
+
+le systeme est constitue par un ensembles de modules lisp dont le premier
+est constitue par le langage oriente object de base et les suivants 
+rajoutent a l environement des possibilite specifiques :
+ exemple les objects et fonctions relatifs aux traitement des courbes ou
+ceux relatif au savoir-faire d analyse chartisme en terme de canaux et
+triangles. On peut donc employer l environement a plusieur niveaux
+car si on utilise pas les possibilite d un module il nuisible de l'avoir
+charge pour des questions d optimalite de gestion de la memoire
+l utilisateur est encourage a developper des modules sur une phisophie
+similaire.
+
+la syntaxe du systeme est une syntaxe lisp , l utilisateur peut immerger
+son utilisation du systeme au sein d application non systeme expert,
+et celui-ci peut a tout moment impliquer l evaluation de n importe quelle
+forme lisp avec quelques reserve de sysntaxe particuliere ( utilisation
+des { et } dans les premisses et conclusions des regles .
+
+Nous allons donc etudier successivement les specificite de chaque modules
+et sa dependance vis a vis des autres modules
+
+
+
+
+I le module OBJECT
+
+
+module prerequis : aucun
+
+Ce module donne les possibilites de base a l environnement
+
+
+les briques de base de tout systeme construit sur GRAPHICUS sont constitue
+par des objects.
+
+N importe quel symbole lisp peut pointer vers un object 
+d un point de vue lisp un object est un atome possedant une propriete 
+OBJECT-PROPERTIES et une propriete KNOWLEDGE-BASE particulieres
+entierement gerees par le systeme 
+de multiples formes lisp engendrent des objects , 
+la forme fondamentale qui engendre un object et le retourne comme valeur est :
+
+(USER-INSTANCIATE metaclasse nom-1 superclasses)
+
+metaclasse    est le nom de l object entretenant avec 
+              le futur nom-1 un lien meta
+
+nom-1         est le nom que l on veut donner a l object
+
+superclasses  est une liste de nom d object entrenant avec 
+              le futur nom-1 un lien super
+
+
+
+un object ainsi engendre possede un certain nombre de slots (proprietes
+de l object)
+certaine slots sont dits "system" car leur presence ou leur absence ainsi
+que leur valeur est gere par GRAPHICUS . les autres sont dit "user"
+
+un slot possede a son tour un certain nombre de facettes (proprietes 
+du slot)
+certaines facettes sont dites "system" car leur presence ou leur absence ainsi
+que leur valeur est gere par GRAPHICUS . les autres sont dit "user"
+
+
+une facette possede a son tour un certain nombre d aspects (les valeur de la 
+facette dans differentes circonstances). Un aspect est dit "fondamental"
+les autres sont dit hypothetiques.
+
+exemple :
+ liste maximum des slots system pour un object :
+ (date-of-creation metaclass  instances supertypes subtypes name 
+  method-list method-inheritance-role
+  pre-instanciation-demon pre-instanciation-demon-inheritance-role 
+  post-instanciation-demon post-instanciation-demon-inheritance-role
+  dynamic-inheritance-slot-list expansion-slot rete-forward-chainer-list
+  instance-number instance-user-slots-list class-user-slots-list 
+  transparent-slot-list)
+
+
+ liste maximum des facettes system pour un slot system:
+
+ (value existence-status)
+
+ liste maximum des facettes system pour un slot user:
+
+ (value existence-status type value-list constraint-list determined 
+ determination-means determination-predicat determination-date
+ question-to-ask default link read-demon read-demon-inheritance-role 
+ write-before-demon write-before-demon-inheritance-role write-after-demon 
+ write-after-demon-inheritance-role structure-inheritance-role 
+ value-inheritance-role constraint-inheritance-role rete-forward-chainer-list)
+
+
+ un nouveau slot est ajoutable a un object par la forme suivante :
+
+(ADD-SLOT-USER object-name slot-name role)
+
+ object-name    nom de l object auquel on veut rajouter un slot
+
+ slot-name      nom du slot que l on veut rajouter a l object
+
+ role           doit etre element de (CLASS INSTANCE CLASS-INSTANCE)
+
+
+ les liens super et meta controlent la maniere dont s heritent ces prorietes
+ dans un precessus de creation d object lance par une forme USER-INSTANCIATE
+
+
+ la philosophie est la suivante
+
+ a la naissance un slot est dit  un slot de classe ou un slot d instance
+ si il a ete cree avec un role de CLASS ou un role INSTANCE il peut etre les
+ deux si il a ete cree avec un role CLASS-INSTANCE .
+ une instance A d un object O herite de la part des slot de O declare slot
+ d instance ceux-ci deviennent alors slot de classe chez l instance.
+ les slot de classe  de O ne sont pas herite par l instance , les slot dit
+ de classe-instance sont herite et restent de classe-instance.
+
+ si l object A a ete cree avec comme superclasses les object B et C
+ A herite des slot user de B et C sans changement de role pour eux
+
+
+ heritage des methodes : le long du lien meta les methodes ne sont pas
+ herite car celle-ci sont accessible par la precedure de recherche. Par
+ contre le long du lien super les methodes sont herites.
+
+ les demons sont herites avec les slots le cas echeants, ceux associes 
+ a l instanciation sont herites mecaniquement.
+
+ ceci peut apparraitre contraignant mais il faut savoir que tous les processus
+ d heritage sont controllable precisement grace aux slots et facettes de
+ role d heritage.
+
+
+l ensemble des instance d une classe ainsi que des instance d une sous-classe 
+(toute ensembles) s obtient par :
+
+
+(GET-ALL-INSTANCES objectname)
+
+et l appartenance d un object a cet ensemble est teste par le predicat :
+
+(IS-A  variable-name  object-name)
+
+exemple :
+
+(IS-A 'maximum-3  'extremum) ---> T
+
+
+ 
+  - objectname   ; nom de l object concerne
+
+
+
+exemple :
+
+ (USER-INSTANCIATE 'metaclass 'extremum nil)
+
+ (USER-INSTANCIATE 'extremum nil nil)
+
+ (USER-INSTANCIATE 'metaclass 'maximum '(extremum))
+
+ (USER-INSTANCIATE  'maximum  nil nil)
+ (USER-INSTANCIATE  'maximum  nil nil)
+ (USER-INSTANCIATE  'maximum  nil nil)
+
+ (USER-INSTANCIATE 'metaclass 'minimum '(extremum))
+
+ (USER-INSTANCIATE  'minimum  nil nil)
+ (USER-INSTANCIATE  'minimum  nil nil)	
+
+ (GET-ALL-INSTANCES 'maximum) --> (maximum-1 maximum-2 maximum-3)
+
+ (GET-ALL-INSTANCES 'extremum) ---> (extremum-1 maximum-1 maximum-2 maximum-3 minimum-1 minimum-2)
+
+
+
+ une nouvelle facette est ajoutable a un slot par la forme suivante :
+
+
+ (ADD-SLOT-FACET-USER  object-name slot-name facet-name initial-value)
+
+ 
+  object-name       :le nom de l object concerne
+
+
+  slot-name         :le nom du slot auquel on veut rajouter une facette
+
+
+  facet-name        :le nom que l on veut donner a la facette que l on rajoute
+ 
+ 
+  initial-value     :la valeur  qu aura la facette lorsqu elle sera cree
+
+
+
+  Les methodes
+
+
+ Puisque l on parle de langage oriente object il faut bien parler des messages
+ que l on peut envoyer aux objects.
+
+ la forme qui permet d envoyer un message est la suivante :
+
+ ($ object-name  message-name)
+
+   ou
+
+ ($ object-name message-name argument1 ... argumentN)
+
+
+ la maniere dont repond un object a un message depend de la methode qu il
+ utilisera pour y repondre cette metthode se trouve stoke dans le slot
+ METHOD-LIST d un  autre object ou de lui-meme
+
+ la strategie utilisee pour trouver la bonne methode est la suivante :
+ le systeme regarde dans l object , si il ne trouve pas de methode de
+ ce nom il regarde dans la metaclasse de celui , si il ne trouve pas il
+ regarde dans la metaclasse de la metaclasse  ... et ainsi de suite
+ jusqu a l object METACLASS pere de toute chose et gardien des methodes 
+ generique a l ensemble des object (les message instanciate , ...)
+
+
+ le moyen de donner une methode a un object est le suivant :
+
+ (ADD-METHOD object-name function message role)
+
+
+  object-name       : l object concerne
+  
+  function          : la fonction ou la lambda-forme decrivant le comportement
+                      de l object vis a vis du message , cette fonction 
+                      doit prendre comme arguments une instance et autant
+                      d argument supplementaire que necessaire
+
+  message           : le mot cle du message
+
+
+  role              : un element de (SUPERSEED , MERGE-BEFORE , MERGE-AFTER)
+
+
+
+  si le role est SUPERSEED la methode  remplace celle precedement existante
+  et relative au meme message dans l object.
+  si le role est MERGE-BEFORE la methode sera execute avant toutes celles
+  deja existantes et relatives au meme message et qui seront executees apres
+  si le role est MERGE-AFTER la methode sera execute apres que toute celles
+  deja existantes et relatives au meme message aient ete executees
+
+  
+
+
+ Il faut garder a l esprit que la hierarchiation des objects grace aux
+ lien super et meta permet la factorisation des methodes 
+ (lien meta = lien de genericite) et l etablissement d une taxonomie de
+ proprietes (lien super = lien de classification) 
+
+
+  Les demons 
+
+
+ Une maniere tres pratique de travailler est d utiliser les demons 
+ actions qui se declenche a l occasion de certaines circonstances :
+ acces a un slot ecriture ou lecture , creation d une nouvelle instance.
+
+ 
+ demons relatifs a l acces a la valeur d une facette d un slot
+
+
+ trois types de demons:
+ 
+ - les read-demons qui sont actionnes des que l on tente de lire un slot
+
+ - les write-before-demons qui sont actionnes des que l on tente d ecrire
+   dans un slot , ils sont active juste avant l ecriture proprement-dite
+ 
+ - les write-after-demons qui sont actionnes des que l on tente d ecrire
+   dans un slot , ils sont actionnes juste apres l ecriture proprement-dite
+
+
+ demons relatifs a la creation d une nouvelle instance
+
+ deux types de demons
+
+ - les pre-instanciation-demons qui sont active juste avant que ne soit 
+   possiblement instancie l object. ils ont un role supplementaires , si
+   il retourne la valeur NIL l instanciation n a pas lieu . il rendent 
+   ainsi tres souple la verification de dernier moment de la validite 
+   de la creation de la nouvelle instance .
+
+ - les post-instanciation-demons qui sont active juste apres la creation
+   d une instance de l object . ils servent generalement a structurer une
+   base de connaissance , en associant a chaque object une liste d actions
+   naturellement associees.
+
+
+
+
+ la maniere normale de les declarer est :
+
+
+ (ADD-READ-DEMON object-name slot-name function role)
+
+ (ADD-WRITE-BEFORE-DEMON object-name slot-name function role)
+
+ (ADD-WRITE-AFTER-DEMON object-name slot-name function role)
+
+ (ADD-PRE-INSTANCIATION-DEMON object-name function role)
+
+ (ADD-POST-INSTANCIATION-DEMON object-name function role)
+
+
+
+   object-name     : nom de l object concerne
+
+   slot-name       : nom du slot concerne
+
+   function        : lamda-forme ou nom de fonction correspondnat a l action
+                     du demon . cette fonction doit prendre pour argument
+                     un objet ou un object et un slot suivant le cas .
+
+   role            : un element de (SUPERSEED , MERGE-AFTER , MERGE-BEFORE)
+
+
+si le role est SUPERSEED le demon remplace tout demon precedent
+si le role est MERGE-BEFORE , le demon sera active avant tout demon associe
+aux memes circonstances.
+si le role est MERGE-AFTER , le demon sera active apres tout demon associe
+aux memes circonstances.
+
+dans le cas ou souhaiterait associer des actions a des circonstances plus
+sophistiquees , il faut utiliser un situation-bloc.
+
+la maniere de declarer un situation-bloc est la suivante :
+
+(ADD-SITUATION-BLOC invocation-form  predicat  action  blocname)
+
+
+  invocation-form   : Une liste de la forme ((object-name slot-name INSTANCE)
+                      ou (object-name slot-name METACLASS) ...)
+                      qui specifie les cas ou on doit verifier le predicat
+                      du situation bloc . INSTANCE precise que c est le cas 
+                      pour les acces en ecriture du slot slot-name d une
+                      instance de object-name . METACLASS precise que ce ne 
+                      doit etre le cas que pour les acces en ecriture du
+                      slot slot-name de l object object-name.
+
+  predicat          : une forme lisp qui sera evaluee dans un contexte ou
+                      OBJECT , SLOT , OLDVALUE et NEWVALUE  seront lies
+                      a leur valeur de circonstance.
+
+  action            : une forme lisp qui sera evaluee si le predicat est
+                      evaluee a autre chose que NIL.
+
+  blocname          : un nom naturellement associe au situation-bloc .
+
+
+ exemple d utilisation : un arbitrage peut etre decrit par un situation-bloc
+
+(add-situation-bloc 
+ '((call premium instance) (put premium instance) (support prix instance))
+ '(or (and (eq (get-slot-value object 'metaclass) 'support)
+	   (any '(lambda (c) (any '(lambda (p) 
+				     (and (eq (get-slot-value c 'serie)
+					      (get-slot-value p 'serie))
+					  (eq (get-slot-value c 'support)
+					      object)
+					  (> (- (- (get-slot-value c 'premium)
+						   (get-slot-value p 'premium))
+						(* (get-slot-value p 'prix-exe)
+						   rt))
+					     0)))
+				  (get-all-instances 'put)))
+		(get-all-instances 'call)))
+      (and(eq (get-slot-value object 'metaclass) 'call)
+	  (any '(lambda(p)(any '(lambda (s)
+				  (and(eq(get-slot-value object 'serie)
+					 (get-slot-value p 'serie))
+				      (eq(get-slot-value object 'support)
+					 s)
+				      (>(-(-(get-slot-value object 'premium)
+					    (get-slot-value p 'premium))
+					  (* (get-slot-value p 'prix-exe)
+					     rt))
+					0)))
+			       (get-all-instances 'support)))
+	       (get-all-instances 'put)))
+       (and(eq (get-slot-value object 'metaclass) 'put)
+	  (any '(lambda(c)(any '(lambda (s)
+				  (and(eq(get-slot-value c 'serie)
+					 (get-slot-value object 'serie))
+				      (eq(get-slot-value c 'support)
+					 s)
+				      (>(-(-(get-slot-value c 'premium)
+					    (get-slot-value object 'premium))
+					  (* (get-slot-value c 'prix-exe)
+					     rt))
+					0)))
+			       (get-all-instances 'support)))
+	       (get-all-instances 'call)))
+      )
+ '(print " il existe un arbitrage de conversion sur la serie " 
+	 (cond ((eq (get-slot-value object 'metaclass) 'support)
+		NIL)
+	       ((memq (get-slot-value object 'metaclass) '(call put))
+		(get-slot-value object 'serie))))
+	       
+ 'arbitrage-de-conversion)
+
+
+bien sur ce situation-bloc quoi-que fonctionnant dans certain cas (lequels ?)
+est ameliorable.
+
+
+
+les slots transparents 
+
+ dans certain cas un message parvenant a un object ne lui est pas destine
+mais doit etre postpone a l object contenu dans un de ses slots . pour
+que ceci fonctionne on declare l object transparent par :
+
+(SET-TRANSPARENT-OBJECT object-name slot-name-list )
+
+
+   object-name        : le nom de l object concerne
+
+   slot-name-list     : une liste de nom de slot de l object a qui dans l ordre
+                        le systeme tentera d envoyer le message
+
+
+exemple :
+
+  (user-instanciate 'metaclass 'cours nil)
+
+  (add-slot-user 'cours 'prix 'instance)
+
+  (add-slot-user 'cours 'volume 'instance)
+
+  (user-instanciate 'metaclass 'courbe nil)
+  
+  (add-method 'courbe 'courbe-lissage-par-fourier 'lissage 'superseed)
+
+  (setq michelin (user-instanciate 'cours nil nil))
+
+  (setq cours-de-michelin (user-instanciate 'courbe nil nil))
+
+  (setq volume-de-michelin (user-instanciate 'courbe nil nil))
+
+  (setf (get-slot-value michelin 'cours) cours-de-michelin)
+
+  (setf (get-slot-value michelin 'volume) volume-de-michelin)
+
+  (setq lissage-de-michelin ($ michelin 'lissage))
+
+
+
+les liens dynamiques
+
+ dans certains cas la valeur contenu dans un slot doit etre immediatement
+transmise a d autre slot voir a un slot de l ensemble des instance d un
+object . cette repercussion qui pourrait etre laborieusement effectuee
+a l aide de demons peut etre simplement declaree par un lien dynamique.
+
+la maniere de declarer un lien dynamique est la suivante :
+
+(ADD-DYNAMIC-LINK object1 slot1 role1 object2 slot2 role2)
+
+  object1 : nom de l object concerne par l emetteur du lien dynamique
+
+  slot1   : nom du slot concerne par l emetteur du lien dynamique
+
+  object2 : nom de l object concerne par le recepteur du lien dynamique
+
+  slot2   : nom du slot concerne par le recepteur du lien dynamique
+
+  role1   : un element de (INSTANCE METACLASS)
+
+  role2   : un element  de (INSTANCE METACLASS)
+
+
+ le role role1 sert a preciser l ensemble des emetteurs :
+
+ - si role1 = INSTANCE  l ensemble de instances de object1 (mais pas object1)
+   sera emetteur , c est a dire que des que pour une des instances de object1 
+   la valeur du slot1 sera changee, l emission se produira vers les recepteurs 
+   
+ - si role1 = METACLASS seul un changement dans le slot slot1 de object1
+   produira l emission.
+
+ le role role2 sert a preciser l ensemble des recepteurs :
+
+ - si role2 = INSTANCE en cas de message le long du lien dynamique , l ensemble
+   des instances de object2 sera recepteur . c est a dire que l ensemble
+   des instances de object2 verra son slot slot2 adopter la valeur transmise
+   par le lien dynamique.
+
+ - si role2 = METACLASS seul le slot slot2 de l object object2 sera recepteur
+   c est a dire adoptera la valeur transmise par le lien dynamique.
+  
+
+acces aux slots facettes et aspects des objects.
+
+la principale fonction qui permet d acceder a la valeur d un slot est :
+
+(USER-GET-VALUE object slot) 
+
+la fonction inverse qui permet de rentrer une valeur dans un slot est  obtenue
+en utilisant la macro SETF
+
+soit donc :
+
+(SETF (USER-GET-VALUE object slot) newvalue)
+
+pour l ensemble des fonctions d acces que nous verront par la suite cette
+fonction est utilisee , car elle permet de ne retenir que la fonction d acces
+la fonction inverse s obtenant en utilisant la macro SETF .
+
+
+
+l utilisation de la fonction USER-GET-VALUE garantie que les demons , les liens
+dynamiques et les situation-blocs fonctionneront correctement . 
+
+neanmoins lorsque ces possibilites ne seront pas utilisee et que on est
+sur que on aura pas a les utiliser , on peut utiliser une autre fonction
+qui est beaucoup plus rapide :
+
+(GET-SLOT-VALUE object slot)
+
+
+l acces aux facettes se fait grace a la fonction :
+
+
+(GET-SLOT-FACET-VALUE object slot facet)
+
+
+l acces aux differentes hypotheses ou aspects se fait grace a :
+
+
+(GET-SLOT-FACET-ASPECT object slot facet aspect)
+
+
+
+(GET-SLOT-VALUE object slot) est parfaitement equivalent a 
+(GET-SLOT-FACET object slot 'value) , par contre 
+
+(GET-SLOT-FACET object slot facet) n est pas du tout equivalent
+a (GET-SLOT-FACET-ASPECT object slot facet 'fondamental)
+car la premiere forme accede en fait a 
+(GET-SLOT-FACET-ASPECT object slot facet *current-hypothetical-world*)
+et est equivalente a la seconde que si 
+*current-hypothetical-world* = fondamental
+
+
+
+Notion de determination de la valeur d un slot
+
+cette notion sert a introduire la notion de regle et de chainage de regle 
+pour determiner la valeur d un slot.
+
+elle sert de base a l edification de base de connaissance en vue
+de determiner des valeurs.
+
+l idee de base est d associe a tout slot un ensemble de moyens de determination
+qui pourront etre tres varies depuis la simple fonction lisp jusqu au moyen
+conpletement customise en passant par les chainage avant et arriere d un
+ensemble de regles.
+
+
+Un certain nombre de facettes sont associe a la determination de la valeur
+d un slot  ce sont : 
+
+
+    - VALUE                : contient la valeur courrante du slot
+
+
+    - DETERMINED           : si different de NIL , signifie que la valeur du 
+                             slot a ete determine , et qu il n est plus 
+                             necessaire de chercher a la determiner.
+
+    - DETERMINATION-MEANS  : liste de moyens de determination pour obtenir
+                             la valeur du slot.
+
+    - QUESTION-TO-ASK      : question a poser a l utilisateur relative
+                             a la valeur du slot.
+
+    - DETERMINATION-PREDICAT : fonction ou lambda forme servant a verifier
+                               la validite de la valeur du slot obtenue par
+                               un moyen de determination ou par l utilisateur.
+
+    - VALUE-LIST           : liste de valeur possible pour le slot , le systeme
+                             ne considerera comme acceptable comme valeur du
+                             slot qu une valeur appartenant a cette liste.
+
+
+
+
+la premiere chose a faire pour pouvoir determiner la valeur d un slot
+est de s assurer qu il possede bien l ensemble des facettes necessaires
+car elle ne sont pas cree automatiquement afin de diminuer la taille
+des slots.
+
+on declare donc qu un slot sera un slot suceptible d etre determine par :
+
+(SET-DETERMINATION-SLOT objectname slotlist)
+
+
+  - objectname   : nom de l object concerne
+
+  - slotlist     : liste de nom de slot qui doivent recevoir l ensemble des 
+		   facettes necessaires a une determination.
+
+cette forme de declaration collective est utile car on l utilise generalement
+juste apres l introduction d un type d object et de ses slots associes.
+
+
+
+ le moyen de base d obtenir la valeur d un slot est d envoyer le message
+ DETERMINE a l object avec pour argument le nom du slot :
+
+ (setq result ($ object 'DETERMINE slot))
+
+
+ le systeme regarde  le contenue de la facette DETERMINED . si celui-ci est 
+ different de NIL le systeme recupere le contenu de la facette VALUE
+ et le renvoi comme reponse au message. sinon
+ le systeme regarde  la liste des moyen de determination mis a sa
+ disposition dans la la facette DETERMINATION-MEANS et essaye le premier
+ en lui envoyant le message TRY-TO-DETERMINE avec comme arguments 
+le nom de l object et celui du slot , si la reponse est differente de NIL
+ le systeme applique sur lui la fonction de verification contenue
+ dans la facette DETERMINATION-PREDICAT si celle-ci est differrente de NIL
+ et verifie l appartenance a la liste contenue dans la facette VALUE-LIST
+ si celle-ci est differente de NIL , si le resultat de ces verification
+ est concluant alors le systeme considere le resulta comme valable et le 
+ stocke dans la facette VALUE . le systeme stoke alors aussi T dans la facette
+ DETERMINED.
+ si le resultat n est pas concluant , et si il reste un moyen de determination
+ non encore essaye , le systeme essaye alors ce nouveau moyen , ainsi de suite
+ ... si il ne reste plus de moyen determination , et que la facette 
+ QUESTION-TO-ASK est differente de NIL , le systeme pose une question
+ relative a  la valeur du slot en utilisant le contenu de cette facette.
+ si la reponse de l utilisateur n est pas verifie comme acceptable (au sens
+ des facette DETERMINATION-PREDICAT ou VALUE-LIST) le systeme le signale
+ et repose la question jusqu a satisfaction.si la facette QUESTION-TO-ASK
+ est vide , le syteme considere qu l utilisateur n est d aucun secours
+ et stoke T dans le slot DETERMINED ,et retourne la valeur courrante 
+ du slot avant la procedure de determination.
+
+
+ les moyens de determination
+
+
+le slot determination-means contient une liste d'object qui sont des instances de 
+determination-mean ou  des fonctions prenant en argument :(object slot).
+le slot est marque determine si un moyen de determination a retourne une liste dont le premier
+argument est different de nil , le slot est alors positionne au second element de la liste
+
+
+
+
+ Trois moyens principaux sont mis a la disposition de l utilisateur :
+ - le chainage arriere 
+ 
+ - chainage avant
+
+ - le bloc de determination
+
+
+
+pour manipuler correctement le chainage celui a ete objective , c est a dire
+qu il existe des objects de type chaineur avant et chaineur arriere qui seront
+mis dans la facette DETERMINATION-MEANS , ces object ont un slot RULE-LIST
+mis a jour et gere par le systeme qui contient la liste des regle qui le 
+concerne.
+
+pour creer un chaineur arriere , on declare :
+
+
+ (ADD-BACKWARD-CHAINER  chainername  slot-list)
+
+pour creer un chainer avant , on declare :
+
+
+ (ADD-FORWARD-CHAINER   chainername  slot-list)
+
+
+pour creer un chaineur avant de rete on declare :
+
+
+ (ADD-RETE-FORWARD-CHAINER chainername slot-list)
+
+
+les chaineurs avant de rete sont une race tres particuliere de chaineur
+avant qui en contrepartie d une moins grande richesse d expression
+dans les premisse et conclusion sont par contre tres rapide .
+on ne devellopera pas ici les subtilites de l algorithme de rete
+qui est bien developpe ailleurs .avant d envisager d utiliser un chaineur
+de rete il vaut mieux essayer d utiliser un chaineur avant classique 
+et venir a rete que si la vitesse d examun des regles est insuffisante
+et si certaine caracteristique du problemes sont reunis.
+
+
+  chainername     :  le nom que l on desire donner au backward chainer
+
+  slot-list       : une liste de nom de slot qui seront de slot de classe
+                    de l object chainername
+
+
+
+
+
+ le chainer est un object servant a delimiter une tranche de savoir faire
+ dans la base de connaissance , il a quelque fois besoin de parametres 
+ supplementaires qui ne sont pas instancie naturellement , il serait
+ dont inefficace d inventer un object particulier dont le seul but serait
+ de porter dans ses slot des valeurs dont le systeme aurait besoin dans ses
+ calcul . ces parametres peuvent etre par exemple des conditions de 
+ fonctionement du chainer des constantes numeriques  , ou des resultats 
+ intermediaires auquels on souhaite acceder seulement si on le desire.
+
+
+
+
+
+
+Les regles 
+
+
+pour rentrer une regle dans le systeme , pourvu qu ait ete soit definit
+ prealablement dans le systeme un chaineur correspondant , il suffit de rentrer
+une forme lisp specifique .
+
+les regles de chainage arriere
+
+la forme est la suivante :
+
+(ADD-BACKWARD-RULE  
+ 	backwardchaineur premisse conclusion  slotspecificateur commentaire)
+
+
+ - backwardchaineur  : nom du backward-chaineur implique ou liste des noms
+                       des backward-chaineur implique.
+
+ - premisse          : premisse de la regle , il s agit d une forme lisp
+                       compile puis evalue .
+
+ - conclusion        : resultat qui sera directement mis dans le slot deduit
+                       en cas de succes du premisse, un forme lisp.
+
+ - slotspecificareur : une liste de la forme (slot{variable} object)
+                       ou slot est un nom de slot pour une instance ou
+                       une instance de sous classe de object, et variable
+                       est un symbole qui representera l instance precise
+                       sur la quelle on devra determiner le slot au moment
+                       du lancement du chainage arriere.
+
+ - commentaire       : une string qui precisera la cas d 'application auquel
+                       correspond cette regle , et qui servira a identifier
+                       la regle dans les procedure d explication.
+
+
+
+ exemple de regle de chainage arriere : 
+
+(ADD-BACKWARD-RULE 
+	'(existing (o 'objectif) 
+		(eq echeance-d-etude{o} 'moyenne))
+	'12
+	'(butterworth-limit-up{b} backward-chainer)
+	"determination de la limite superieure de butterworth dans le cas 
+        d une echeance moyenne "
+)
+
+
+lorsque le systeme essaye une regle du type de celle sus mentionne , 
+arrivant au probleme de savoir si echeance-d-etude{o} est determine ou pas
+deux type de comportement sont possible :
+
+ - soit le systeme envoie a l object O le message 'DETERMINE et recupere la 
+   reponse , on parle a lors de determination externe du slot car elle peut
+   utiliser d autre chainer ou moyen de determination que le present chaineur
+   c est le cas general lorsque l on envoie a un object le message 'DETERMINE
+   
+
+ - soit le systeme essaye de trouver dans le chaineur une autre regle concluant
+   a echeance-d-etude et dont le premisse est verifie  et si il ne trouve pas,
+   il conclu qu la regle sus mentionne est inapplicable . on parle alors
+   de chainage interne .pour obtenir un chainage exclusivement interne on
+   utilise :
+
+        ($ backchainer 'INTERN-DETERMINE object-name slot-name) 
+
+ 
+
+ le premisse premet d utiliser toute la puissance du lisp pour
+ exprimer la condition en utilisant la variable qui a ete declaree dans 
+ le slotspecification , mais en plus vous pouver utiliser toute les variables
+ possibles suivant les regle de la logique du premier ordre et de la 
+ fermeture lexicale en utilisant les trois forme de base : 
+
+  - EXISTING
+
+  - FOR-ALL
+
+  - FOR-ALL  ... SUCH-THAT
+
+
+exemple :
+   
+'(existing (cc 'courbe-2d) 
+   (and (eq (get-slot-value f-elliott 'pret-a-scanner) 'oui)  
+     (for-all (vg 'vague-de-base) (vague-de-base-traite vg))
+       (< (get-slot-value f-elliott 'rang-debut-de-vague-cherchee  )
+          (get-slot-value (get-slot-value f-elliott 'courbe) 'pointeur-max))))
+
+
+'(for-all (cc 'coube-2d) such-that  (eq objectif{cc} notre-objectif)
+   (and
+     (for-all (vg 'vague-de-base) (vague-de-base-traite vg))
+        (< (get-slot-value f-elliott 'rang-debut-de-vague-cherchee) 
+           (get-slot-value (get-slot-value f-elliott 'courbe) 'pointeur-max))))
+
+
+
+dans ces trois forme seule la premiere genere une variable qui est libre et 
+dont la porte lexicale depasse les parenthese de la forme et peut donc si
+elle n est pas enferme dans une forme de un des deux autres types , etre 
+utilise dans la conclusion.
+
+	        
+
+Il faut remarquer la notation pour l utilisation de la valeur d un autre slot
+avec des accolade autour de l object . cette notation est etendu lors de la
+ compilation un en (USER-GET-VALUE ..) et permet la transmission du message
+de determination ainsi que le bon fonctionnement des demons et autres bidules. 
+
+
+cette notation ne peut etre utilise qu a l interieur des premisses ou 
+conclusions de regle backward ou forward et a l interieur des block de
+determination.
+
+de meme la quantification par les trois formes de bases que nous venont de voir
+ne peut etre utilise qu a l interieur des premisses de regle backward ou
+forward et a l interieur des blocs de determination.
+
+
+
+
+les regles de chainage avant
+
+
+la forme de definition d une regle en chainage avant est la suivante:
+
+(ADD-FORWARD-RULE 
+ 	forwardchaineur  premisse  conclusion  commentaire)
+
+
+ - forwardchaineur  : nom du forward-chaineur implique ou liste des noms
+                       des forward-chaineur implique.
+
+ - premisse          : premisse de la regle , il s agit d une forme lisp
+                       compile puis evalue .
+
+ - conclusion        : forme lisp qui sera evalue si le premisse a 
+                       ete evalue vrai.
+
+ - commentaire       : une string qui precisera la cas d 'application auquel
+                       correspond cette regle , et qui servira a identifier
+                       la regle dans les procedure d explication.
+
+
+
+Le probleme du chainage avant est que lorsque plusieurs regles sont
+simultanement applicable , et qu une regle applicable l est pour plusieurs
+ensemble de variables libres, il faut choisir. Un ensemble de toute les 
+possibilites est alors constitue appele l ensemble de conflit.
+le probleme du choix est appele probleme de la resolution du conflit.
+un classement de toute les possibilites (on dit instanciation de regles)
+doit etre fait et le systeme choisira celle qui arrive premiere a ce classement
+avec les instanciations afferentes.
+le classement generalement pratique et celui choisi ici consiste a preferer
+une regle avec un plus grand nombre de variable libre et parmi plusieurs
+ensembles de variables tous avec le meme nombre de variable le critere de 
+recence d instanciation servira a les departager le systeme preferant les 
+instances les plus recentes.
+l interet d un telle preference est tres pratique : il permet d avoir dans 
+une base de connaissance des regles generales et des regles particulieres
+si aucune regle particulieres n est applicable , le systeme choisira une
+regle generale , de meme le critere de recence est celui qui permet
+de suivre un raisonement coherent , le systeme s interressant toujours a ce qu
+il vient de creer en priorite.
+pour eviter au systeme de boucler sur une regle  ,le systeme memorise les 
+regles qui ont deja reussi et ne les reapplique pas (sous entendu avec une meme
+instanciation des variables libres).
+
+la maniere pour un chaineur avant d ' essayer de determiner le slot d un object
+est de lancer le chainage avant et de verifier a chaque cycle si le slot
+en question a ete determine par le cycle precedent . si oui
+et si la verification avec le predicat de determination et/ou la liste des
+valeurs acceptables est concluante  alors le chainage s arrete et la
+ valeur ainsi trouve est renvoye comme resultat de la determination .sinon
+le chainage continue.
+
+
+chainage avant 
+
+
+il est possible de lancer le chainage avant d un forward-chaineur sans
+chercher a priori de valeur particuliere , mais simplement en attandant
+qu il execute toute les regles possible et qu il ne s arrete que lorsque 
+plus aucun premisse de regle n est plus verifie.
+
+la maniere normale de lancer un tel chainage est par le message GO :
+
+($ forwardchaineur 'GO)
+
+
+mais si on ne s'interresse qu a la saturation du chainage , c est a dire
+si l ordre d execution des regles n est pas important et que seul compte 
+le fait qu elle soit toutes applique jusqu a saturation des possibilite
+alors le calcul de l ensemble de conflit est inutile et prend du temps
+il suffit d essayer les regles et des qu une marche , on l'applique ,
+sans toutefois reappliquer avec les memes instanciations une regle que l on
+vient d'appliquer.
+
+la facon de lancer un tel chainage est par le message 'SATURE :
+
+
+($ forwardchaineur 'SATURE)
+
+
+Les blocs de determination
+
+un bloc de determination est essentiellement une fonction lisp qui doit
+calculer la valeur du slot , mais le texte de cette fonction passe
+par une moulinette prealable a sons execution qui permet d utiliser
+dans cette fonction les meme macro que dans le corps d une premisse
+d une regle.
+
+la facon de declarer un bloc de determination est :
+
+
+(ADD-DETERMINATION-BLOC  body  blocname)
+
+   - body     :forme lisp qui est passe par la meme moulinette que les 
+               premisse de regle .les symbole OBJECT et SLOT seront au
+	       moment de l evaluation du body du bloc de determination
+	       lie aux elements correspondant de la demande de determination.
+
+   - blocname : nom du bloc de determination , peut comporter une string
+                qui decrit l action du bloc.
+
+
+la forme contenue dans le body doit retourner :
+
+ - NIL si la recherche d une valeur a echoue pour ce bloc
+
+ - ( value ... ) c est a dire une liste dont le premier element est la valeur
+   si le bloc decide de retourner une valeur pour ce slot.
+
+l utilisation de bloc de determination permet de structurer un chainage arriere
+generalise comportant des phases  de calcul procedural.
+
+exemple:
+
+(ADD-BLOC-DETERMINATION
+ '(when (and (eq slot 'diagnostic)
+	     (eq metaclass{object} 'probleme))
+        (prog (d1)
+	      (setq d1 ($ 'bc1 'determine object 'nombre-critique))
+	      (cond (( > d1 0) 
+                     (return (list ($ fc1 'determine object 'diagnostic))))
+		    ((and (<= d1 0)
+                          (> d1 -1)) 
+                     (return (list ($ fc2 'determine object 'diagnostic))))
+                    ((for-all (h 'structure)  (eq test{h} 'OK))
+	             (return (list 'element-en-parfaite-condition)))
+                    (t (return nil)))))
+ "utilisation d une  des deux methodes critiques connues"
+
+ )
+	
+
+
+
+les attributs
+
+	
+
+il est quelquefois un peu lourd de declarer un bloc de determination pour
+un slot dont le calcul de la valeur n implique pas de d appel
+a d'autre determination .d autre part on ne sait pas si on aura forcement
+besoin de sa valeur.mais si on en a besoin alors on souhaiterai que
+le calcul de sa valeur ait lieu rapidement sans intervention de 
+mecanisme d 'intelligence artificielle.neamoins on ne souhaite pas
+recalculer sa valeur a chaque fois que on en a besoin d ou l'idee
+de de le stoker dans un slot.
+
+ceci correspond a la notion d attribut
+
+la maniere de declarer un attribut est la suivante:
+
+(ADD-ATTRIBUTE-USER object slotname function role)
+
+  - object    : nom de l object a qui on rajout un slot 
+                avec des propriete d attribut
+
+
+  - slotname  : nom du slot que l on suhaite creer
+
+
+  - function  : lambda-forme ou nom de fonction qui sera appelle pour calculer
+                la valeur du slot lors qu l onutilisera celle-ci.les argument
+		que lon doit fournir a cette fonction sont l object et
+		le nom du slot (cette fonction peut servir pour plusieurs
+                attributs)
+
+  - role      : element de (INSTANCE CLASS CLASS-INSTANCE) avec la meme
+                signification que la forme (ADD-SLOT-USER ..)
+
+
+
+ exemple : 
+   
+  (ADD-ATTRIBUTE-USER
+	 'courbe-2d 'dernier-minimum 'courbe-2d-dernier-minimum 'instance)
+
+  (de courbe-2d-dernier-minimum (courbe slot)
+    (dernier-extremum ($ courbe 'minimums-locaux)))
+
+
+
+aspect non monotone de GRAPHICUS
+
+on peut toujours intervenir a la main sur la facette DETERMINED des slots
+
+neamoins il est preferable d utiliser la fonction 
+
+(UNDETERMINE objectname slotname)
+
+    - objectname  : nom de l object concerne
+
+
+    - slotname    : nom du slot dont on veut pouvoir redeterminer la valeur
+
+
+de meme pour enlever un object cree il faut utiliser la fonction :
+
+
+(DELETE-OBJECT object-name)
+
+    - objectname  : nom de l object a detruire
+
+
+les monde hypothetiques
+
+
+Un systeme de mondes hypothetiques a ete implante afin de permettre d examiner
+les consequences de diferentes possibilites et de travailler sur elle
+le systeme choisi est une tentative d unification des systemes de mondes
+parallele de ART et de truth maintenance de KEE . ce systeme fonctione
+au travers d un chaineur avant fondamental qui decrit toutes les etapes 
+possibles des travaux.ce chaineur peut appeler d autres moyens de determination
+ou d autres chaineurs avant.
+
+les mondes-hypothetiques sont organises hierarchiquement chaque sous-monde
+etant engendre par le monde precedent et pouvant donner naissance a son tour
+ a d autre mondes .
+
+ le principe de maintenance de la verite est le suivant :
+
+ chaque fait vrai dans un monde est encore vrai dans tous les mondes en dessous
+de lui hierarchiquement, sauf si un fait plus hypothetique existe.
+
+(plus hypothetique signifie vrai dans un monde en dessous hierarchiquement)
+
+le monde dans lequel le systeme est en train de raisonner est donne par:
+
+  *CURRENT-HYPOTHETICAL-WORLD*
+
+il est interdit sous peine de dysfonctionement majeur d acceder autrement qu 
+en lecture pure a cette variable.
+
+
+le monde hypothetique de base (le moins hypothetique) ou monde racine 
+est donne par 
+
+  *CURRENT-HYPOTHETICAL-WORLD* = FONDAMENTAL
+
+pour connaitre la valeur d un slot dans un monde hypothetique donne 
+on peut utiliser :
+
+ (GET-SLOT-WORLD objectname slotname worldname)
+
+   - objectname    : nom de l object concerne
+
+   - slotname      : nom du du slot dont on desire avoir la valeur
+
+   - worldname     : nom du monde dans lequel on veut avoir la valeur
+
+
+ Il faut faire attention au fait que cette fonction peut tres bien rendre
+ NIL alors  qu un GET-SLOT-VALUE  dans un cadre ou 
+    *CURRENT-HYPOTHETICAL-WORLD*  =  worldname  rendrait une valeur differente
+cela est du au principe de maintenance de la verite . GET-SLOT-WORLD se
+contente de renvoyer la valeur qui a ete evalue a son niveau.
+Il est extremement deconseille de l employer avec un SETF neanmoins si on le 
+fait , il faut toujours verifier prealablemnent que le slot comporte une 
+valeur pour le monde envisage sinon il faut employer :
+
+ (HYPOTHETICAL-GET-SLOT-VALUE objectname slotname worldname)
+
+   - objectname    : nom de l object concerne
+
+   - slotname      : nom du slot concerne
+
+   - worldname     : nom du monde hypothetique , il faut absolument que ce 
+                     monde ait ete cree regulierement par un 
+                     CREATE-POSSIBILITIES par exemple
+ 
+
+c est la seule fonction qui marche dans tous les cas qui est employable avec SETF sans danger
+
+
+La valeur fondamentale d un slot est toujours accessible par 
+
+
+(GET-FONDAMENTAL-VALUE objectname slotname)
+
+   - objectname : nom de l object
+  
+   - slotname   : nom du slot
+
+
+cette fonction est tres utile quand on sait pertinemment que un slot
+ne servira jammais a installer des demons , lien dynamiques ou autre bidule
+et qu on ne lui donnera jammais d autre valeur que dans le monde fondamental.
+on peut alors l employer avec un SETF
+
+
+c est une fonction encore plus rapide que GET-SLOT-VALUE 
+
+la maniere normale de creer des monde est dynamique par la forme 
+
+
+ (CREATE-HYPOTHETICAL-WOLRD sequencelist )
+
+
+    - sequencelist    : liste de forme lisp qui seront evalue dans des mondes
+                        crees successivement . chaque forme lisp constitue une
+                        hypothese de travail et ou on incorpore toute les
+                        initialisations necessaires .unehypothese au moins
+                        est requise.
+
+
+
+
+  cette forme doit etre incluse dans une conclusion de regle forward
+et de preference execute a le fin de celle-ci car toutes conclusions
+sur des valeur de slot faite apres seront faite dans le monde de depart
+en ignorant la forme qui sera prise en consideration seulement a la fin
+de l evaluation de la conclusion.
+juste avant que le forward chaineur ne relance le chaineur , les mondes
+decrits sont crees fils du monde precedent qui cesse d etre active 
+(voir plus loin) .l ensemble des mondes fils sont alors actives et le chainage
+reprend parralelement dans chacun des mondes actives.L activation ici 
+signifie que le forward chaineur a chaque cycle de moteur resoudra le conflit
+et declenchera une regle si il y a lieu dans chacun des monde active 
+uniquement. des que dans un des monde active le chaineur ne peut plus trouver
+de regle applicable ou qu il en recoit l ordre (voir REMOVE-HYPOTHETICAL-WORLD)
+le monde est desactive .lorsque qu il n y a plus de monde active , le chainage
+avant s arrete et le monde courrant redevient celui de depart. 
+
+
+chacune des hypotheses creees correspond a un essai de poursuite du raisonement
+dans une direction . a un certain moment le systeme peut reconnaitre que cette
+direction est erronnee et donc l abandonne en desactivant le monde 
+correspondant. ceci se fait grace a la forme :
+
+
+  (REMOVE-HYPOTHETICAL-WORLD)
+
+
+la creation d hypothese n est pas l apanage des seules conclusions
+il est quelquefois utile de considerer des hypotheses non encore exploree dans
+les premisses.ceci se fait grace a la forme (qui est un predicat):
+
+
+ (IN-A-WORLD-WHERE worldname worddescription predicat)
+
+  - worldname        : nom local au premisse du monde qui sera cree pour
+                       verifier le predicat
+
+
+  - worlddescription : forme lisp qui sera evalue dans le contexte du monde
+                       hypothetique designe par worldname pour le
+                       particulariser
+
+  - predicat         : forme lisp qui constitue la condition a verifier
+                       le resultat de l evaluation de ce predicat dans un monde
+                       ou la forme worlddescription a ete evalue et qui est
+                       fils du monde courrant , sera renvoye comme resultat 
+                       de la forme tout entiere
+
+
+
+
+
+
+backtracking
+
+
+la maniere d explorer les hypotheses decrite par les formes precedentes
+ne convient toutefois pas a tous les cas ,soit parceque il est impossible
+de decrire a priori toute les hypotheses et on ne connait qu un generateur 
+d hypothese calculant l hypothese suivante a partir des resultats connu sur
+les hypothese precedentes , soit que le nombre d hypotheses est trop
+grand , soit parceque on pense a quelque hypotheses a privilegier et a
+traiter d abord quitte a en envisager d autre par la suite , soit enfin
+pour toute raison nous faisant refuser l idee de traiter toutes les
+hypotheses en parallele.
+
+le concept du backtracker est alors adapte a ces cas.
+
+
+Un point de backtracking ou backtracker est cree par la forme :
+
+
+ (CREATE-POSSIBILITIES sequencelist function pointname subhypothesis)
+
+
+   - sequencelist    :liste de formes lisp qui seront evaluees dans des
+                      sous-mondes du monde actuel 
+
+   - function        :fonction lisp qui joura le role soit de best-fonction
+                      si sequencelist est different de NIL , soit de
+                      find-next-fonction si sequencelist est NIL
+
+   - pointname       : nom donne au point de backtracking afin de pouvoir
+                       y revenir par la suite
+
+   - subhypothesis   : nom d une sous-classe de HYPOTHETICAL-WORLD qui sera
+                       instancie a la place de HYPOTHETICAL-WORLD pourvoir
+                       beneficier des slots et messages qui y seraient attaches
+                       qui sont des caracteristique de la solution essayee
+                       par exemple des mesures de l optimalite de cette
+                       solution
+
+
+le principe de fonctionement de ce backtracking est le suivant:
+au moment ou il rencontre la forme precedente , trois cas se presentent:
+
+ - soit sequencelist n est pas vide et function est vide dans ce cas la , 
+   l ensemble des monde correspondant a sequencelist est cree et seul le
+   premier est active. lors d un backtracking nommant pointname ,l hypothese
+   courrante serait abandonne au profit de l hypothese suivante de la liste
+   et ainsi dde suite jusqu a epuisement de la liste. lorsque toutes les 
+   hypotheses ont ete essayees , et que le systeme veut encore backtracker,
+   le systeme backtracke vers le backtraker au dessus de lui lexicalement.
+   si il n y en a pas , l hypothese courrante est desactivee.
+
+ - soit sequencelist n est pas vide et function contient une best-function
+   c est a dire une fontion prenant comme argumment bactraker et
+   current-hypothesis et rendant soit une autre hypothese non encore
+   essaye parmi la liste des hypotheses cree lors de la declaration
+   CREATE-POSSIBILITIES ,soit NIL signifiant par la que aucune autre hypothese
+   n est adequeate ,le systeme backtracke alors ou desactive le monde courrant
+
+
+ - soit sequencelist est vide et function contient une find-next-function
+   c est a dire une fonction prenant comme argumment backtraker , 
+   current-hypothesis et next-hypothesis .cette fonction doit rendre 
+   soit next-hypothesis si elle estime qu il sagit de l hypothese suivante a
+   essayer soit NIL signifiant qu elle ne peut plus generer d hypothese ,
+   forcant ainsi le systeme soit a backtracker soit a desactiver l hypothese
+   courrante. l hypothese next-hypothesis qui est passe en argument , est
+   une hypothese blanche , c est a dire que c est a la fonction de la
+   customiser et donc lui donner un contenu . c est dans ce sens que function
+   apparait comme un generateur d 'hypothese qui prend l hypothese precedente
+   et genere une nouvelle hypothese . cette solution a ete choisie parce qu
+   elle libere le programmeur de la tache de creer cette hypotheses et de la 
+   lier au monde actuelle de maniere adequate.
+
+
+
+le backtraking se presente sous deux formes :
+
+ - soit on desire exprimer que le monde actuel ne convient pas
+   et qu il faut essayer une autre solution , dans ce cas le systeme 
+   va chercher le bactracker juste-au-dessus lexicalement et lui
+   donner l ordre de backtracker .cela se fait grace a la forme :
+
+
+ (BACKTRACK)
+
+
+
+- soit on sait a quel niveau le systeme  doit reprendre son hypothese
+  (a quel point de backtracking s addresser) la forme a employer
+  est alors la suivante :
+
+ (BACKTRACK-TO pointname)
+
+  - pointname : nom d un point de backtracking
+
+ le systeme va alors chercher le point de backtracking le plus proche
+ lexicalement qui porte ce nom et lui intimer l ordre de backtracker .
+ si il n en trouve pas , le systeme backtracke ou desactive le monde courrant
+ 
+
+ exemple : 
+
+(add-forward-rule
+ 'f-elliott
+ '(existing (cc 'courbe-2d) 
+           (and (for-all (vg 'vague-de-base) (vague-de-base-traite vg))
+                (< (get-slot-value f-elliott 'rang-debut-de-vague-cherchee) 
+                   (get-slot-value (get-slot-value f-elliott 'courbe) 
+				   'pointeur-max))))
+ 
+ '(create-possibilities 
+    '((progn (setf (get-slot-value f-elliott 'vague-superieure) 
+		   (user-instanciate 'figure-en-5-vagues nil nil))
+	     (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure)
+				   'courbe) (get-slot-value f-elliott 'courbe))
+	     (setf (get-slot-value f-elliott 'sens-superieur) 'haussier)
+	     (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure)
+				   'sens)
+		   (get-slot-value f-elliott 'sens-superieur))
+	     (setf (get-slot-value f-elliott 'vague-cherchee) 'vague-1)
+	     (setf (get-slot-value f-elliott 'pret-a-scanner) 'oui)
+                                        
+	     )
+
+      (progn (setf (get-slot-value f-elliott 'vague-superieure)
+		   (user-instanciate 'figure-en-5-vagues nil nil))
+	     (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure)
+				   'courbe) (get-slot-value f-elliott 'courbe))
+	     (setf (get-slot-value f-elliott 'sens-superieur) 'baissier)
+	     (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure)
+				   'sens)
+		   (get-slot-value f-elliott 'sens-superieur))
+	     (setf (get-slot-value f-elliott 'vague-cherchee) 'vague-1)
+	     (setf (get-slot-value f-elliott 'pret-a-scanner) 'oui)
+	     )
+
+      (progn (setf (get-slot-value f-elliott 'vague-superieure) 
+		   (user-instanciate 'figure-en-3-vagues nil nil))
+	     (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure)
+				   'courbe) (get-slot-value f-elliott 'courbe))
+	     (setf (get-slot-value f-elliott 'sens-superieur) 'haussier)
+	     (setf (get-slot-value f-elliott 'vague-cherchee) 'vague-a)
+	     (setf (get-slot-value f-elliott 'pret-a-scanner) 'oui)
+	     )
+
+      (progn (setf (get-slot-value f-elliott 'vague-superieure) 
+		   (user-instanciate 'figure-en-3-vagues nil nil))
+	     (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure)
+				   'courbe) (get-slot-value f-elliott 'courbe))
+	     (setf (get-slot-value f-elliott 'sens-superieur) 'baissier)
+	     (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure)
+				   'sens) 
+		   (get-slot-value f-elliott 'sens-superieur))
+	     (setf (get-slot-value f-elliott 'vague-cherchee) 'vague-a)
+	     (setf (get-slot-value f-elliott 'pret-a-scanner) 'oui)
+	     )
+                        
+                                
+      )
+			 nil 
+			 'hypothese-principale-sur-les-vagues
+			 'hypothetical-wawe)
+ "formulation des 6 formes possibles de vagues d elliott")
+
+
+
+ Traces
+
+
+le systeme est capable si on lui demande de tracer certains evenements ,
+pour cela la variable lisp globale *TRACE-LEVEL* contient
+une liste de nombres compris entre 1 et 12 inclus qui specifient les
+evenement a tracer.
+
+exemple : 
+  tracage des regles essaye en chainage arriere qui ont reussi et celle qui
+  ont echouee :
+   
+   (SETQ *TRACE-LEVEL* '(5 6))
+
+liste des douze possiblilites
+
+1: activation est desactivation des mondes , backtracking.
+
+2: lancement des chaineurs avant par 'GO 'SATURE ou 'DETERMINE et sortie
+   de chainage avant.
+
+3: lancement d une determination par 'DETERMINE et liste des moyens
+   mis a dispositions
+
+4: determination de la valeur d un slot avec indication de la valeur conclue
+
+5: regles backward qui ont reussi
+
+6: regles backward qui ont echoue
+
+7: regles forward qui ont reussie
+
+8: ensemble de conflit genere a chaque cycle
+
+9: changement de structure intervenant dans la base : creation d un object
+   ajout d un slot , .. .
+
+10: activation d un demon d instance (pre-instanciation-demon ou
+    post-instanciation-demon)
+
+11: activation d un demon d acces (read-demon , write-before-demon ou
+    write-after-demon)
+
+12: activation d un situation-bloc
+
+

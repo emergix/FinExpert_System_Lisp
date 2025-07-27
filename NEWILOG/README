@@ -1,0 +1,3 @@
+dans ce directory il y a un fichier LOADALL.LL qui charge tous les modules necessaires.Une variable INTERPRETE? permet
+de charger soit en interprete soit en compile. le fichier LIASON.LL doit etre modifie pour que tous les objects AIDA
+sachent etre fabrique a partir des objects du systeme chartiste.

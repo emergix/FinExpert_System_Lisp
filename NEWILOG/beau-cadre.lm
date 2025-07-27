@@ -1,0 +1,19 @@
+defmodule
+beau-cadre
+files
+(|beau-cadre.lh| beau-cadre)
+include
+(image.lh)
+import
+()
+export
+(#:image:rectangle:beau-cadre:make #:image:rectangle:beau-cadre:relief? #:image:rectangle:beau-cadre:pattern-fond #:image:rectangle:beau-cadre:pattern-ombre #:image:rectangle:beau-cadre:pattern-soleil #:image:rectangle:beau-cadre:epaisseur-w #:image:
+rectangle:beau-cadre:epaisseur-h #:image:rectangle:beau-cadre:initialize beau-cadre #:image:rectangle:beau-cadre:display #:image:rectangle:beau-cadre:invert-display #:image:rectangle:beau-cadre:grow)
+cpexport
+((#:image:rectangle:beau-cadre:make subr0 ()) (#:image:rectangle:beau-cadre:relief? nsubr ()) (#:image:rectangle:beau-cadre:pattern-fond nsubr ()) (#:image:rectangle:beau-cadre:pattern-ombre nsubr ()) (#:image:rectangle:beau-cadre:pattern-soleil nsubr ()
+) (#:image:rectangle:beau-cadre:epaisseur-w nsubr ()) (#:image:rectangle:beau-cadre:epaisseur-h nsubr ()) (#:image:rectangle:beau-cadre:initialize nsubr ()) (beau-cadre nsubr ()) (#:image:rectangle:beau-cadre:display nsubr ()) (#:image:rectangle:
+beau-cadre:invert-display nsubr ()) (#:image:rectangle:beau-cadre:grow subr3 ()))
+cpfunctions
+((#:image:rectangle:beau-cadre:create subr0) (#:image:rectangle:beau-cadre:prepare-vectors nsubr) (#:image:rectangle:beau-cadre:compute-vector nsubr) (#:image:rectangle:beau-cadre:set-v-ombre subr1) (#:image:rectangle:beau-cadre:set-v-soleil subr1))
+cpimport
+()

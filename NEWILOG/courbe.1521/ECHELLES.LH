@@ -1,0 +1,43 @@
+(defabbrev mes-graduations {image}:mes-graduations)
+
+(setq #:sys-package:colon '{mes-graduations})
+
+(defstruct {mes-graduations}
+        police
+        longueur
+        chaine
+        valeur
+        hor?
+        texte-avant?)
+
+(defvar :long-grosse-grad 7)
+
+(defvar :long-petite-grad 2)
+
+(defvar :police 0)
+
+(defabbrev echelle {objet-graph}:echelle)
+
+(setq #:sys-package:colon '{echelle})
+
+(defstruct {echelle}
+        hor?
+        texte-avant?
+        graduations )
+
+
+(defabbrev num-echelle {echelle}:num-echelle)
+
+
+(defstruct {num-echelle}
+        pas
+        petit-pas)
+
+(defabbrev cal-echelle {echelle}:cal-echelle)
+
+(setq #:sys-package:colon '{cal-echelle})
+
+(defstruct {cal-echelle}
+        quatorze?)
+
+(defvar :quatorze-mois 450)     ; environ ...

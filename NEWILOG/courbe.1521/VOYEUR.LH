@@ -1,0 +1,15 @@
+(defabbrev voyeur {scroller}:voyeur)
+
+(defstruct {voyeur}
+        scroll-h?
+        scroll-v?
+        zoom-w?
+        zoom-h?
+        min-zoom
+        max-zoom)
+
+(setq #:sys-package:colon '{voyeur})
+
+(defvar :min-zoom-par-defaut 1)
+
+(defvar :max-zoom-par-defaut 3)

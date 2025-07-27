@@ -1,0 +1,17 @@
+defmodule
+point
+files
+(|points.lh| points)
+include
+()
+import
+()
+export
+(#:point:get-x #:point:get-y #:point:set-x #:point:set-y #:point:min-x #:point:min-y #:point:max-x #:point:max-y get-nth get-length min-x min-y max-x max-y get-min-point-x get-min-point-y get-max-point-x get-max-point-y)
+cpexport
+((#:point:get-x subr1 ()) (#:point:get-y subr1 ()) (#:point:set-x subr2 ()) (#:point:set-y subr2 ()) (#:point:min-x subr2 ()) (#:point:min-y subr2 ()) (#:point:max-x subr2 ()) (#:point:max-y subr2 ()) (get-nth subr2 ()) (get-length subr1 ()) (min-x subr3
+()) (min-y subr3 ()) (max-x subr3 ()) (max-y subr3 ()) (get-min-point-x subr3 ()) (get-min-point-y subr3 ()) (get-max-point-x subr3 ()) (get-max-point-y subr3 ()))
+cpfunctions
+((coeur nsubr) (coeur-point nsubr))
+cpimport
+()

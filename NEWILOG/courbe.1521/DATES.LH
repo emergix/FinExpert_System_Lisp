@@ -1,0 +1,15 @@
+(defabbrev ma-date ma-date)
+
+(setq #:sys-package:colon '{ma-date})
+
+(defstruct {ma-date}
+        annees
+        mois 
+        jours)
+
+(defvar :table-des-mois 
+        '("Janvier" "Fevrier " "Mars" "Avril" "Mai" "Juin" "Juillet" 
+          "Aout" "Septembre" "Octobre" "Novembre" "Decembre"))
+
+(defvar :global (new '{ma-date}))
+

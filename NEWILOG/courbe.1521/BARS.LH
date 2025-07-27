@@ -1,0 +1,9 @@
+(defabbrev bars-and-charts {application}:bars-and-charts)
+
+(defstruct {bars-and-charts}
+        controleur
+        courbes-map
+        valeur?)
+
+
+        

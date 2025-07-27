@@ -1,0 +1,17 @@
+defmodule
+dates
+files
+(|dates.lh| dates)
+include
+()
+import
+()
+export
+(#:ma-date:make #:ma-date:annees #:ma-date:mois #:ma-date:jours #:ma-date:inverse-convert-time #:ma-date:convert-time #:ma-date:debut-de-mois-suivant #:ma-date:debut-de-trimestre-suivant #:ma-date:debut-d-annee-suivante #:ma-date:nom-du-mois)
+cpexport
+((#:ma-date:make subr0 ()) (#:ma-date:annees nsubr ()) (#:ma-date:mois nsubr ()) (#:ma-date:jours nsubr ()) (#:ma-date:inverse-convert-time subr1 ()) (#:ma-date:convert-time subr1 ()) (#:ma-date:debut-de-mois-suivant subr1 ()) (#:ma-date:
+debut-de-trimestre-suivant subr1 ()) (#:ma-date:debut-d-annee-suivante subr1 ()) (#:ma-date:nom-du-mois subr1 ()))
+cpfunctions
+()
+cpimport
+()

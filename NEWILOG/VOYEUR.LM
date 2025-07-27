@@ -1,0 +1,25 @@
+defmodule
+voyeur
+files
+(|voyeur.lh| voyeur)
+include
+(image.lh application.lh scroller.lh)
+import
+(application view)
+export
+(#:image:rectangle:application:scroller:voyeur:make #:image:rectangle:application:scroller:voyeur:scroll-h? 
+#:image:rectangle:application:scroller:voyeur:grow
+#:image:rectangle:application:scroller:voyeur:scroll-v? #:image:rectangle:application:scroller:voyeur:zoom-w? 
+#:image:rectangle:application:scroller:voyeur:zoom-h?
+ #:image:rectangle:application:scroller:voyeur:min-zoom 
+#:image:rectangle:application:scroller:voyeur:max-zoom 
+#:image:rectangle:application:scroller:voyeur:initialize voyeur v-voyeur h-voyeur f-voyeur #:image:rectangle:application:scroller:voyeur:scroll #:image:rectangle:application:scroller:voyeur:zoom
+ #:image:rectangle:application:scroller:voyeur:current-zoom-w #:image:rectangle:application:scroller:voyeur:current-zoom-h)
+
+;;; Added automatically, don't type beyond this line.
+cpexport
+((#:image:rectangle:application:scroller:voyeur:make subr0 ()) (#:image:rectangle:application:scroller:voyeur:scroll-h? nsubr ()) (#:image:rectangle:application:scroller:voyeur:grow subr3 ()) (#:image:rectangle:application:scroller:voyeur:scroll-v? nsubr ()) (#:image:rectangle:application:scroller:voyeur:zoom-w? nsubr ()) (#:image:rectangle:application:scroller:voyeur:zoom-h? nsubr ()) (#:image:rectangle:application:scroller:voyeur:min-zoom nsubr ()) (#:image:rectangle:application:scroller:voyeur:max-zoom nsubr ()) (#:image:rectangle:application:scroller:voyeur:initialize nsubr ()) (voyeur nsubr ()) (v-voyeur nsubr ()) (h-voyeur nsubr ()) (f-voyeur nsubr ()) (#:image:rectangle:application:scroller:voyeur:scroll nsubr ()) (#:image:rectangle:application:scroller:voyeur:zoom subr3 ()) (#:image:rectangle:application:scroller:voyeur:current-zoom-w subr1 ()) (#:image:rectangle:application:scroller:voyeur:current-zoom-h subr1 ()))
+cpfunctions
+((#:image:rectangle:application:scroller:voyeur:create subr0) (#:image:rectangle:application:scroller:voyeur:scroll-it nsubr) (#:image:rectangle:application:scroller:voyeur:verticalscroll-it subr3) (#:image:rectangle:application:scroller:voyeur:horizontalscroll-it subr3) (#:image:rectangle:application:scroller:voyeur:zoom-valide? subr2))
+cpimport
+((view (view . nsubr)) (application (application . nsubr) (full-redisplay . subr1)))

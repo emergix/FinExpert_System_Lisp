@@ -1,0 +1,7 @@
+(defabbrev mybutton {application}:mybutton)
+
+(setq #:sys-package:colon '{mybutton})
+
+(defstruct {mybutton}
+	get-function
+	titre)

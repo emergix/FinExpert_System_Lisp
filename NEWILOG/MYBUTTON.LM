@@ -1,0 +1,25 @@
+defmodule
+mybutton
+files
+(mybutton.lh mybutton)
+include 
+(image.lh application.lh)
+import 
+(view virbitmap application)
+export
+(
+#:image:rectangle:application:mybutton:make
+mybutton
+#:image:rectangle:application:mybutton:get-function
+#:image:rectangle:application:mybutton:titre
+#:image:rectangle:application:mybutton:down-event
+#:image:rectangle:application:mybutton:compute-menu
+)
+
+;;; Added automatically, don't type beyond this line.
+cpexport
+((#:image:rectangle:application:mybutton:make subr0 ()) (mybutton subr3 ()) (#:image:rectangle:application:mybutton:get-function nsubr ()) (#:image:rectangle:application:mybutton:titre nsubr ()) (#:image:rectangle:application:mybutton:down-event subr2 ()) (#:image:rectangle:application:mybutton:compute-menu subr1 ()))
+cpfunctions
+()
+cpimport
+((view (view . nsubr)) (virbitmap (create-menu . nsubr) (menu-insert-item . nsubr) (activate-menu . subr3) (ungrab-event . subr0)) (application (application . nsubr) (#:image:rectangle:application:menu . nsubr) (#:image:rectangle:application:action . nsubr)))

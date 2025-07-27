@@ -1,0 +1,34 @@
+defmodule
+bars-and-charts
+files
+(|bars.lh| bars)
+include
+(|image.lh| |courbes.lh| |application.lh| |components.lh|)
+import
+(points courbes echelles box filledbox column view elview elcview beau-cadre application components pres vue)
+export
+(#:image:rectangle:application:bars-and-charts:create #:image:rectangle:application:bars-and-charts:make #:image:rectangle:application:bars-and-charts:controleur #:image:rectangle:application:bars-and-charts:courbes-map #:image:rectangle:application:
+bars-and-charts:valeur? #:image:rectangle:application:bars-and-charts:initialize #:image:rectangle:application:bars-and-charts:prin #:image:rectangle:application:bars-and-charts:make-controleur #:image:rectangle:application:bars-and-charts:courbes-map #:
+image:rectangle:application:bars-and-charts:valeur? #:image:rectangle:application:bars-and-charts:bars-and-charts #:image:rectangle:application:bars-and-charts:add-object-liste-principale #:image:rectangle:application:bars-and-charts:
+add-object-liste-principale #:image:rectangle:application:bars-and-charts:delete-object-liste-principale #:image:rectangle:application:bars-and-charts:modify-object-liste-principale #:image:rectangle:application:bars-and-charts:
+add-object-liste-secondaire-1 #:image:rectangle:application:bars-and-charts:delete-object-liste-secondaire-1 #:image:rectangle:application:bars-and-charts:modify-object-liste-secondaire-1 #:image:rectangle:application:bars-and-charts:
+add-object-liste-secondaire-2 #:image:rectangle:application:bars-and-charts:delete-object-liste-secondaire-2 #:image:rectangle:application:bars-and-charts:modify-object-liste-secondaire-2 #:image:rectangle:application:bars-and-charts:
+create-vertical-histogramme #:image:rectangle:application:bars-and-charts:create-horizontal-histogramme #:image:rectangle:application:bars-and-charts:get-liste-principale #:image:rectangle:application:bars-and-charts:get-liste-secondaire1 #:image:
+rectangle:application:bars-and-charts:get-liste-secondaire2 #:image:rectangle:application:bars-and-charts:valeur-presente? #:image:rectangle:application:bars-and-charts:ajuster-deplaceur)
+cpexport
+((#:image:rectangle:application:bars-and-charts:create nsubr ()) (#:image:rectangle:application:bars-and-charts:make subr0 ()) (#:image:rectangle:application:bars-and-charts:controleur nsubr ()) (#:image:rectangle:application:bars-and-charts:courbes-map 
+nsubr ()) (#:image:rectangle:application:bars-and-charts:valeur? nsubr ()) (#:image:rectangle:application:bars-and-charts:initialize nsubr ()) (#:image:rectangle:application:bars-and-charts:valeur-presente? subr1 ()) (#:image:rectangle:application:
+bars-and-charts:make-controleur nsubr ()) (#:image:rectangle:application:bars-and-charts:prin subr1 ()) (#:image:rectangle:application:bars-and-charts:bars-and-charts nsubr ()) (#:image:rectangle:application:bars-and-charts:add-object-liste-principale 
+subr2 ()) (#:image:rectangle:application:bars-and-charts:delete-object-liste-principale subr2 ()) (#:image:rectangle:application:bars-and-charts:modify-object-liste-principale subr3 ()) (#:image:rectangle:application:bars-and-charts:
+add-object-liste-secondaire-1 subr2 ()) (#:image:rectangle:application:bars-and-charts:delete-object-liste-secondaire-1 subr2 ()) (#:image:rectangle:application:bars-and-charts:modify-object-liste-secondaire-1 subr3 ()) (#:image:rectangle:application:
+bars-and-charts:add-object-liste-secondaire-2 subr2 ()) (#:image:rectangle:application:bars-and-charts:delete-object-liste-secondaire-2 subr2 ()) (#:image:rectangle:application:bars-and-charts:modify-object-liste-secondaire-2 subr3 ()) (#:image:
+rectangle:application:bars-and-charts:create-vertical-histogramme subr2 ()) (#:image:rectangle:application:bars-and-charts:create-horizontal-histogramme subr2 ()) (#:image:rectangle:application:bars-and-charts:get-liste-principale subr1 ()) (#:image:
+rectangle:application:bars-and-charts:get-liste-secondaire1 subr1 ()) (#:image:rectangle:application:bars-and-charts:get-liste-secondaire2 subr1 ()) (#:image:rectangle:application:bars-and-charts:ajuster-deplaceur subr1 ()))
+cpfunctions
+((#:image:rectangle:application:bars-and-charts:compute-controleur nsubr) (#:image:rectangle:application:bars-and-charts:w-ech-v-v subr2) (#:image:rectangle:application:bars-and-charts:h-ech-v-v subr2) (#:image:rectangle:application:bars-and-charts:
+h-prin-v subr2) (#:image:rectangle:application:bars-and-charts:w-ech-h-v subr2) (#:image:rectangle:application:bars-and-charts:w-prin-v subr2) (#:image:rectangle:application:bars-and-charts:h-ech-h-v subr2) (#:image:rectangle:application:bars-and-charts:
+w-second-v subr2) (#:image:rectangle:application:bars-and-charts:h-second-v subr2) (#:image:rectangle:application:bars-and-charts:image-controleur subr1))
+cpimport
+((view (view . nsubr)) (points (max-y . subr3) (get-length . subr1)) (echelles (h-cal-echelle . subr1) (v-num-echelle . subr1)) (pres (presentateur . nsubr)) (vue (vue-sur-voyeur . nsubr) (vue-sur-h-voyeur . nsubr) (vue-sur-v-voyeur . nsubr) (
+vue-sur-f-voyeur . nsubr)) (column (column . nsubr)) (components (add-component . subr3) (mixed-application . nsubr) (component . subr2)) (elcview (%centeredview . nsubr)) (beau-cadre (beau-cadre . nsubr)) (elview (%view . nsubr)) (filledbox (filledbox .
+nsubr)) (box (box . nsubr)) (courbes (v-histogramme . subr1) (indicateur-volume . subr1) (gros-v-histogramme . subr1) (gros-h-histogramme . subr1)) (application (application . nsubr) (full-redisplay . subr1)))

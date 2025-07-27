@@ -1,0 +1,6 @@
+(defabbrev vue-sur-voyeur {application}:vue-sur-voyeur)
+
+
+(defstruct {vue-sur-voyeur}
+        titre
+        voyeur)

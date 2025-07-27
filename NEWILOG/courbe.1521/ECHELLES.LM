@@ -1,0 +1,35 @@
+defmodule
+echelles
+files
+(|echelles.lh| echelles)
+include
+(|dates.lh| |image.lh| |courbes.lh|)
+import
+(dates courbes)
+export
+(#:image:mes-graduations:hauteur-totale #:image:mes-graduations:longueur-totale #:image:mes-graduations:display #:image:mes-graduations:display-with-string? #:image:mes-graduations:make #:image:mes-graduations:police #:image:mes-graduations:longueur #:
+image:mes-graduations:chaine #:image:mes-graduations:valeur #:image:mes-graduations:hor? #:image:mes-graduations:texte-avant? #:image:rectangle:objet-graph:echelle:make #:image:rectangle:objet-graph:echelle:hor? #:image:rectangle:objet-graph:echelle:
+texte-avant? #:image:rectangle:objet-graph:echelle:graduations #:image:rectangle:objet-graph:echelle:initialize #:image:rectangle:objet-graph:echelle:calculer-graduations #:image:rectangle:objet-graph:echelle:plus-haute-chaine #:image:rectangle:
+objet-graph:echelle:plus-grande-chaine #:image:rectangle:objet-graph:echelle:nbre-de-chaines #:image:rectangle:objet-graph:echelle:display #:image:rectangle:objet-graph:echelle:num-echelle:make #:image:rectangle:objet-graph:echelle:num-echelle:pas #:
+image:rectangle:objet-graph:echelle:num-echelle:petit-pas #:image:rectangle:objet-graph:echelle:num-echelle:initialize #:image:rectangle:objet-graph:echelle:num-echelle:prin h-num-echelle v-num-echelle #:image:rectangle:objet-graph:echelle:num-echelle:
+display #:image:rectangle:objet-graph:echelle:num-echelle:premiere-valeur #:image:rectangle:objet-graph:echelle:num-echelle:prochaine-valeur #:image:rectangle:objet-graph:echelle:num-echelle:calculer-grad #:image:rectangle:objet-graph:echelle:
+num-echelle:calculer-pas #:image:rectangle:objet-graph:echelle:num-echelle:calculer-petit-pas #:image:rectangle:objet-graph:echelle:cal-echelle:make #:image:rectangle:objet-graph:echelle:cal-echelle:quatorze? #:image:rectangle:objet-graph:echelle:
+cal-echelle:initialize #:image:rectangle:objet-graph:echelle:cal-echelle:prin h-cal-echelle v-cal-echelle #:image:rectangle:objet-graph:echelle:cal-echelle:premiere-valeur #:image:rectangle:objet-graph:echelle:cal-echelle:prochaine-valeur #:image:
+rectangle:objet-graph:echelle:cal-echelle:calculer-grad #:image:rectangle:objet-graph:echelle:cal-echelle:mois-a-afficher?)
+cpexport
+((#:image:mes-graduations:hauteur-totale subr1 ()) (#:image:mes-graduations:longueur-totale subr1 ()) (#:image:mes-graduations:display nsubr ()) (#:image:mes-graduations:display-with-string? nsubr ()) (#:image:mes-graduations:make subr0 ()) (#:image:
+mes-graduations:police nsubr ()) (#:image:mes-graduations:longueur nsubr ()) (#:image:mes-graduations:chaine nsubr ()) (#:image:mes-graduations:valeur nsubr ()) (#:image:mes-graduations:hor? nsubr ()) (#:image:mes-graduations:texte-avant? nsubr ()) (#:
+image:rectangle:objet-graph:echelle:make subr0 ()) (#:image:rectangle:objet-graph:echelle:hor? nsubr ()) (#:image:rectangle:objet-graph:echelle:texte-avant? nsubr ()) (#:image:rectangle:objet-graph:echelle:graduations nsubr ()) (#:image:rectangle:
+objet-graph:echelle:initialize subr3 ()) (#:image:rectangle:objet-graph:echelle:calculer-graduations subr1 ()) (#:image:rectangle:objet-graph:echelle:plus-haute-chaine subr1 ()) (#:image:rectangle:objet-graph:echelle:plus-grande-chaine subr1 ()) (#:
+image:rectangle:objet-graph:echelle:nbre-de-chaines subr1 ()) (#:image:rectangle:objet-graph:echelle:display nsubr ()) (#:image:rectangle:objet-graph:echelle:num-echelle:make subr0 ()) (#:image:rectangle:objet-graph:echelle:num-echelle:pas nsubr ()) (#:
+image:rectangle:objet-graph:echelle:num-echelle:petit-pas nsubr ()) (#:image:rectangle:objet-graph:echelle:num-echelle:initialize subr3 ()) (#:image:rectangle:objet-graph:echelle:num-echelle:prin subr1 ()) (h-num-echelle subr1 ()) (v-num-echelle subr1 ()
+) (#:image:rectangle:objet-graph:echelle:num-echelle:display nsubr ()) (#:image:rectangle:objet-graph:echelle:num-echelle:calculer-pas subr1 ()) (#:image:rectangle:objet-graph:echelle:num-echelle:calculer-petit-pas subr1 ()) (#:image:rectangle:
+objet-graph:echelle:num-echelle:premiere-valeur subr1 ()) (#:image:rectangle:objet-graph:echelle:num-echelle:prochaine-valeur subr2 ()) (#:image:rectangle:objet-graph:echelle:num-echelle:calculer-grad subr2 ()) (#:image:rectangle:objet-graph:echelle:
+cal-echelle:make subr0 ()) (#:image:rectangle:objet-graph:echelle:cal-echelle:quatorze? nsubr ()) (#:image:rectangle:objet-graph:echelle:cal-echelle:initialize subr3 ()) (#:image:rectangle:objet-graph:echelle:cal-echelle:prin subr1 ()) (h-cal-echelle 
+subr1 ()) (v-cal-echelle subr1 ()) (#:image:rectangle:objet-graph:echelle:cal-echelle:premiere-valeur subr1 ()) (#:image:rectangle:objet-graph:echelle:cal-echelle:prochaine-valeur subr2 ()) (#:image:rectangle:objet-graph:echelle:cal-echelle:calculer-grad
+subr2 ()) (#:image:rectangle:objet-graph:echelle:cal-echelle:mois-a-afficher? subr2 ()))
+cpfunctions
+((#:image:rectangle:objet-graph:echelle:num-echelle:create subr0) (grosse-graduation nsubr) (#:image:mes-graduations:initialize nsubr) (#:image:mes-graduations:create subr0) (petite-graduation nsubr) (#:image:rectangle:objet-graph:echelle:cal-echelle:
+create subr0))
+cpimport
+((dates (#:ma-date:convert-time . subr1) (#:ma-date:debut-de-mois-suivant . subr1) (#:ma-date:inverse-convert-time . subr1) (#:ma-date:debut-d-annee-suivante . subr1) (#:ma-date:debut-de-trimestre-suivant . subr1) (#:ma-date:nom-du-mois . subr1)))

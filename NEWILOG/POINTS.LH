@@ -1,0 +1,3 @@
+(defabbrev point #:point)
+
+(defstruct {point})

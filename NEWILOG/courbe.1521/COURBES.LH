@@ -1,0 +1,146 @@
+(defabbrev objet-graph {rectangle}:objet-graph)
+
+(defstruct {objet-graph}
+        ech-x
+        ech-y
+        h-total
+        min-x
+        min-y
+        max-x
+        max-y
+        symbol)
+
+
+
+(defabbrev courbe {objet-graph}:courbe)
+        
+(defstruct {courbe}
+        liste-de-points
+        mon-min-x
+        mon-min-y
+        mon-max-x
+        mon-max-y
+        )
+
+(setq #:sys-package:colon '{courbe})
+
+
+(defabbrev histogramme {objet-graph}:histogramme)
+
+
+(defstruct {histogramme}
+        liste-de-points
+        hor?
+        pattern)
+
+(defabbrev gros-histogramme {histogramme}:gros-histogramme)
+
+
+(defstruct {gros-histogramme})
+
+
+(defabbrev valeur {objet-graph}:valeur)
+
+(setq #:sys-package:colon '{valeur})
+
+(defstruct {valeur}
+        mon-max-x
+        mon-max-y
+        mon-min-x
+        mon-min-y
+        courbe-ouverture
+        courbe-fermeture
+        courbe-plus-h
+        courbe-plus-b
+        courbe-volume)
+
+(defvar :decal-length 3)
+
+
+(defabbrev segment {objet-graph}:segment)
+
+
+(defstruct {segment}
+        point-depart
+        point-arrivee
+        epaisseur)
+
+
+(defabbrev droite-technique {objet-graph}:droite-technique)
+
+(defstruct {droite-technique}
+        pente
+        ordonnee-0
+        epaisseur)
+
+(defabbrev figure {objet-graph}:figure)
+
+(defstruct {figure}
+        droite-resistance
+        droite-support)
+
+(defabbrev canal {objet-graph}:figure:canal)
+
+(defstruct {canal})
+
+(defabbrev ctriangle {objet-graph}:figure:ctriangle)
+
+(defstruct {ctriangle})
+
+(defabbrev fleche {objet-graph}:fleche)
+
+(defstruct {fleche}
+        point-arrivee
+        type           ; 8 angles  
+        longueur       ; de la fleche
+        rang
+        courbe)
+
+(setq #:sys-package:colon '{fleche})
+
+(defvar :pi/4 .785398)
+
+(defabbrev texte-sur-fleche {fleche}:texte-sur-fleche)
+
+(defstruct {texte-sur-fleche}
+        petite-long
+        texte
+        police
+        boite?
+        situation)      ; tete ou queue
+
+
+(defabbrev indicateur-volume {objet-graph}:indicateur-volume)
+
+(defstruct {indicateur-volume}
+        liste-de-points
+        point-max)
+
+(setq #:sys-package:colon '{indicateur-volume})
+
+(defvar :length 6)
+
+(defabbrev indicateur-etendu {objet-graph}:indicateur-etendu)
+
+(defstruct {indicateur-etendu}
+        point-debut
+        rang-debut
+        point-fin
+        rang-fin
+        courbe
+        titre
+        police
+        boite?)
+
+
+(defabbrev points-et-figures {objet-graph}:points-et-figures)
+
+(setq #:sys-package:colon '{points-et-figures})
+
+(defstruct {points-et-figures}
+        largeur-colonne
+        boite
+        body)
+
+(defvar :chiffres-et-autres 
+        '("1" "2" "3" "4" "5" "6" "7" "8" "9" "0" "x" "o"))
