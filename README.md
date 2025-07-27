@@ -1,5 +1,14 @@
 # FinExpert_System_Lisp
 Chartist Expert System written in Lisp (LeLisp 1987)
+Presentation : 
+📄 **Read the paper**: [Chartix_PRES.pdf (francais)](./Chartix_PRES.pdf)
+
+Papier : 
+📄 **Read the paper**: [Chartix_papier.pdf (francais)](./Chartix_papier.pdf)
+
+AI chez MR : 
+📄 **Read the paper**: [IA_chez_MR.pdf (francais)](./IA_chez_MR.pdf)
+
 # GRAPHICUS Expert System Manual
 
 ## Introduction
