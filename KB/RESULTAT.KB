@@ -1,0 +1,135 @@
+; fichier contenant les objects lies a l utilisation des resultats d analyse 
+
+(add-knowledge-base 'resultat-kb
+                   'object-de-base
+                   '(expert-consultation resultat-d-analyse)
+                   nil)
+(user-instanciate 'expert 'expert-consultation nil)
+
+(add-method 'expert-consultation 'expert-consultation-what-do-you-think-about 'what-do-you-think-about 'superseed)
+
+
+(user-instanciate 'metaclass 'resultat-d-analyse nil)
+(add-slot-user 'resultat-d-analyse 'valeur-concernee 'instance)
+(add-slot-user 'resultat-d-analyse 'resultats-d-analyse 'instance)
+
+(de expert-consultation-what-do-you-think-about (expert-x list-y)
+    (setq *indic-disp* 1)
+    ($ ($ (get-slot-value (car list-y) 'dernier-cours) 'convert-time) 'display-1 
+       (catenate "derniers cours a la date du " 
+                 (date-string (car ($ (get-slot-value (car list-y) 'dernier-cours) 'dernier-point))))
+       )
+    (mapc '(lambda (x) ($ x 'display-1 "consultation d analyse : "))
+          (cadr list-y))
+    nil)
+
+
+
+(user-instanciate 'metaclass 'univers-graphique nil)
+(add-slot-user 'univers-graphique 'description 'instance)
+(add-slot-user 'univers-graphique 'date 'instance)
+(add-slot-user 'univers-graphique 'libelle 'instance)
+(add-slot-user 'univers-graphique 'origine 'instance)
+(add-slot-user 'univers-graphique 'transformation 'instance)
+(add-slot-user 'univers-graphique 'echeance 'instance)
+
+(add-method 'univers-graphique 'univers-graphique-display-1 'display-1 'superseed)
+
+(add-method 'resultat-d-analyse 'resultat-d-analyse-create-univers-graphique 'create-univers-graphique 'superseed)
+
+
+
+(de resultat-d-analyse-create-univers-graphique (resu)
+    (prog (uni-g-list)
+          (setq uni-g-list (mapcan '(lambda (x)
+                                      (let (y)
+                                        (cond ((and x (car x))
+                                               (setq y (user-instanciate 'univers-graphique nil nil))
+                                               (setf (get-slot-value y 'date) (inverse-convert-time (car x)))
+                                               (setf (get-slot-value y 'libelle) 
+                                                     (catenate (get-slot-value resu 'valeur-concernee)
+                                                               " au " 
+                                                               (date-string (inverse-convert-time (car x)))))
+                                               (setf (get-slot-value y 'origine) resu)
+                                               (setf (get-slot-value y 'transformation) 'create-univers-graphique)
+                                               (setf (get-slot-value y 'description)
+                                                     (let (z w  (dt (get-slot-value y 'date)))
+                                                       (setq z (user-instanciate 'courbe-de-probabilite nil nil))
+                                                       (setf (get-slot-value z 'body) (cadr x))
+                                                       (setf (get-slot-value z 'xtype) 'real)
+                                                       (setf (get-slot-value z 'ytype) 'real)
+                                                       (setf (get-slot-value z 'courbe-origine) nil)
+                                                       (setf (get-slot-value z 'transformation) 
+                                                             (list 'create-univers-graphique resu))
+                                                       (setf (get-slot-value z 'pointeur-max) (vlength (cadr x)))
+                                                       (cond ((setq w (existing-echeance dt))
+                                                              (setf (get-slot-value y 'echeance) w))
+                                                             (t (setq w (user-instanciate 'echeance nil nil))
+                                                                (setf (get-slot-value w 'date-usuelle)
+                                                                      (cond ((consp dt)
+                                                                             dt)
+                                                                            (t (inverse-convert-time dt))))
+                                                                
+                                                                (setf (get-slot-value w 'date-entiere)
+                                                                      (cond ((consp dt)
+                                                                             (convert-time dt))
+                                                                            (t dt)))
+                                                                (setf (get-slot-value y 'echeance) w)
+                                                                ))
+                                                       (list z))))
+                                              (t nil))
+                                        (cond (y (list y))
+                                              (t nil))
+                                        ))
+                                   (get-slot-value resu 'resultats-d-analyse)))
+          (return uni-g-list)))
+
+          
+(de existing-echeance (dt)
+    (let (edt udt ins-list)
+      (cond ((consp dt) 
+             (setq udt dt)
+             (setq edt (convert-time dt)))
+            (t (set edt dt)
+               (setq udt (inverse-convert-time dt))))
+      (setq ins-list (get-all-instances 'echeance))
+      (setq e-list (mapcan '(lambda (x) (cond ((or (equal (get-slot-value x 'date-usuelle) udt)
+                                                   (equal (get-slot-value x 'date-entiere) edt))
+                                               (list x))
+                                              (t nil)))
+                           ins-list))
+      e-list))
+
+
+
+
+(setq  *display-1-next-x* 20)
+(setq  *display-1-next-y* 180)
+
+
+(de  univers-graphique-display-1 (uni-g libelle-sup)
+     (prog (result bin x1 y1 titre l)
+          (setq x1 *display-1-next-x*)
+          (setq y1 *display-1-next-y*)
+          (setq titre (catenate libelle-sup (get-slot-value uni-g 'libelle)))
+          (setq l (get-slot-value uni-g 'description))
+          (setq  *display-1-next-x* (+ 20 *display-1-next-x*))
+          (setq  *display-1-next-y* (+ 20 *display-1-next-y*))
+          (setq *mode-display-time* nil)
+          (add-application (setq result (send 'translate (curveappli titre  (- (div #wd 2) 20) (div #hd 3) l) x1 y1)))
+         ))
+    
+
+(add-method 'courbe-2d 'courbe-2d-display-1 'display-1 'superseed)
+       
+(de  courbe-2d-display-1 (c titre)
+     (prog (result bin x1 y1 l)
+          (setq x1 *display-1-next-x*)
+          (setq y1 *display-1-next-y*)
+          (setq l (list c))
+          (setq  *display-1-next-x* (+ 20 *display-1-next-x*))
+          (setq  *display-1-next-y* (+ 20 *display-1-next-y*))
+          (setq *mode-display-time* nil)
+          (add-application (setq result (send 'translate (curveappli titre  (- (div #wd 2) 20) (div #hd 3) l) x1 y1)))
+         ))
+           

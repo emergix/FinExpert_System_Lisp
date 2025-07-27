@@ -1,0 +1,29 @@
+;fichier contenant les regles de savoir-faire concernant l'utilisation des moyennes mobiles et fourier pour 
+
+;obtenir des rapports 
+
+(add-knowledge-base 'moving-average.kb)
+
+(user-instanciate 'expert 'expert-moving-average nil)
+
+(setf (get-slot-value 'expert-moving-average 'body '(moving-average-parameters moving-average-analysis)))
+
+(add-method 'expert-moving-average 'expert-moving-average-what-do-you-think-about 'what-do-you-think-about 'superseed)
+(add-method 'expert-moving-average 'expert-moving-average-forme-final-rapport 'forme-final-rapport 'superseed)
+
+(de expert-moving-average-what-do-you-think-about (expert courbe )
+ (prog (c dernier-jour  liste-de-courbes-de-distribution-long  liste-de-courbes-de-distribution-court )
+         (setq c ($ courbe 'expand 'convert-time))
+           (setq dernier-jour (car ($ c 'dernier-point)))
+           (setq liste-de-courbes-de-distribution-long
+                 (mapcar '(lambda (x) ($ x 'forme-distribution
+                                         (get-slot-value select-parameters 'diviseur-de-distribution)))
+                          (mapcar '(lambda (x) ($ momentum-long '- ($ momentum-long 'x-shift (- dernier-jour x))))
+                                  (get-slot-value select-parameters 'liste-des-echeances-interessantes))))
+
+           (setq liste-de-courbes-de-distribution-court
+                  (mapcar '(lambda (x) ($ x 'forme-distribution 
+                                          (get-slot-value select-parameters 'diviseur-de-distribution)))
+                          (mapcar '(lambda (x) ($ momentum-court '- ($ momentum-court 'x-shift (- dernier-jour x))))
+                                  (get-slot-value select-parameters 'liste-des-echeances-interessantes))))
+           ))

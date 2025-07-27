@@ -1,0 +1,1102 @@
+;fichier contenant la description des fonctionalitees de base du systeme expert
+
+
+(add-knowledge-base 'fonction-kb
+                    'object-de-base
+                    '(fonction load expertise-en-meta expertise-en-elliott expertise-en-canal expertise-en-fourier
+                               expertise-en-eliot expertise-en-moving-average print expertise-en-test-1 
+                               expertise-en-test-2 expertise-en-test-du-generateur load)
+                    nil
+                    )
+
+
+(user-instanciate 'metaclass 'fonction nil)
+
+(add-slot-user 'fonction 'description 'instance)
+
+;fonction qui reinitialise la base
+
+(de initialise-base-de-faits ()
+    (mapc 'delete-object (get-slot-value 'courbe-2d 'instances))
+    (mapc 'delete-object (get-slot-value 'maximum-local 'instances))
+    (mapc 'delete-object (get-slot-value 'minimum-local 'instances))
+    (mapc 'delete-object (get-slot-value 'droite-technique 'instances))
+    (mapc 'delete-object (get-slot-value 'triangle 'instances))
+    (mapc 'delete-object (get-slot-value 'canal 'instances))
+    (mapc 'delete-object (get-slot-value 'rapport 'instances))
+    (mapc 'delete-object (get-slot-value 'moving-average-event 'instances))
+    (mapc 'delete-object (get-slot-value 'bi-droite 'instances))
+    (mapc 'delete-object (get-slot-value 'pseudo-extremum 'instances))
+    (mapc 'delete-object (get-slot-value 'cours 'instances))
+    (when  *displayed-courbe-a* (remove-application  *displayed-courbe-a*))
+    (when  *displayed-courbe-b* (remove-application  *displayed-courbe-b*))
+    (when  *displayed-courbe-c* (remove-application  *displayed-courbe-c*))
+    (when  *displayed-courbe-d* (remove-application  *displayed-courbe-d*))
+    (setq *displayed-courbe-a* nil)
+    (setq *displayed-courbe-b* nil)
+    (setq *displayed-courbe-c* nil)
+    (setq *displayed-courbe-d* nil)
+    (setq  *already-studied-courbe* nil)
+    (setq  *already-studied-q-valeur* nil)
+    (setq  *already-studied-h-valeur* nil)
+    (mapc '(lambda (x) (setf (get-slot-value x 'graphique-liste-des-objects-affiches) nil)
+                       (setf (get-slot-value x 'graphique) nil)
+                       (setf (get-slot-value x 'representation-graphique) nil))
+          '(expert-canal expert-moving-average expert-meta))
+    )
+
+
+(de initialisation () (initialise-base-de-faits))
+
+                                        ;EXPERTISE EN CHARGEMENT DE COURS A PARTIR DU VAX
+
+
+(user-instanciate 'fonction 'load nil)
+(setf (get-slot-value load 'description)
+      " charge a partir du vax un fichier de cours")
+
+
+(add-method 'load 'load-cours-quotidien 'cours-quotidien 'superseed)
+(add-method 'load 'load-cours-hebdomadaire 'cours-hebdomadaire 'superseed)
+
+
+
+(add-method 'load 'load-enregistrements-disponibles 'enregistrements-disponibles 'superseed)
+
+(de load-enregistrements-disponibles (fonction message)
+    (prog (savechan chan result)
+          (return (list "cac" "cac40"  "ai" "ca" "cl" "sq" "or" "ac" "aq" "en" "ly" "lg" "lr" "cs" "bn" "ri"
+                         "mt" "ff" "mc" "cw" "ml" "ho" "cb" "ex" "ug" "cu" "mi" "du" "ef" "pn"
+                         "lh" "ar" "sgo" "pm" "cap" "co" "cge" "aj" "rs" "cr" "gle" "fs" ))))
+
+(add-method 'load 'load-fin-de-fichier-d-enregistrement 'fin-de-fichier-d-enregistrement 'superseed)
+
+(de load-fin-de-fichier-d-enregistrement (fonction message) "")
+
+(de load-cours-quotidien (fonction arg-list)
+    (load-valeur-quotidien (car arg-list)))
+
+(de load-cours-hebdomadaire (fonction arg-list)
+    (load-valeur-hebdomadaire (car arg-list)))
+
+
+
+
+
+;fichier qui decrit les fonctionalite du systemes qui exploite les bases de connaissances et donc les experts
+
+                                      ;EXPERTISE EN CONSULTATION DE COURS
+
+
+(user-instanciate 'fonction 'expertise-en-consultation nil)
+(setf (get-slot-value expertise-en-consultation 'description)
+      " exploite un expert en consultation de cours")
+
+(add-method 'expertise-en-consultation 
+            'expertise-en-consultation-what-to-think 
+            'what-do-you-think
+            'superseed)
+
+
+(de expertise-en-consultation-what-to-think (object arg-list)
+    (prog (rap x-obj y-obj z-obj indic)
+        (debut-de-consultation)
+          (setq indic  (determine-indic-h-q arg-list  'expertise-en-consultation 'what-to-think))
+          (when (not (assoc (car arg-list) (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                  ((eqstring indic "q") *already-studied-q-valeur*)
+                                                  )))
+                (fetch-courbe-from-current-directory (car arg-list)
+                                                               ($ 'expertise-en-consultation 'fin-de-fichier-d-enregistrement
+                                                                 'what-to-think)))
+          (setq x-obj (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                         ((eqstring indic "q") *already-studied-q-valeur*)
+                                                         ))))
+          (setq y-obj (fetch-object-from-current-directory (car arg-list)
+                                                             ($ 'expertise-en-consultation 'fin-de-fichier-d-enregistrement
+                                                                 'what-to-think)))
+          (setq z-obj (mapcan '(lambda (k) ($ k 'create-univers-graphique))
+                              y-obj))
+          (setq rap ($ expert-consultation 'what-do-you-think-about (list x-obj z-obj)))  
+          (print " la conclusion du " rap " est " (get-slot-value rap 'conclusion))
+          (fin-de-consultation)))
+
+
+(add-method 'expertise-en-consultation 'resultats-disponibles-founissant-les-.answer
+            'enregistrements-disponibles 'superseed)
+
+(add-method 'expertise-en-consultation 'fin-de-fichier-d-enregistrement-en.answer
+            'fin-de-fichier-d-enregistrement 'superseed)
+
+
+
+
+;                                       EXPERTISE EN META
+
+(user-instanciate 'fonction 'expertise-en-meta nil)
+(setf (get-slot-value expertise-en-meta 'description)
+      " exploite un expert en theorie des meta")
+
+(add-method 'expertise-en-meta 
+            'expertise-en-meta-what-to-think 
+            'what-do-you-think
+            'superseed)
+
+
+
+(add-method 'expertise-en-meta 
+            'expertise-en-meta-analyse-cours-de-fermeture
+            'analyse-cours-de-fermeture
+            'superseed)
+
+(add-method 'expertise-en-meta 
+            'expertise-en-meta-analyse-cours-de-fermeture-g
+            'analyse-cours-de-fermeture-g
+            'superseed)
+
+(de determine-indic-h-q (arg-list current-function current-message)
+    (prog ((w (substring (string (car arg-list)) (- (plength (string (car arg-list))) 2) 2))
+           (r  ($ current-function 'fin-de-fichier-d-enregistrement  current-message)))
+          (cond ((eqstring w "-h") (return "h"))
+                ((eqstring w "-q") (return "q"))
+                ((eqstring (string r) ".hebdomadaire") (return "h"))
+                ((eqstring (string r) ".quotidien") (return "q"))
+                )))
+
+(de expertise-en-meta-what-to-think (object arg-list)
+    (prog (rap x-obj save-expert c m1 m2 dlist w-rapport k-rapport indic (libelle "expert-meta : "))
+          (setq save-expert *current-expert*)
+          (setq *current-expert* 'expert-meta)
+          (debut-de-consultation)
+          (setq indic (determine-indic-h-q arg-list 'expertise-en-meta 'what-to-think))
+          (when (not (assoc (car arg-list) (cond ((eqstring indic "h") *already-studied-h-valeur* )
+                                                  ((eqstring indic "q") *already-studied-q-valeur* )
+                                                  )
+                            ))
+                                                   
+                (fetch-courbe-from-current-directory (car arg-list)
+                                                               ($ 'expertise-en-meta 'fin-de-fichier-d-enregistrement
+                                                                 'what-to-think)))
+          (setq x-obj (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                         ((eqstring indic "q") *already-studied-q-valeur*))
+                                                         )))
+          (setq *contexte-d-analyse* (car arg-list))
+          (setq rap ($ expert-meta 'what-do-you-think-about x-obj arg-list))  
+          (trace-file (catenate " la conclusion du " rap " est "(cat-list (get-slot-value rap 'conclusion)))
+                      "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+          (setq c ($ x-obj  'expand 'convert-time))
+          (setq m1 (get-slot-value moving-average-parameters 'moving-average-courte))
+          (setq m2 (get-slot-value moving-average-parameters 'moving-average-longue))
+          (setq dlist (mapcan '(lambda (x) (cond ((or (eq (get-slot-value x 'courbe) c))
+                                                  (list (get-slot-value x 'droite-de-support) 
+                                                        (get-slot-value x 'droite-de-resistance)
+                                                        ))
+                                                 (t nil)))
+                              (get-all-instances 'figure)))
+          (setf (get-slot-value expert-meta 'graphique-liste-des-objects-affiches) (list c m1 m2))
+          (setf (get-slot-value expert-meta 'graphique) (display-courbe-d
+                                                         (catenate libelle "synthese")
+                                                         (append (list c m1 m2 ) dlist)))
+          
+          ;(add-application (bars-and-charts 
+          ;                  0 0 400 300
+          ;                  1
+          ;                  "essai" "du 14/02/89"
+          ;                  "principal"  (copy (append (list c m1 m2 ) dlist))
+          ;                  "second2" (list m1)
+          ;                  "second2" (list m2)))
+          (process-pending-events)
+          (setq  *current-expert* save-expert)
+          (fin-de-consultation)))
+
+
+
+
+
+(add-method 'expertise-en-meta 
+            'expertise-en-meta-ajoute-des-echeances
+            'ajoute-des-echeances
+            'superseed)
+
+
+(de expertise-en-meta-ajoute-des-echeances (object arg-list)
+    (prog (rap x-obj save-expert c m1 m2 dlist w-rapport k-rapport)
+          (setq save-expert *current-expert*)
+          (setq *current-expert* 'expert-meta)
+          (debut-de-consultation)
+          (setq rap ($ expert-meta 'ajoute-des-echeances ))  
+          (trace-file (catenate " la conclusion du " rap " est "(cat-list (get-slot-value rap 'conclusion)))
+                      "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+          (process-pending-events)
+          (setq  *current-expert* save-expert)
+          (fin-de-consultation)))
+
+
+(de expertise-en-meta-analyse-cours-de-fermeture (object arg-list)
+    (setf (get-slot-value expert-canal 'representation-graphique) nil)
+    (expertise-en-meta-what-to-think object arg-list))
+
+
+(de expertise-en-meta-analyse-cours-de-fermeture-g (object arg-list)
+    (setf (get-slot-value expert-canal 'representation-graphique) t)
+    (expertise-en-meta-what-to-think object arg-list))
+
+(add-method 'expertise-en-meta 'expertise-en-meta-enregistrements-disponibles 'enregistrements-disponibles 'superseed)
+
+
+(de expertise-en-meta-enregistrements-disponibles (fonction message)
+    (cond ((memq message '(analyse-cours-de-fermeture analyse-cours-de-fermeture-g )) 
+           (enregistrements-disponibles-founissant-les-speciaux "-fermet.courbe-2d") 
+                   )
+          ((eq message 'ajoute-des-echeances) "preciser les echeances")
+          (t  (enregistrements-disponibles-founissant-les-speciaux ".courbe-2d") )))
+
+
+(add-method 'expertise-en-meta 
+            'expertise-en-meta-fin-de-fichier-d-enregistrement 'fin-de-fichier-d-enregistrement 'superseed)
+
+(de expertise-en-meta-fin-de-fichier-d-enregistrement (fonction message) 
+    (cond ((memq message '(analyse-cours-de-fermeture analyse-cours-de-fermeture-g )) 
+           "-fermet.courbe-2d")
+          ((eq message 'ajoute-des-echeances) "")
+          (t  ".courbe-2d")))
+
+
+                                 ;EXPERTISE EN ELLIOTT
+
+(user-instanciate 'fonction 'expertise-en-elliott nil)
+(setf (get-slot-value expertise-en-elliott 'description)
+      " exploite un expert en theorie d elliott")
+
+(add-method 'expertise-en-elliott 
+            'expertise-en-elliott-what-to-think 
+            'what-do-you-think
+            'superseed)
+
+(add-method 'expertise-en-elliott 
+            'expertise-en-elliott-what-to-think-with-graphics
+            'what-do-you-think-with-graphics
+            'superseed)
+
+(de expertise-en-elliott-what-to-think (object arg-list)
+    (prog (rap x-obj save-expert indic)
+          (setq save-expert *current-expert*)
+          (setq *current-expert* 'expert-elliott)
+          (debut-de-consultation)
+          (setq indic  (determine-indic-h-q arg-list  'expertise-en-elliott 'what-to-think))
+          (when (not (assoc (car arg-list) (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                  ((eqstring indic "q") *already-studied-q-valeur*)
+                                                  )))
+                (fetch-courbe-from-current-directory (car arg-list)
+                                                               ($ 'expertise-en-elliott 'fin-de-fichier-d-enregistrement
+                                                                 'what-to-think)))
+          (setq x-obj (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                         ((eqstring indic "q") *already-studied-q-valeur*)
+                                                         ))))
+          (setq rap ($ expert-elliott 'what-do-you-think-about x-obj))  
+          (print " la conclusion du " rap " est " (get-slot-value rap 'conclusion))
+          (setq *current-expert* save-expert)
+          (fin-de-consultation)))
+
+            
+(de expertise-en-elliott-what-to-think-with-graphics (object arg-list)
+    (prog (rap c c1 save-expert indic (catenate "elliott : " (libelle *contexte-d-analyse*)))
+          (setq save-expert *current-expert*)
+          (setq *current-expert* 'expert-elliott)
+          (debut-de-consultation)
+          (setq indic  (determine-indic-h-q arg-list 'expertise-en-elliott 'what-to-think-with-graphics))
+          (when (not (assoc (car arg-list) (cond ((eqstring indic "h") *already-studied-h-valeur*) 
+                                                  ((eqstring indic "q") *already-studied-q-valeur*)
+                                                  )))
+                (fetch-courbe-from-current-directory (car arg-list)
+                                                              ($ 'expertise-en-elliott 'fin-de-fichier-d-enregistrement
+                                                                 'what-to-think-with-graphics)))
+          (setf (get-slot-value expert-elliott 'representation-graphique) t)
+          (setq c ($ (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                        ((eqstring indic "q") *already-studied-q-valeur*))
+                                                        )) 'expand 'convert-time))
+          (setf (get-slot-value expert-elliott 'graphique) 
+                (display-courbe-b 
+                 libelle (list  c)))
+          (setf (get-slot-value expert-canal 'graphique-incremental) nil)
+          (setf (get-slot-value expert-canal 'graphique-liste-des-objects-affiches) (list c))
+          (setq c1 ($ c 'expand 'convert-time))
+	  ($ c1 'expand 'extremum-local 'objects nil)
+          (setf (get-slot-value expert-elliott 'graphique-min-max) 
+                (list (cadr (get-slot-value ($ c 'plus-haut-extremum) 'hauteur))
+                      (cadr (get-slot-value ($ c 'plus-bas-extremum) 'hauteur))))
+          (setq rap ($ expert-elliott 'what-do-you-think-about 
+                       (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                          ((eqstring indic "q") *already-studied-q-valeur*))
+                                                          ))))
+          (print " la conclusion du " rap " est " (get-slot-value rap 'conclusion))
+          (setq *current-expert* save-expert)
+          (fin-de-consultation)))
+
+(add-method 'expertise-en-elliott 'enregistrements-disponibles-founissant-les-.courbe-2d 
+            'enregistrements-disponibles 'superseed)
+
+(add-method 'expertise-en-elliott 'fin-de-fichier-d-enregistrement-en.courbe-2d
+            'fin-de-fichier-d-enregistrement 'superseed)
+
+
+
+
+                                  ;EXPERTISE EN CANAUX ET TRIANGLES
+
+
+(user-instanciate 'fonction 'expertise-en-canal nil)
+(setf (get-slot-value expertise-en-canal 'description)
+      " exploite un expert en canal et en triangles")
+
+(add-method 'expertise-en-canal 
+            'expertise-en-canal-what-to-think 
+            'what-do-you-think
+            'superseed)
+
+(add-method 'expertise-en-canal 
+            'expertise-en-canal-what-to-think-with-graphics
+            'what-do-you-think-with-graphics
+            'superseed)
+
+
+(de expertise-en-canal-what-to-think (object arg-list)
+    (prog (rap save-expert indic)
+          (setq save-expert *current-expert*)
+          (setq *current-expert* 'expert-canal)
+          (debut-de-consultation)
+          (setq indic (determine-indic-h-q arg-list 'expertise-en-canal 'what-to-think))
+          (when (not (assoc (car arg-list) (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                  ((eqstring indic "q") *already-studied-q-valeur*))))
+                (fetch-courbe-from-current-directory (car arg-list)
+                                                               ($  'expertise-en-canal 'fin-de-fichier-d-enregistrement
+                                                                  'what-to-think)))
+          (setq rap ($ expert-canal 'what-do-you-think-about 
+                       (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                          ((eqstring indic "q") *already-studied-q-valeur*))))))
+          (trace-file (catenate " la conclusion du " rap " est " (cat-list (get-slot-value rap 'conclusion)))
+                      "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+          (setq *current-expert* save-expert)
+          (fin-de-consultation)))
+
+(de expertise-en-canal-what-to-think-with-graphics (object arg-list)
+    (prog (rap c c1 save-expert indic (libelle (catenate "expert en canal : " *contexte-d-analyse*)))
+          (setq save-expert *current-expert*)
+          (setq *current-expert* 'expert-canal)
+          (debut-de-consultation)
+          (setq indic  (determine-indic-h-q arg-list 'expertise-en-canal 'what-to-think-with-graphics))
+          (when (not (assoc (car arg-list) (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                  ((eqstring indic "q") *already-studied-q-valeur*))))
+                (fetch-courbe-from-current-directory (car arg-list)
+                                                               ($ 'expertise-en-canal 'fin-de-fichier-d-enregistrement
+                                                                  'what-to-think-with-graphics)))
+         
+          (setq c ($ (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                        ((eqstring indic "q") *already-studied-q-valeur*))))
+                     'expand 'convert-time))
+          (when *generateur-de-droite-flag-de-sens*
+                (setq max-de-ref (* 1.2 (cadr (courbe-2d-point-maximum c 0 (get-slot-value c 'pointeur-max)))))
+                (setq courbe2 ($ c '* -1.))
+                (setq c  ($ courbe2 '+ max-de-ref)))
+          (setf (get-slot-value expert-canal 'graphique) 
+                (display-courbe-a libelle (list  c)))
+          (setf (get-slot-value expert-canal 'graphique-incremental) nil)
+          (setf (get-slot-value expert-canal 'graphique-liste-des-objects-affiches) (list c))
+          (setq c1 ($ c 'expand 'convert-time))
+	  ($ c1 'expand 'extremum-local 'objects nil)
+          (setf (get-slot-value expert-canal 'graphique-min-max) 
+                (list (cadr (get-slot-value ($ c 'plus-haut-extremum) 'hauteur))
+                      (cadr (get-slot-value ($ c 'plus-bas-extremum) 'hauteur))))
+          (setq rap ($ expert-canal 'what-do-you-think-about 
+                       (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                          ((eqstring indic "q") *already-studied-q-valeur*))))))
+          (trace-file (catenate  " la conclusion du " rap " est " (cat-list (get-slot-value rap 'conclusion)))
+                       "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+          (setq *current-expert* save-expert)
+          (fin-de-consultation)))
+
+
+
+(add-method 'expertise-en-canal 'enregistrements-disponibles-founissant-les-.courbe-2d 'enregistrements-disponibles 'superseed)
+(add-method 'expertise-en-canal 'fin-de-fichier-d-enregistrement-en.courbe-2d
+            'fin-de-fichier-d-enregistrement 'superseed)
+
+
+
+                             ;EXPERTISE EN FOURIER
+
+(user-instanciate 'fonction 'expertise-en-fourier nil)
+(setf (get-slot-value expertise-en-canal 'description)
+      " exploite un expert en canal et en triangles")
+
+(add-method 'expertise-en-fourier 
+            'expertise-en-fourier-what-to-think 
+            'what-do-you-think
+            'superseed)
+
+
+(add-method 'expertise-en-fourier 
+            'expertise-en-fourier-what-to-think-with-graphics
+            'what-do-you-think-with-graphics
+            'superseed)
+
+(de expertise-en-fourier-what-to-think (object arg-list)
+    (prog (rap o save-expert indic)
+          (setq save-expert *current-expert*)
+          (setq *current-expert* 'expert-fourier)
+          (debut-de-consultation)
+          (setq indic (determine-indic-h-q arg-list 'expertise-en-fourier 'what-to-think))
+          (when (not (assoc (car arg-list) (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                  ((eqstring indic "q") *already-studied-q-valeur*))))
+                (fetch-courbe-from-current-directory (car arg-list)
+                                                     ($ 'expertise-en-fourier 'fin-de-fichier-d-enregistrement
+                                                        'what-do-you-think)))
+          (setq o ($ 'objectif 'instanciate nil nil))
+          ($  o 'put-value 'courbe-etudiee (cdr (assoc (car arg-list)  
+                                                       (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                             ((eqstring indic "q") *already-studied-q-valeur*))))
+              )
+          (setq rap ($ expert-fourier 'what-do-you-think-about 
+                       (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                          ((eqstring indic "q") *already-studied-q-valeur*))))))
+          (print " la conclusion du " rap " est " (get-slot-value rap 'conclusion))
+          (setq *current-expert* save-expert)
+          (fin-de-consultation)))
+
+(de expertise-en-fourier-what-to-think-with-graphics (object arg-list)
+    (prog (rap o c  save-expert indic (libelle *contexte-d-analyse*))
+          (setq save-expert *current-expert*)
+          (setq *current-expert* 'expert-fourier)
+          (debut-de-consultation)
+          (setq indic (determine-indic-h-q arg-list 'expertise-en-fourier 'what-to-think-with-graphics))
+          (when (not (assoc (car arg-list) (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                  ((eqstring indic "q") *already-studied-q-valeur*))))
+                (fetch-courbe-from-current-directory (car arg-list)
+                                                     ($ 'expertise-en-fourie 'fin-de-fichier-d-enregistrement
+                                                        'what-to-think-with-graphics)))
+          (setq c ($ (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                        ((eqstring indic "q") *already-studied-q-valeur*))
+                                 )) 'expand 'convert-time))
+          (setf (get-slot-value expert-fourier 'graphique) 
+                (display-courbe-c (catenate "expert en fourier : courbe etudiee : " libelle) (list  c)))
+          (setf (get-slot-value expert-fourier 'graphique-liste-des-objects-affiches) (list c))
+          (setf (get-slot-value expert-fourier 'graphique-liste-des-objects-affiches) (list c))
+          (setq o ($ 'objectif 'instanciate nil nil))
+          ($  o 'put-value 'courbe-etudiee (cdr (assoc (car arg-list) 
+                                                       (cond ((eqstring indic "q") *already-studied-q-valeur*)
+                                                             ((eqstring indic "h") *already-studied-h-valeur*))
+                                                       )))
+          (setf (get-slot-value expert-fourier 'graphique-incremental) nil)
+          (setf (get-slot-value o 'courbe-etudiee) (cdr (assoc (car arg-list) 
+                                                               (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                                     ((eqstring indic "q") *already-studied-q-valeur*)))))
+          (setq rap ($ expert-fourier 'what-do-you-think-about 
+                       (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                          ((eqstring indic "q") *already-studied-q-valeur*))))))
+          (setf (get-slot-value expert-fourier 'graphique) 
+                (display-courbe-c (catenate " expert en fourier : moyennes associees : " libelle)
+                                  (list  c (get-slot-value rap 'courbe-filtree))))
+          (display-courbe-b (catenate "expert en fourier : modes propres : " libelle)
+                            (list ($ (get-slot-value rap 'spectre) 'module)))
+          (setf (get-slot-value expert-fourier 'graphique-liste-des-objects-affiches) 
+                (list c (get-slot-value rap 'courbe-filtree)))
+          (print " la conclusion du " rap " est " (get-slot-value rap 'conclusion))
+          (setq *current-expert* save-expert)
+          (fin-de-consultation)))
+
+
+(add-method 'expertise-en-fourier 'enregistrements-disponibles-founissant-les-.courbe-2d 'enregistrements-disponibles 'superseed)
+
+
+(add-method 'expertise-en-fourier 'fin-de-fichier-d-enregistrement-en.courbe-2d
+            'fin-de-fichier-d-enregistrement 'superseed)
+
+
+                                       ;EXPERTISE EN ELIOT
+
+(user-instanciate 'fonction 'expertise-en-eliot nil)
+(setf (get-slot-value expertise-en-canal 'description)
+      " exploite un expert en canal et en triangles")
+
+(add-method 'expertise-en-eliot 
+            'expertise-en-eliot-what-to-think 
+            'what-do-you-think
+            'superseed)
+
+(add-method 'expertise-en-eliot 
+            'expertise-en-eliot-what-to-think-with-graphics
+            'what-do-you-think-with-graphics
+            'superseed)
+
+
+
+(de expertise-en-eliot-what-to-think (object arg-list)
+    (prog (rap save-expert indic)
+          (setq save-expert *current-expert*)
+          (setq *current-expert* 'expert-eliot)
+          (debut-de-consultation)
+          (setq indic (determine-indic-h-q arg-list 'expertise-en-eliot 'what-to-think))
+          (when (not (assoc (car arg-list) (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                  ((eqstring indic "q") *already-studied-q-valeur*))))
+                (fetch-courbe-from-current-directory (car arg-list)
+                                                     ($ 'expertise-en-eliot 'fin-de-fichier-d-enregistrement
+                                                        'what-do-you-think)))
+          (setq rap ($ expert-eliot 'what-do-you-think-about 
+                       (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                          ((eqstring indic "q") *already-studied-q-valeur*))))))
+          (print " la conclusion du " rap " est " (get-slot-value rap 'conclusion))
+          (setq *current-expert* save-expert)
+          (fin-de-consultation)))
+
+
+(de expertise-en-eliot-what-to-think-with-graphics (object arg-list)
+    (prog (rap c save-expert indic (libelle *contexte-d-analyse*))
+          (setq save-expert *current-expert*)
+          (setq *current-expert* 'expert-eliot)
+          (debut-de-consultation)
+          (setq indic (determine-indic-h-q arg-list 'expertise-en-eliot 'what-to-think-with-graphics))
+          (when (not (assoc (car arg-list) (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                  ((eqstring indic "q") *already-studied-q-valeur*))))
+                (fetch-courbe-from-current-directory (car arg-list)
+                                                     ($'expertise-en-eliot 'fin-de-fichier-d-enregistrement
+                                                        'what-to-think-with-graphics)))
+          (setf (get-slot-value expert-eliot 'representation-graphique) t)
+          (setq c ($  (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                         ((eqstring indic "q") *already-studied-q-valeur*)))) 
+                      'expand 'convert-time))
+          (setf (get-slot-value expert-canal 'graphique) 
+                (display-courbe-2d (catenate "expert en eliot : " libelle) (list c)))
+          (setq rap ($ expert-eliot 'what-do-you-think-about 
+                       (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                          ((eqstring indic "q") *already-studied-q-valeur*))))))
+          (print " la conclusion du " rap " est " (get-slot-value rap 'conclusion))
+          (setq *current-expert* save-expert)
+          (fin-de-consultation)))
+    
+
+(add-method 'expertise-en-eliot 'enregistrements-disponibles-founissant-les-.courbe-2d 'enregistrements-disponibles 'superseed)
+
+
+(add-method 'expertise-en-eliot 'fin-de-fichier-d-enregistrement-en.courbe-2d
+            'fin-de-fichier-d-enregistrement 'superseed)
+
+
+                           ;EXPERTISE EN MOYENNE MOBILES
+
+
+(user-instanciate 'fonction 'expertise-en-moving-average nil)
+(setf (get-slot-value expertise-en-moving-average 'description)
+      " exploite un expert en theorie des moving-average")
+
+(add-method 'expertise-en-moving-average 
+            'expertise-en-moving-average-what-to-think 
+            'what-do-you-think
+            'superseed)
+
+(add-method 'expertise-en-moving-average 
+            'expertise-en-moving-average-what-to-think-with-graphics
+            'what-do-you-think-with-graphics
+            'superseed)
+
+(de expertise-en-moving-average-what-to-think (object arg-list)
+    (prog (rap x-obj save-expert indic)
+          (setq save-expert *current-expert*)
+          (setq *current-expert* 'expert-moving-average)
+          (debut-de-consultation)
+          (setq indic (determine-indic-h-q arg-list 'expertise-en-moving-average 'what-to-think))
+          (when (not (assoc (car arg-list) (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                  ((eqstring indic "q") *already-studied-q-valeur*))))
+                (fetch-courbe-from-current-directory (car arg-list)
+                                                               ($ 'expertise-en-moving-average 'fin-de-fichier-d-enregistrement
+                                                                 'what-do-you-think )))
+          (setq x-obj (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                         ((eqstring indic "q") *already-studied-q-valeur*))
+                                  )))
+          (setq rap ($ expert-moving-average 'what-do-you-think-about x-obj))  
+          (trace-file (catenate  " la conclusion du " rap " est " (cat-list (get-slot-value rap 'conclusion)))
+                      "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+          (setq *current-expert* save-expert)
+          (fin-de-consultation)))
+
+(de expertise-en-moving-average-what-to-think-with-graphics (object arg-list)
+    (prog (rap o c  save-expert m1 m2 m3 indic (libelle *contexte-d-analyse*))
+          (setq save-expert *current-expert*)
+          (setq *current-expert* 'expert-moving-average)
+          (debut-de-consultation)
+          (setq indic (determine-indic-h-q arg-list 'expertise-en-moving-average 'what-to-think-with-graphics))
+          (when (not (assoc (car arg-list) (cond ((eqstring indic "h") *already-studied-h-valeur*) 
+                                                  ((eqstring indic "q") *already-studied-q-valeur*))))
+                (fetch-courbe-from-current-directory (car arg-list)
+                                                               ($'expertise-en-moving-average  'fin-de-fichier-d-enregistrement
+                                                                'what-do-you-think-with-graphics )))
+          (setq c ($  (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                         ((eqstring indic "q") *already-studied-q-valeur*))))
+                           'expand 'convert-time))
+         
+          (setf (get-slot-value expert-moving-average 'graphique-liste-des-objects-affiches) (list c))
+          (setf (get-slot-value expert-moving-average 'graphique-liste-des-objects-affiches) (list c))
+          (setf (get-slot-value expert-moving-average 'graphique-incremental) nil)
+          (setq rap ($ 'expert-moving-average 'what-do-you-think-about 
+                       (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                          ((eqstring indic "q") *already-studied-q-valeur*))))))
+          (setq m1 (get-slot-value moving-average-parameters 'moving-average-courte))
+          (setq m2 (get-slot-value moving-average-parameters 'moving-average-longue))
+          (setf (get-slot-value expert-moving-average 'graphique-liste-des-objects-affiches) (list c m1 m2))
+           (display-courbe-b   (catenate "expert-en-moyennes-mobiles  : modes propres " libelle)
+            (list (get-slot-value moving-average-parameters 'spectre) ))
+           (setf (get-slot-value expert-moving-average 'graphique) 
+                 (display-courbe-c   (catenate "expert-en-moyennes-mobiles  : moyennes associees " libelle)
+                                     (list  c m1 m2)))
+           (trace-file (catenate  " la conclusion du " rap " est " (cat-list (get-slot-value rap 'conclusion)))
+                        "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+           (setq *current-expert* save-expert)
+           (fin-de-consultation)))
+
+
+
+               
+(add-method 'expertise-en-moving-average 'enregistrements-disponibles-founissant-les-.courbe-2d 
+            'enregistrements-disponibles 'superseed)
+
+(add-method 'expertise-en-moving-average 'fin-de-fichier-d-enregistrement-en.courbe-2d
+            'fin-de-fichier-d-enregistrement 'superseed)
+
+
+
+
+;                                              FONCTION PRINT ET BATCH
+
+(user-instanciate 'fonction 'print  nil)
+(setf (get-slot-value load 'description)
+      " envoie sur l imprimante une analyse de cours ")
+
+
+(add-method 'print
+            'print-current-displayed-analysis
+            'current-displayed-analysis
+            'superseed)
+
+
+(de print-current-displayed-analysis (object)
+  (prog (savechan  chan print-nb name)
+        (process-pending-events)
+        (setq chan (openi "/usr/jupiter/olivier/expert/print/print.NB"))
+        (setq savechan (inchan))
+        (inchan chan)
+        (setq print-nb  (read))
+        (setq print-nb (1+ print-nb))
+        (inchan savechan)
+        (setq name (catenate " /usr/jupiter/olivier/expert/print/to-print-" (string print-nb)))
+        (comline (catenate "screendump " name ))
+        (close chan)
+        (setq chan (openo "/usr/jupiter/olivier/expert/print/print.NB"))
+        (setq savechan (outchan))
+        (outchan chan)
+        (print print-nb)
+        (outchan savechan)
+        (close chan)
+        (setq *list-to-print* (cons name *list-to-print*))
+        ))
+
+        
+
+
+(add-method 'print
+            'print-achieve-print
+            'achieve-print
+            'superseed)
+
+
+(de print-achieve-print (object)
+
+    (mapc '(lambda (x) (comline (catenate  "cat " x " | lpr -v")))
+          *list-to-print*)
+    (setq *list-to-print* nil))
+
+
+
+
+(add-method 'print
+            'print-clean-print-directory
+            'clean-print-directory
+            'superseed)
+
+
+(de print-clean-print-directory (object)
+    (prog ()
+          (comline "rm  /usr/jupiter/olivier/expert/print/to-print-*")))
+
+
+
+(add-method 'print
+            'print-batch-execute
+            'batch-execute
+            'superseed)
+
+(de print-batch-execute (object)
+    (prog (current-batch savechan chan input name total-commande)
+          (setq current-batch (car arg-list))
+          (setq name (catenate "/usr/jupiter/olivier/expert/batch/" (string current-batch)))
+          (setq chan (openi name))
+          (setq savechan (inchan))
+          (inchan chan)
+          (untilexit eof
+                     (setq input (read))
+                     (setq total-commande (cons input total-commande)))
+          (close)
+          (inchan savechan)
+          (mapc '(lambda (x) (eval x)) (reverse total-commande))
+          ))
+
+
+
+(add-method 'print 'print-enregistrements-disponibles 'enregistrements-disponibles 'superseed)
+
+
+(add-method 'print 'print-fin-de-fichier-d-enregistrement
+            'fin-de-fichier-d-enregistrement 'superseed)
+
+(de print-fin-de-fichier-d-enregistrment (fonction message) "")
+
+
+(de print-enregistrements-disponibles (fonction message)
+    (prog (savechan chan result)
+          (when (eq message 'achieve-print) (return nil))
+          (when (eq message 'clean-print-directory) (return nil))
+          (when (eq message 'batch-execute)
+                (comline "cd /usr/jupiter/olivier/expert/batch")
+                (comline (catenate "/bin/sh -c "" echo '(' "
+                                   "*.batch"
+                                   " ')' ""  > /tmp/list"))
+                (setq chan (openi "/tmp/list"))
+                (setq savechan (inchan))
+                (inchan chan)
+                (setq result  (mapcar 'string (read)))
+                (inchan savechan )
+                (close chan)
+                (return result))))
+
+(de rafraichit-cours-quotidien (cours)
+    (setq (car arg-list) cours)
+    ($ 'load 'cours-quotidien ))
+
+
+
+(de rafraichit-cours-hebdomadaire (cours)
+    (setq (car arg-list) cours)
+    ($ 'load 'cours-hebdomadaire))
+
+
+
+
+(de analyse-courbe-fermeture-quotidien (cours)
+    (setq (car arg-list) (concat (string cours) "-q-fermet.courbe-2d"))
+    ($ 'expertise-en-meta 'what-do-you-think-with-graphics))
+
+
+(de analyse-courbe-fermeture-hebdomadaire (cours)
+    (setq (car arg-list) (concat (string cours) "-h-fermet.courbe-2d"))
+    ($ 'expertise-en-meta 'what-do-you-think-with-graphics))
+
+
+
+(de print-resultat ()
+    (process-pending-events)
+    ($ 'print 'current-displayed-analysis)
+    ($ 'print 'achieve-print))
+
+;                                          EXPERTISE DE TEST
+
+(user-instanciate 'fonction 'expertise-en-test-1 nil)
+(setf (get-slot-value expertise-en-test-1 'description)
+      " exploite un expert en test")
+
+(add-method 'expertise-en-test-1 
+            'expertise-en-test-1-what-to-think 
+            'what-do-you-think
+            'superseed)
+
+
+(de expertise-en-test-1-what-to-think (object arg-list)
+    (prog (rap save-expert indic)
+          (setq save-expert *current-expert*)
+          (setq *current-expert* 'expert-test)
+          (debut-de-consultation)
+          (setq indic (determine-indic-h-q arg-list 'expertise-en-test-1 'what-to-think))
+          (when (not (assoc (car arg-list) (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                  ((eqstring indic "q") *already-studied-q-valeur*))))
+                (fetch-courbe-from-current-directory (car arg-list)
+                                                                  ($ 'expertise-en-test-1 'fin-de-fichier-d-enregistrement
+                                                                    'what-do-you-think )))
+          (setq rap ($ 'expert-test-1 'what-do-you-think-about 
+                       (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                          ((eqstring indic "q") *already-studied-q-valeur*))))))
+          (print " la conclusion du test est  " rap)
+          (setq *current-expert* save-expert)
+          (fin-de-consultation)))
+
+(add-method 'expertise-en-test-1 'enregistrements-disponibles-founissant-les-.quotidien 
+            'enregistrements-disponibles 'superseed)
+
+
+
+(add-method 'expertise-en-test-1 'fin-de-fichier-d-enregistrement-en.quotidien
+            'fin-de-fichier-d-enregistrement 'superseed)
+
+
+
+
+(user-instanciate 'fonction 'expertise-en-test-2 nil)
+(setf (get-slot-value expertise-en-test-2 'description)
+      " exploite un expert en test")
+
+(add-method 'expertise-en-test-2 
+            'expertise-en-test-2-what-to-think 
+            'what-do-you-think
+            'superseed)
+
+
+(de expertise-en-test-2-what-to-think (object arg-list)
+    (prog (rap save-expert indic)
+          (setq save-expert *current-expert*)
+          (setq *current-expert* 'expert-test)
+          (debut-de-consultation)
+          (setq indic (determine-indic-h-q arg-list 'expertise-en-test-2 'what-to-think))
+          (when (not (assoc (car arg-list) (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                  ((eqstring indic "q") *already-studied-q-valeur*))))
+                (fetch-courbe-from-current-directory (car arg-list) 
+                                                                  ($ 'expertise-en-test-2  'fin-de-fichier-d-enregistrement
+                                                                    'what-do-you-think)))
+          (setq rap ($ 'expert-test-2 'what-do-you-think-about 
+                       (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                          ((eqstring indic "q") *already-studied-q-valeur*))))))
+          (print " la conclusion du test est  " rap)
+          (setq *current-expert* save-expert)
+          (fin-de-consultation)))
+
+(add-method 'expertise-en-test-2 'enregistrements-disponibles-founissant-les-.hebdomadaire 'enregistrements-disponibles 'superseed)
+
+(add-method 'expertise-en-test-2 'fin-de-fichier-d-enregistrement-en.hebdomadaire
+            'fin-de-fichier-d-enregistrement 'superseed)
+
+;                                       EXPERTISE DE TEST DU GENERATEUR DE DROITES
+
+(user-instanciate 'fonction 'expertise-en-test-du-generateur nil)
+(setf (get-slot-value expertise-en-test-du-generateur 'description)
+      " exploite un expert en test du generateur de droite")
+
+(add-method 'expertise-en-test-du-generateur
+            'expertise-en-test-du-generateur-show-generation-superieure
+            'show-generation-superieure
+            'superseed)
+
+
+
+
+(add-method 'expertise-en-test-du-generateur
+            'expertise-en-test-du-generateur-show-generation-inferieure
+            'show-generation-inferieure
+            'superseed)
+
+
+(de expertise-en-test-du-generateur-show-generation (object details)
+    (prog (rap x-obj save-expert c m1 m2 dlist w-rapport k-rapport indic)
+          (setq save-expert *current-expert*)
+          (setq *current-expert* 'expert-meta)
+          (debut-de-consultation)
+          (setq indic (determine-indic-h-q arg-list 'expertise-en-test-du-generateur 'show-generation))
+          (when (not (assoc (car arg-list) (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                  ((eqstring indic "q") *already-studied-q-valeur*))))
+                (fetch-courbe-from-current-directory (car arg-list) 
+                                                               ($ 'expertise-en-test-du-generateur 'fin-de-fichier-d-enregistrement
+                                                                nil)))
+          (setq x-obj (cdr (assoc (car arg-list)  (cond ((eqstring indic "h") *already-studied-h-valeur*)
+                                                         ((eqstring indic "q") *already-studied-q-valeur*)))))
+          (setq rap ($ expert-canal 'show-generation x-obj details))  
+          (print " la conclusion du " rap " est " (get-slot-value rap 'conclusion))
+        
+          (process-pending-events)
+          (setq  *current-expert* save-expert)
+          (fin-de-consultation)))
+
+
+(add-method 'expertise-en-test-du-generateur
+            'expert-canal-show-generation-superieur 'show-generation-superieur 'superseed)
+(add-method 'expertise-en-test-du-generateur
+            'expert-canal-show-generation-superieur-aller-non-filtre 'show-generation-superieur-aller-non-filtre 'superseed)
+(add-method 'expertise-en-test-du-generateur
+            'expert-canal-show-generation-superieur-aller-filtre 'show-generation-superieur-aller-filtre 'superseed)
+(add-method 'expertise-en-test-du-generateur
+            'expert-canal-show-generation-superieur-retour-non-filtre 'show-generation-superieur-retour-non-filtre 'superseed)
+(add-method 'expertise-en-test-du-generateur
+            'expert-canal-show-generation-superieur-retour-filtre 'show-generation-superieur-retour-filtre 'superseed)
+(add-method 'expertise-en-test-du-generateur
+            'expert-canal-show-generation-inferieur 'show-generation-inferieur 'superseed)
+(add-method 'expertise-en-test-du-generateur
+            'expert-canal-show-generation-inferieur-aller-non-filtre 'show-generation-inferieur-aller-non-filtre 'superseed)
+(add-method 'expertise-en-test-du-generateur
+            'expert-canal-show-generation-inferieur-aller-filtre 'show-generation-inferieur-aller-filtre 'superseed)
+(add-method 'expertise-en-test-du-generateur
+            'expert-canal-show-generation-inferieur-retour-non-filtre 'show-generation-inferieur-retour-non-filtre 'superseed)
+(add-method 'expertise-en-test-du-generateur
+            'expert-canal-show-generation-inferieur-retour-filtre 'show-generation-inferieur-retour-filtre 'superseed)
+
+
+(add-method 'expertise-en-test-du-generateur 'expertise-en-test-du-generateur-enregistrements-disponibles 
+            'enregistrements-disponibles 'superseed)
+
+
+(de expertise-en-test-du-generateur-enregistrements-disponibles (fonction message)
+           (append (enregistrements-disponibles-founissant-les-speciaux "-q-fermet.courbe-2d") 
+                   (enregistrements-disponibles-founissant-les-speciaux "-h-fermet.courbe-2d") ))
+
+(add-method 'expertise-en-test-du-generateur 'fin-de-fichier-d-enregistrement-en-q-fermet.courbe-2d
+            'fin-de-fichier-d-enregistrement 'superseed)
+
+
+
+;                                           FONCTIONS ANNEXES
+
+(de date-string (dat)
+    (let (( x (cond ((atomp dat) (inverse-convert-time dat))
+                    (t dat))))
+      (catenate (string (caddr x)) "/"
+                (string (cadr x)) "/"
+                (string (car x)))
+      ))
+
+;format des courbes lues
+;    '#[((10 20 87 0 0 0) 105.)
+;       ((10 20 87 0 0 0) 105.)
+;       ((10 20 87 0 0 0) 106.)
+;       ((10 20 87 0 0 0) 107.)
+;       ((10 20 87 0 0 0) 108.5)]
+; suivi du volume au meme format
+  
+(de enregistrements-disponibles-founissant-les-speciaux* (fin-de-fichier)
+    (prog (savechan chan result)
+          (comline "cd /usr/jupiter/olivier/expert/cours")
+          (comline (catenate "/bin/sh -c "" echo '(' *"
+                             (string fin-de-fichier)
+                             " ')' ""  > /tmp/list"))
+          (setq chan (openi "/tmp/list"))
+          (setq savechan (inchan))
+          (inchan chan)
+          (setq result  (mapcar 'string (read)))
+          (inchan savechan )
+          (close chan)
+          (return result)))
+
+(de enregistrements-disponibles-founissant-les-speciaux (fin-de-fichier)
+    (prog (savechan chan result)
+          (comline "cd /usr/jupiter/olivier/expert/cours")
+          (comline (catenate "/bin/sh -c "" echo '(' *"
+                             (string fin-de-fichier)
+                             " ')' ""  > /tmp/list"))
+          (setq chan (openi "/tmp/list"))
+          (setq savechan (inchan))
+          (inchan chan)
+          (setq result  (mapcar 'string (read)))
+          (setq result (mapcar '(lambda (x) (substring x 0 (- (plength x) (plength (string fin-de-fichier)))))
+                               result))
+          (inchan savechan )
+          (close chan)
+          (return result)))
+
+(de resultats-disponibles-founissant-les-speciaux (fin-de-fichier)
+    (prog (savechan chan result)
+          (comline "cd /usr/jupiter/olivier/expert/base-de-donnees")
+          (comline (catenate "/bin/sh -c "" echo '(' *"
+                             (string fin-de-fichier)
+                             " ')' ""  > /tmp/list"))
+          (setq chan (openi "/tmp/list"))
+          (setq savechan (inchan))
+          (inchan chan)
+          (setq result  (mapcar 'string (read)))
+          (setq result (mapcar '(lambda (x) (substring x 0 (- (plength x) (plength (string fin-de-fichier)))))
+                               result))
+          (inchan savechan )
+          (close chan)
+          (return result)))
+
+(de resultats-disponibles-founissant-les-.answer (fonction message)
+    (resultats-disponibles-founissant-les-speciaux ".answer"))
+ 
+(de enregistrements-disponibles-founissant-les-.courbe-2d (fonction message)
+    (enregistrements-disponibles-founissant-les-speciaux ".courbe-2d"))
+         
+
+(de enregistrements-disponibles-founissant-les-.courbe (fonction message)
+    (enregistrements-disponibles-founissant-les-speciaux ".courbe-2d"))
+
+(de enregistrements-disponibles-founissant-les-.quotidien (fonction message)
+     (enregistrements-disponibles-founissant-les-speciaux ".quotidien"))
+
+(de enregistrements-disponibles-founissant-les-.hebdomadaire (fonction message)
+   (enregistrements-disponibles-founissant-les-speciaux ".hebdomadaire"))
+   
+
+(de fin-de-fichier-d-enregistrement-en.answer (fonction message) 
+     ".answer")
+        
+
+(de fin-de-fichier-d-enregistrement-en.courbe-2d (fonction message) 
+     ".courbe-2d")
+
+(de fin-de-fichier-d-enregistrement-en.quotidien (fonction message) 
+     ".quotidien")
+
+(de fin-de-fichier-d-enregistrement-en.hebdomadaire (fonction message) 
+     ".hebdomadaire")
+  
+
+(de fin-de-fichier-d-enregistrement-en-q-fermet.courbe-2d (fonction message) 
+     "-q-fermet.courbe-2d")
+              
+(de debut-de-consultation ()
+    (new-trace-file (list 0 'debut-de-consultation) 'explanation.expl nil)
+    (setq *trace-main-event-buffer* nil)
+    (setq *trace-main-event-buffer-count* 0)
+)
+
+
+
+(de fin-de-consultation ()
+    (trace-main-events (list 0 'fin-de-consultation))
+    (finish-trace-main-events)
+)
+
+
+
+
+
+(de lprint (txt)
+    (prog ((n1 0) (n2 0) (l (slen txt)))
+          (when (null txt) (return))
+          loop
+          (setq n2 (scanstring txt (ascii 13) n1))
+          (when (null n2) (print (substring txt n1)) (return))
+          (print (substring txt n1 (- n2 n1)))
+          (setq n1 (1+ n2))
+          (go loop)))
+
+
+
+
+
+
+
+
+(de wprint (txt wp)
+    (prog ((n1 0) (n2 0) (l (slen txt)) ll)
+          (when (null txt) (return))
+          loop
+          (setq n2 (scanstring txt (ascii 13) n1))
+          (when (null n2) (setq ll (append ll (list  (substring txt n1)))) (go fin))
+          (setq ll (append ll (list (substring txt n1 (- n2 n1)))))
+          (setq n1 (1+ n2))
+          (go loop)
+          fin
+          (send 'set-text wp ll)
+          (return)))
+
+

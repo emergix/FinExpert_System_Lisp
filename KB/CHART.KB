@@ -1,0 +1,52 @@
+ ; fichier contennant les objects et fonctions necessaire au fonctionnement de la nouvelle interface concue par ilog
+
+(add-knowledge-base 'chart 
+                    'object-de-base
+                    '(indication fleche indication-de-droite indication-de-courbe indication-de-pic
+                                 indication-de-pattern-point indication-de-pattern-etendu)
+                    nil)
+
+
+(user-instanciate 'metaclass 'indication nil)
+(add-slot-user 'indication 'texte 'instance) ; ex : "fin de la vague A "
+
+
+(user-instanciate 'metaclass 'fleche '(indication))
+(add-slot-user 'fleche 'type 'instance)     ; peut valoir : 'vers-le-bas 'vers-le-haut 'vers-la-droite 'vers-la-gauche
+(add-slot-user 'fleche 'point-d-arrivee 'instance)     ; ex : (6789 114.4)
+(add-slot-user 'fleche 'rang 'instance)           ; ex 17
+(add-slot-user 'fleche 'courbe  'instance)                  ; ex courbe-2d-4
+(add-slot-user 'fleche 'longueur 'instance)          ; ex 5.5 en unite de cours ou de temps
+(add-slot-user 'fleche 'situation-du-texte 'instance ) ; peut valoir 'debut-de-fleche ou 'bout-de-fleche
+
+
+
+(user-instanciate 'metaclass 'indication-de-droite '(indication))
+(add-slot-user 'indication-de-droite 'droite 'instance)  ; ex 'droite-technique-34
+(add-slot-user 'indication-de-droite ' texte 'instance)  ; ex "neckline"
+
+
+(user-instanciate 'metaclass 'indication-de-courbe '(indication))
+(add-slot-user 'indication-de-courbe 'courbe 'instance)   ;ex : 'courbe-2d-3
+(add-slot-user 'indication-de-courbe 'texte 'instance)    ; ex " courbe du profit"
+
+(user-instanciate 'metaclass 'indication-de-pic '(indication))
+(add-slot-user 'indication-de-pic 'courbe 'instance)      ; ex : 'courbe-2d-4
+(add-slot-user 'indication-de-pic 'rang-du-point 'instance)  ; ex : 17
+
+
+(user-instanciate 'metaclass 'indication-de-pattern-point '(indication))
+(add-slot-user 'indication-de-pattern-point 'courbe 'instance)   ;ex : 'courbe-2d-4
+(add-slot-user 'indication-de-pattern-point 'rang-du-point 'instance)  ;ex : 17
+
+
+(user-instanciate 'metaclass 'indication-de-pattern-etendu '(indication))
+(add-slot-user 'indication-de-pattern-etendu 'courbe 'instance)   ; ex : 'courbe-2d-34
+(add-slot-user 'indication-de-pattern-etendu 'rang-debut 'instance)   ; ex : 17
+(add-slot-user 'indication-de-pattern-etendu 'rang-fin 'instance)   ; ex : 34
+(add-slot-user 'indication-de-pattern-etendu 'type 'instance)   ; peut valoir 'rectangle ou 'ellipse
+
+
+
+ 
+

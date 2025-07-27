@@ -1,0 +1,560 @@
+;tests pour les experts en analyses techniques , exemple de courbes a analyser
+
+
+(add-knowledge-base 'test-kb
+                    'object-de-base
+                    '(expert-test-1 expert-test-2)
+                    nil)
+
+(user-instanciate 'expert 'expert-test-1 nil
+)
+
+(setf (get-slot-value 'expert-test-1 'body) '())
+
+(add-method 'expert-test-1 'expert-test-1-what-do-you-think-about 'what-do-you-think-about 'superseed)
+
+
+(de expert-test-1-what-do-you-think-about (expert courbe)
+    (prog (c)
+          (print " la valeur selectionnee est :" courbe)
+          (setq c ($ courbe 'expand 'convert-time))
+          (setq cc c)
+          (print "cc = " cc)
+          ))
+
+(user-instanciate 'expert 'expert-test-2 nil
+)
+
+(setf (get-slot-value 'expert-test-2 'body) '())
+
+(add-method 'expert-test-2 'expert-test-2-what-do-you-think-about 'what-do-you-think-about 'superseed)
+
+
+(de expert-test-2-what-do-you-think-about (expert courbe)
+    (prog (c)
+          (print " la valeur selectionnee est :" courbe)
+          (setq c ($ courbe 'expand 'convert-time))
+          (setq cc c)
+          (print "cc = " cc)
+          ))
+                                            ;TESTS DIVERS     
+
+
+
+        (de app1 ()
+            ($ 'metaclass 'instanciate 'rectangle ())
+            ($ 'rectangle 'add-slot 'longueur 'instance)
+            ($ 'rectangle 'add-slot 'largeur  'instance)
+
+            ($ 'rectangle 'add-method '(lambda (object) (* ($ object 'get-value 'largeur)
+                                                           ($ object 'get-value 'longueur)))
+               'surface 'superseed)
+
+            ($ 'metaclass 'instanciate 'carre '(rectangle))
+            ($ 'carre 'add-slot 'cote 'instance)
+            ($ 'carre 'add-write-after-demon 'cote '(lambda (object slot) (prog (a)
+                                                                                (setq a ($ object 'get-value 'cote))
+                                                                                ($ object 'put-value 'largeur a)
+                                                                                ($ object 'put-value 'longueur a)))
+               'superseed)
+ 
+            (print (setq c ($ 'carre 'instanciate () ())))
+
+            ($ c 'put-value 'cote 100)
+
+            (print ($ c 'get-value 'longueur))
+            (print ($ c 'get-value 'largeur))
+            ($ c 'surface)
+  
+            )
+        (de app2()
+
+            ($ 'metaclass 'instanciate 'option ()) ;des calls 
+
+            ($ 'option 'add-slot 'prix-d-exercice 'instance)
+            ($ 'option 'add-slot 'echeance 'instance)
+            ($ 'option 'add-slot 'ask 'instance)
+            ($ 'option 'add-slot 'bid 'instance)
+        ($ 'option 'add-slot 'support 'instance)
+
+        ($ 'option 'add-write-after-demon 'ask 
+           '(lambda (object slot) (prog (f)
+                                        (setq f    (- ($ ($ object 'get-value 'support) 'get-value 'bid)
+                                                      (+      ($ object 'get-value 'prix-d-exercice)
+                                                              ($ object 'get-value 'ask))) )                                                            (cond ( (> f 0)
+                                                      (print "arbitrage possible on gagne :" f)))))     'superseed)
+
+ 
+            ($ 'metaclass 'instanciate 'support ())
+
+            ($ 'support 'add-slot 'bid 'instance)
+            ($ 'support 'add-slot 'ask 'instance)
+            ($ 'support 'add-slot 'option 'instance)
+
+            ($ 'support 'add-write-after-demon 'bid 
+               '(lambda (object slot) (prog (f)
+                                            (setq f     (- ($ object  'get-value 'bid)
+                                                           (+      ($ ($ object 'get-value 'option)
+                                                                      'get-value 'prix-d-exercice)
+                                                                   ($ ($ object 'get-value 'option) 'get-value 'ask))) )
+                                      
+                                            (cond ((>  f  0)
+                                                   (print "arbitrage possible on gagne :" f)))))     'superseed)
+     
+            (setq a ($ 'option 'instanciate 'supercall-1 ()))
+            ($ a 'initialize '((ask 0))) 
+
+            ($ a 'put-value 'prix-d-exercice 1000)
+            ($ a 'put-value 'echeance 'decembre)
+
+ 
+
+            (setq b ($ 'support 'instanciate 'lafarge ()))
+            ($ b 'initialize '((bid 1000)))
+
+            ($ b 'add-link 'option 'supercall-1 'support)
+
+
+
+
+            ($ b 'put-value  'bid 1080 )
+            ($ a 'put-value  'ask 30)
+
+            )
+
+        (de app3 () 
+
+
+
+            ($ 'metaclass 'instanciate 'toto ())
+            ($ 'toto 'add-slot 'att1 'instance)
+            ($ 'toto 'put-facet 'att1 'question-to-ask "quelle est la valeur de ")
+            ($ 'toto 'add-slot 'att2 'instance)
+            ($ 'toto 'put-facet 'att2 'question-to-ask "quelle est la valeur de ")
+            ($ 'toto 'add-slot 'att3 'instance)
+            ($ 'toto 'put-facet 'att3 'determination-means '(bc1))
+            ($ 'toto 'put-facet 'att3 'question-to-ask "quelle est la valeur de ")
+            ($ 'toto 'add-slot 'att4 'instance)
+            ($ 'toto 'put-facet 'att4 'question-to-ask "quelle est la valeur de ")
+            ($ 'toto 'add-slot 'att5 'instance)
+            ($ 'toto 'put-facet 'att5 'question-to-ask "quelle est la valeur de ")
+            ($ 'toto 'add-slot 'att6 'instance)
+            ($ 'toto 'put-facet 'att6 'question-to-ask "quelle est la valeur de ")
+            ($ 'toto 'add-slot 'att7 'instance)
+            ($ 'toto 'put-facet 'att7 'question-to-ask "quelle est la valeur de ")
+            ($ 'toto 'add-slot 'att8 'instance)
+            ($ 'toto 'put-facet 'att8 'question-to-ask "quelle est la valeur de ")
+            ($ 'toto 'add-slot 'att9 'instance)
+            ($ 'toto 'put-facet 'att9 'question-to-ask "quelle est la valeur de ")
+            ($ 'toto 'add-slot 'count 'instance)
+            ($ 'toto 'put-facet 'count  'question-to-ask "quelle est la valeur de ")
+            ($ 'toto 'add-slot 'tata-part 'instance)
+            ($ 'toto 'put-facet 'tata-part  'question-to-ask "quelle est la valeur de ")
+            ($ 'toto 'add-slot 'titi-part 'instance)
+            ($ 'toto 'put-facet 'titi-part  'question-to-ask "quelle est la valeur de ")
+
+
+
+            ($ 'toto 'put-facet 'att7 'determination-means '(d1))
+
+
+            ($ 'toto 'instanciate nil nil)
+            ($ 'toto 'instanciate nil nil)
+            ($ 'toto 'instanciate nil nil)
+            ($ 'toto 'instanciate nil nil)
+            ($ 'toto 'instanciate nil nil)
+
+
+
+
+
+
+            ($ 'toto-1 'put-value 'att1 10)
+            ($ 'toto-1 'put-value 'att2 10)
+            ($ 'toto-1 'put-value 'att3 10)
+            ($ 'toto-1 'put-value 'att8 100)
+
+            ($ 'toto-2 'put-value 'att1 20)
+            ($ 'toto-2 'put-value 'att2 10)
+            ($ 'toto-2 'put-value 'att8 100)
+            ($ 'toto-3 'put-value 'att1 30)
+            ($ 'toto-3 'put-value 'att2 10)
+            ($ 'toto-3 'put-value 'att8 100)
+            ($ 'toto-4 'put-value 'att1 40)
+            ($ 'toto-4 'put-value 'att2 10)
+            ($ 'toto-4 'put-value 'att8 100)
+            ($ 'toto-5 'put-value 'att1 50)
+            ($ 'toto-5 'put-value 'att2 10)
+            ($ 'toto-5 'put-value 'att8 10)
+
+            ($ 'toto-1 'put-value 'att9 200)
+            ($ 'toto-2 'put-value 'att9 200)
+            ($ 'toto-3 'put-value 'att9 200)
+            ($ 'toto-4 'put-value 'att9 100)
+            ($ 'toto-5 'put-value 'att9 400)
+
+            ($ 'metaclass 'instanciate 'tata nil)
+            ($ 'tata 'add-slot  'int 'instance)
+            ($ 'tata 'add-slot 'toto-part 'instance)
+            ($ 'tata 'put-facet 'toto-part  'question-to-ask "quelle est la valeur de ")
+
+            ($ 'metaclass 'instanciate 'titi nil)
+            ($ 'titi 'add-slot  'int 'instance)
+            ($ 'titi 'add-slot 'toto-part 'instance)
+            ($ 'titi 'put-facet 'toto-part  'question-to-ask "quelle est la valeur de ")
+
+            ($ 'titi 'instanciate nil nil)
+            ($ 'titi 'instanciate nil nil)
+            ($ 'titi 'instanciate nil nil)
+
+
+            ($ 'backward-chainer 'instanciate  'bc1 nil)
+            ($ 'backward-chainer 'instanciate  'bc2 nil)
+
+
+
+            (add-backward-rule 
+             'bc1
+             ' (and (equal att1{a} 10)
+                    (equal att2{a} 10))
+                      
+             '(plus att1{a} att2{a})
+             '(att3{a} toto)
+             nil
+             )
+
+            (add-backward-rule 
+             'bc1
+             ' (equal att1{a} 10)
+             '(att1{a})
+             '(att2{a} toto)
+             nil
+             )
+
+            (add-backward-rule 
+             'bc1
+             ' (and (> att3{a} 0))        
+             '(att3{a})
+             '(att4{a} toto)
+             nil
+             )
+
+            (add-backward-rule
+             'bc2
+             '(existing (a 'toto) (equal att1{a} (+ att2{b} 30)))
+             '(+ att1{a} att2{b})
+             '(att3{b} toto)
+             nil
+             )
+ 
+
+            (add-backward-rule
+             'bc2
+             '(existing (a 'toto) (existing (b 'toto)  
+                                            (and 
+                                             (equal att2{a} 10)
+                                             (equal att1{b} 40)
+                                             (not (equal a c))
+                                             (not (equal b c)))))
+             '(* att1{a} att2{b})
+             '(att4{c} toto)
+             nil
+             )
+
+            (add-backward-rule
+             'bc2
+             '(for-all (a 'toto) (equal att2{a} 10))
+             ''super-extra
+             '(att5{b} toto)
+             nil
+             )
+
+            (add-backward-rule
+             'bc2
+             '(existing (a 'toto) 
+                        (and (for-all (b 'toto) (equal att2{b} 10))
+                             (equal att5{c} 'super-extra)))
+             ''hyper-extra
+             '(att6{c} toto)
+             nil
+             )
+
+            (add-backward-rule
+             'bc2
+             '(for-all (a 'toto) such-that (equal att8{a} 100) (equal att9{a} 200))
+             ''meta-hyper-super-extra
+             '(att7{c} toto)
+             nil
+             )
+
+            (add-situation-bloc
+             '((toto-1 att1 instance) (toto-1 att2 instance))
+             '(> new-value old-value)
+             '(print "situation-bloc actif 12")
+             nil)
+
+            (add-situation-bloc
+             '((toto-1 att2 instance) (toto-1 att3 instance))
+             '(> new-value old-value)
+             '(print "situation-bloc actif 23")
+             nil)
+            (add-situation-bloc
+             '((toto-1 att3 instance) (toto-1 att1 instance))
+             '(> new-value old-value)
+             '(print "situation-bloc actif 31")
+             nil)
+
+
+
+
+            (add-determination-bloc  
+             ''toot-tuut
+             'd1
+            )
+
+            ($ 'forward-chainer 'instanciate  'fc1 nil)
+            ($ 'forward-chainer 'instanciate  'fc2 nil)
+
+         
+            (add-forward-rule 
+             'fc1
+             '(existing (a 'toto) (equal att1{a} 40))
+             '(progn (user-put-value a 'att7 47)
+                   
+                     (print " le resultat est att7 de " a  " = " (user-get-value a 'att7)))
+             nil)
+
+            (add-forward-rule
+             'fc2
+             '(existing (a 'toto) (and (not (null count{a}))
+                                       (> count{a} 1)))
+             '(prog (b) (setq b ($ 'toto 'instanciate nil nil))
+                    (count{b} @= (- count{a} 1))
+                    (print b " count = " count{b} )
+                    (count{a} @= 1) )
+             nil)
+
+
+            (add-forward-rule
+             'fc2
+             '(existing (a 'toto) (and (null titi-part{a})
+                                       (not (existing (c 'titi) (null toto-part{c})))))
+             '(prog (b) (setq b ($ 'titi 'instanciate nil nil))
+                    (print b)
+                    (print "lien " a "<-->"  b)
+                    (titi-part{a} @l toto-part{b}))
+             nil)
+
+            (add-forward-rule
+             'fc2 
+             '(existing (a 'toto) (and (null titi-part{a})
+                                       (existing (c 'titi) (null toto-part{c}))))
+             '(prog ()
+                    (print "lien " a "<-->"  c)
+                    (titi-part{a} @l toto-part{c}))
+             nil)
+      
+            (add-dynamic-link 'toto 'att7 'metaclass 'toto 'att8 'metaclass)
+            (add-dynamic-link 'toto 'att7 'metaclass 'toto 'att9 'metaclass)
+            (add-dynamic-link 'toto-4 'att7 'instance 'toto-5 'att7 'instance)
+
+        )
+ 
+
+
+
+        (de app4 ()
+            ($ 'bc1 'intern-determine 'toto-1 'att3))
+
+        (de app5 ()
+            ($ 'toto-1 'determine 'att3))
+
+        (de app6 ()
+            ($ 'bc2 'intern-determine 'toto-1 'att3))
+
+        (de app7 ()
+            ($ 'bc2 'intern-determine 'toto-1 'att4))
+
+        (de app8 ()
+            ($ 'bc2 'intern-determine 'toto-1 'att5))
+
+        (de app9 ()
+            ($ 'bc2 'intern-determine 'toto-2 'att6))
+
+        (de app10 ()
+            ($ 'bc2 'intern-determine 'toto-3 'att7))
+
+        (de app11 () 
+            ($ 'toto-1 'put-value 'att1 200))
+
+        (de app12 ()
+            ($ 'toto-1 'put-value 'att2 200))
+
+        (de app13 ()
+            ($ 'toto-1 'put-value 'att3 200))
+
+        (de app14 ()
+            ($ 'toto-5 'determine 'att7))
+
+        (de app15 ()
+            ($ 'fc1 'one-step)
+            ($ 'fc1 'get-value  'conflict-set)))
+
+       (de app16 ()
+          ($ 'fc1 'sature)
+          (print ($ 'toto-3 'get-value 'att8))
+          (print ($ 'toto-4 'get-value 'att9))
+          )
+
+
+      (de app17()
+         ($ 'toto-3 'put-value 'count 6)
+         ($ 'fc2 'sature))
+
+      (de app18 ()
+         ($ 'metaclass 'instanciate 'fou  nil)
+         (add-slot-user 'fou 'att 'instance)
+         (add-slot-user 'fou 'att2 'instance)
+         (add-slot-user 'fou 'att3 'instance)
+         (add-slot-user 'fou 'att4 'instance)
+         (add-slot-user 'fou 'att5 'instance)
+
+      (initialize-slot 'fou
+                       'att4
+                       '((determination-means (bh))))
+
+         (setq a ($ fou 'instanciate nil nil))
+         (setq b ($ fou 'instanciate nil nil))
+         ($ a 'put-value 'att 1)
+
+    ($ 'backward-chainer 'instanciate 'bh nil)
+
+
+    (add-backward-rule 
+     'bh
+     '(eq att3{c} 2)
+     22
+     '(att4{c} fou)
+     nil)
+      
+  
+
+    (print  ($ 'forward-chainer 'instanciate 'fh nil))
+
+     (add-forward-rule 
+      'fh
+      '(existing (c 'fou) (eq att{c} 1))
+      '(print "***hyp = " (create-hypothetical-world 
+
+        '( (att2{c} @= 3)
+           (att2{c} @= 4))))
+      nil)
+
+
+      (add-forward-rule
+       'fh
+       '(existing (c 'fou) (and (eq att{c} 1)
+                                (not (null att2{c}))))
+       '(progn (print *current-hypothetical-world*)
+               (print '&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&)
+               (create-possibilities '((print 'qqqqqqqq1 *current-hypothetical-world*)
+                                       (print 'qqqqqqqq2 *current-hypothetical-world*)
+                                       (print 'qqqqqqqq3 *current-hypothetical-world*))
+                                     'backtracker-standart-best-function
+                                     'point-z
+                                     nil)
+                                       
+               (print (get-slot-facet c 'att2 'value)))
+       nil)
+
+      (add-forward-rule
+       'fh
+       '(existing (c 'fou) (and (eq att{c} 1)
+                                (eq att2{c} 4)))
+       '(print "***hyp = 1vvv4 " (create-hypothetical-world 
+
+        '( (att2{c} @= 5)
+           (att2{c} @= 6))))
+       nil)
+      (add-forward-rule
+       'fh
+       '(existing (c 'fou) (and (eq att{c} 1)
+                                (eq att2{c} 6)
+                                (in-a-world-where hh  
+                                                   (att3{c} @= 2)
+                                                  (progn (determine att4{c})
+                                                          (eq att4{c} 22)))))
+       '(progn (print " dans le monde " hh " la valeur de att4{c} est :" (get-slot-facet-aspect c 'att4 'value hh))
+               (print " alors que dans le monde " *current-hypothetical-world* )
+                (print      " la valeur de att4 est " (get-slot-value c 'att4)))
+       nil)
+             
+      (add-forward-rule
+       'fh
+       '(existing (c fou) (and (eq att2{c} 6 )
+                               (existing (hh 'hypothetical-world)
+                                         (eq (get-slot-facet-aspect c 'att4 'value hh) 22))))
+       '(progn ; (remove-hypothetical-world)
+               ; (print "le monde " *current-hypothetical-world*  " a ete tue !")
+          (create-possibilities '((progn ( att5{c} @= 1) (print " cree : " *current-hypothetical-world*))
+                                  (progn ( att5{c} @= 2) (print " cree : " *current-hypothetical-world*))
+                                  (progn ( att5{c} @= 3) (print " cree : " *current-hypothetical-world*))
+                                  )
+                                 'backtracker-standart-best-function
+                                 'point-y
+                                 nil)
+                                
+                                  
+          )
+       nil)
+
+
+    (add-forward-rule
+     'fh
+     '(existing (c fou) (and (eq att2{c}  6 )
+                             (existing (hh 'hypothetical-world)
+                                       (eq (get-slot-facet-aspect c 'att4 'value hh) 22))
+                             (eq att5{c} 1)))
+     '(backtrack)
+     nil)
+
+    (add-forward-rule
+     'fh
+     '(existing (c fou) (and (eq att2{c}  6 )
+                             (existing (hh 'hypothetical-world)
+                                       (eq (get-slot-facet-aspect c 'att4 'value hh) 22))
+                             (or (eq att5{c} 2)
+                                 (eq att5{c} 3))
+                             ))
+     '(backtrack-to 'point-z)
+     nil)
+
+   ($ fh 'go)
+)
+
+
+(setq #:system:debug-line 30)
+
+
+      (de aa ()
+          (app1)
+          (app2)
+          (app3)
+          (app4)
+          (app5)
+          (app6)
+          (app7)
+          (app8)
+          (app9)
+          (app10)
+          (app11)
+          (app12)
+          (app13)
+          (app14)
+          (app15)
+          (app16)
+          (app17)
+          (app18)
+          )
+
+

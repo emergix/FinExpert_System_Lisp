@@ -1,0 +1,540 @@
+
+
+;fichier contenant les objects et fonctions ayant a voir avec le meta expert qui
+;supervise le fonctionnement du systeme expert
+(add-knowledge-base 'meta-kb 
+                    'object-de-base
+                    '(expert-meta objectif echeance conclusion-elementaire courbe-de-probabilite meta-analysis meta-r01)
+                    nil)
+
+(user-instanciate 'expert 'expert-meta nil)
+(add-slot-user 'expert-meta 'courbe 'instance)
+(add-slot-user 'expert-meta 'techniques-examinees 'instance)
+(add-slot-user 'expert-meta 'rapport-final 'instance)
+
+(add-method 'expert-meta 'expert-meta-what-do-you-think-about 'what-do-you-think-about 'superseed)
+(add-method 'expert-meta 'expert-meta-ajoute-des-echeances 'ajoute-des-echeances 'superseed)
+
+
+             ;introduction des objects OBJECTIF qui seront instancies lors du deroulement de la consultation
+
+(user-instanciate 'metaclass  'objectif nil)
+(add-slot-user 'objectif 'echeances-interessantes 'instance)
+(add-slot-user 'objectif 'liste-d-echeances 'instance)
+(add-slot-user 'objectif 'to-be-saved 'instance)
+
+(initialize-slot 'objectif 'echeances-interessantes 
+		 '((question-to-ask "quelles sont les echeances interessantes pour cette etude? ")
+                   ))
+
+(add-write-after-demon 'objectif 'echeances-interessantes 'objectif-echeances-interessantes-write-after 'superseed)
+
+(de objectif-echeances-interessantes-write-after (object slot)
+    (let ((echeances (get-slot-value object slot)))
+      (setf (get-slot-value object 'liste-d-echeances)
+            (mapcar '(lambda (eche) 
+                       (let (echea)
+                         (setq echea (user-instanciate 'echeance nil nil))
+                         (setf (get-slot-value echea 'objectif) object)
+                         (setf (get-slot-value echea 'date-entiere) (cond ((consp eche) (convert-time eche))
+                                                                          (t eche)))
+                         echea
+                         ))
+                    echeances))))
+      
+               
+
+
+(add-slot-user 'objectif 'echeances-interessantes-supplementaires 'instance)
+     
+
+(initialize-slot 'objectif 'echeances-interessantes-supplementaires 
+		 '((question-to-ask "quelles sont les echeances interessantes supplementaires ? ")
+                   ))
+                   
+(add-write-after-demon 'objectif 'echeances-interessantes-supplementaires 
+                       'objectif-echeances-interessantes-supplementaires-write-after 'superseed)
+
+(de objectif-echeances-interessantes-supplementaires-write-after (object slot)
+    (let ((echeances (get-slot-value object slot)) eche-sup)
+      (cond ((atomp echeances)
+             (setq echeances (list echeances))
+             (setf (get-slot-value object slot) echeances)))
+      (setq eche-sup
+            (mapcar '(lambda (eche) 
+                       (let (echea)
+                         (setq echea (user-instanciate 'echeance nil nil))
+                         (setf (get-slot-value echea 'objectif) object)
+                         (setf (get-slot-value echea 'date-entiere) eche)
+                         echea
+                         ))
+                    echeances))
+      (setf  (get-slot-value object 'liste-d-echeances)
+             (append eche-sup  (get-slot-value object 'liste-d-echeances)))))
+      
+               
+(set-determination-slot 'objectif '(echeances-interessantes echeances-interessantes-supplementaires))
+
+(add-slot-user 'objectif 'courbe-etudiee 'instance)
+
+
+              ;introduction des echeances pour driver les chainage avant de regles qui interprete les resultats
+
+
+(user-instanciate 'metaclass 'echeance nil)
+(add-slot-user 'echeance 'objectif 'instance)
+(add-slot-user 'echeance 'date-usuelle 'instance)
+(add-slot-user 'echeance 'date-entiere 'instance)
+
+(add-slot-user 'echeance 'courbe-de-probabilite 'instance)
+
+(user-instanciate 'metaclass 'conclusion-elementaire nil)
+(add-slot-user 'conclusion-elementaire 'figure 'instance)
+(add-slot-user 'conclusion-elementaire 'echeance 'instance)
+(add-slot-user 'conclusion-elementaire 'objectif-de-prix 'instance)
+(add-slot-user 'conclusion-elementaire 'intervalle-de-prix 'instance)
+(add-slot-user 'conclusion-elementaire 'technique-utilisee 'instance)
+(add-slot-user 'conclusion-elementaire 'situation-de-la-figure 'instance)
+(add-slot-user 'conclusion-elementaire 'probabilite-de-hausse 'instance)
+(add-slot-user 'conclusion-elementaire 'probabilite-de-baisse 'instance)
+(add-slot-user 'conclusion-elementaire 'type 'instance)
+(add-slot-user 'conclusion-elementaire 'importance 'instance)
+(add-slot-user 'conclusion-elementaire 'rapport 'instance)
+(add-slot-user 'conclusion-elementaire 'formation 'instance)    ; vaut 'primaire ou 'secondaire = ()
+(add-attribute-user 'conclusion-elementaire 'courbe-de-probabilite 'conclusion-elementaire-courbe-de-probabilite 'instance)
+
+(de expert-meta-what-do-you-think-about (expert courbe arg-list)
+    (prog (r courbes objectif)
+          (setf (get-slot-value meta-analysis 'courbe) courbe)
+	  (setf (get-slot-value meta-analysis 'techniques-examinees) '(expertise-en-canal expertise-en-moving-average))
+          (setq objectif (user-instanciate 'objectif nil nil))
+ 
+ 
+          (setf (get-slot-value meta-analysis 'objectif ) objectif)
+          (setq echeances ($ objectif 'determine 'echeances-interessantes))
+          (mapc '(lambda (x) 
+                   ($ x 'what-do-you-think-with-graphics arg-list)
+                   )
+                (get-slot-value meta-analysis 'techniques-examinees))
+          (setf  (get-slot-value meta-analysis 'conclusion) nil)
+	  ($ meta-analysis 'sature)
+ 
+	  (setq r (create-instance-rapport '(techniques-examinees rapport-final courbes-de-probabilite)))
+	  (setf (get-slot-value r 'courbe) courbe)
+	  (setf (get-slot-value r 'technique) 'synthese-meta)
+	  (setf (get-slot-value r 'description-technique)
+		"synthese des rapports etablis par les experts ")
+          (setq courbes (mapcan '(lambda (x) (cond((eq (get-slot-value x 'courbe)
+                                                       (get-slot-value meta-analysis 'courbe))
+                                                   (list x))
+                                                  (t nil)))
+                                (get-all-instances 'courbe-de-probabilite)))
+          (setf (get-slot-value r 'courbes-de-probabilite) courbes)
+	  (setf (get-slot-value r 'conclusion) (get-slot-value meta-analysis 'conclusion))
+          (setf (get-slot-value expert-meta 'rapport-final) r)
+ 
+          (setf (get-slot-value 'expert-meta 'echeances-deja-traitees)
+                (append-new (mapcan '(lambda (y) (cond((eq (get-slot-value y 'objectif) objectif)
+                                                       (list y))))
+                                    (get-all-instances 'echeance))
+                            (get-slot-value 'expert-meta 'echeances-deja-traitees)))
+   
+	  (setf (user-get-value objectif 'to-be-saved)
+                (cons *contexte-d-analyse*
+                      (mapcar '(lambda (echea) 
+                                 (list (get-slot-value echea 'date-entiere)
+                                       (get-slot-value (get-slot-value echea 'courbe-de-probabilite) 'body)))
+                               (get-slot-value 'expert-meta 'echeances-deja-traitees))))
+          (return r)
+                                                                                                                 
+	  ))
+
+
+(de expert-meta-ajoute-des-echeances (expert)
+    (prog (r courbes objectif courbe)
+          (setq courbe  (get-slot-value meta-analysis 'courbe))
+          (setq objectif (get-slot-value meta-analysis 'objectif)) 
+	  (setf (get-slot-value meta-analysis 'techniques-examinees) '(expert-canal expert-moving-average))
+          
+          (setq echeances-supplementaires ($ objectif 'determine 'echeances-interessantes-supplementaires))
+          (mapc '(lambda (x) ($ x 'ajoute-des-echeances))
+                (get-slot-value meta-analysis 'techniques-examinees))
+          (setf  (get-slot-value meta-analysis 'conclusion) nil)
+	  ($ meta-analysis 'sature)
+	  (setq r (get-slot-value expert-meta 'rapport-final))
+	  (setq courbes (mapcan '(lambda (x) (cond((eq (get-slot-value x 'courbe)
+                                                       (get-slot-value meta-analysis 'courbe))
+                                                   (list y))
+                                                  (t nil)))
+                                (get-all-instances 'courbe-de-probabilite)))
+          (setf (get-slot-value r 'courbes-de-probabilite) courbes)
+	  (setf (get-slot-value r 'conclusion) (get-slot-value meta-analysis 'conclusion))
+          (setf  rapport-final)
+          (setf (get-slot-value 'expert-meta 'echeances-deja-traitees)
+                (append-new (mapcan '(lambda (y) (cond((eq (get-slot-value y 'objectif) objectif)
+                                                       (list y))))
+                                    (get-all-instances 'echeance))
+                            (get-slot-value 'expert-meta 'echeances-deja-traitees)))
+	  (return r)
+	  
+	  ))
+
+
+(de forme-courbe-finale-de-probabilite-de-cours (courbe echeance)
+    (prog (h c (rapports (mapcan '(lambda (x) (cond ((eq (get-fondamental-value x 'courbe) courbe) (list x))
+                                                    (t nil)))
+                                 (get-all-instances 'rapport)))
+             conclusions conclusions-filtrees  liste-de-points liste-de-courbes)
+          (setq conclusions (mapcan '(lambda (x) (copy (get-slot-value x 'liste-des-conclusions-elementaires)))
+                                    rapports))
+          (setq conclusions-filtrees (mapcan '(lambda (x) (let ((eche (get-fondamental-value x 'echeance)))
+                                                            (cond ((and (not (get-slot-value x 'formation))
+                                                                        (or (and eche
+                                                                                 (get-slot-value x 'objectif-de-prix))
+                                                                            
+                                                                            (and eche
+                                                                                 (eq  eche echeance)
+                                                                                 (get-slot-value x 'intervalle-de-prix))))
+                                                                   (list x))
+                                                                  (t nil))))
+                                             conclusions))
+          (setq liste-de-courbes (mapcar '(lambda (x) (user-get-value x 'courbe-de-probabilite)) 
+                                         conclusions-filtrees))
+          (setq liste-de-points (addition-generalisee-de-courbes-2d liste-de-courbes))
+          (multiplie-courbe liste-de-points 1000.)
+          (setq h (apply 'vector liste-de-points))
+          (setq c ($ 'courbe-de-probabilite 'instanciate nil nil))
+          (setf (get-slot-value c 'body) h)
+	  (setf (get-slot-value c 'pointeur) 0)
+	  (setf (get-slot-value c 'pointeur-max) (1- (vlength h)))
+	  (setf (get-slot-value c 'transformation) 'probabilite-de-prix)
+	  (setf (get-slot-value c 'xtype) 'real)
+	  (setf (get-slot-value c 'ytype) 'real)
+	  (return c)))
+
+
+
+(de addition-generalisee-de-courbes-2d (liste-de-courbes)
+;il faut qu il y ait des courbes , sans ca , erreur
+    (prog ((bodies (mapcar '(lambda (x) (get-slot-value x 'body)) liste-de-courbes))
+           (nbcourbe (length liste-de-courbes))
+           (limites (mapcar '(lambda (x) (get-slot-value x 'pointeur-max)) liste-de-courbes))
+           (indexes (mapcar '(lambda (x) 0) liste-de-courbes))
+           (niveaux-x (mapcar '(lambda (x) 0) liste-de-courbes))
+           (niveaux-x-enable (mapcar '(lambda (x) 'ok) liste-de-courbes))
+           (niveaux-x-suivant (mapcar '(lambda (x) 0) liste-de-courbes))
+           (niveaux-y (mapcar '(lambda (x) 0) liste-de-courbes))
+           courbe-finale)
+          (for (i 0 1 (1- nbcourbe))
+               (setf (nth i niveaux-x) (car (vref (nth i bodies) (nth i indexes))))
+               (setf (nth i niveaux-x-suivant) (car (vref (nth i bodies) (1+ (nth i indexes)))))
+               (setf (nth i niveaux-y) (cadr (vref (nth i bodies) (nth i indexes)))))
+          loop
+        
+          (setq x-actuel (apply 'min (let (z) (for (i 0 1 (1- nbcourbe))
+                                                   (setq z (cons (cond ((eq (nth i niveaux-x-enable) 'ok) (nth i niveaux-x))
+                                                                      (t (nth i niveaux-x-suivant)))
+                                                                z)))
+                                          z)))
+          (for (i 0 1 (1- nbcourbe))
+               (when (>= x-actuel (nth i niveaux-x-suivant ))
+                     (setf (nth i indexes) (1+ (nth i indexes)))
+                     (setf (nth i niveaux-x) (cond ((> (nth i indexes) (nth i limites)) 1e32)
+                                                   (t (car (vref (nth i bodies) (nth i indexes))))))
+                     (setf (nth i niveaux-x-suivant) (cond ((> (1+ (nth i indexes)) (nth i limites)) 1.5e32)
+                                                           (t (car (vref (nth i bodies) (1+ (nth i indexes)))))))
+                     (setf (nth i niveaux-y) (cond ((> (nth i indexes) (nth i limites)) 0.)
+                                                   (t (cadr (vref (nth i bodies) (nth i indexes))))))
+                     (setf (nth i niveaux-x-enable) 'ok)
+                     ))
+
+          (setq y-actuel (apply 'plus niveaux-y))
+          (when (< x-actuel 1e32)
+                (setq courbe-finale (cons (list x-actuel y-actuel) courbe-finale)))
+          (for (i 0 1 (1- nbcourbe )) 
+               (when (<= (nth i indexes) (nth i limites))
+                     (go suite)))
+          (go fin)
+        
+          suite
+        
+          (for (i 0 1 (1- nbcourbe))
+               (when (equal (nth i niveaux-x) x-actuel)
+                     (setf (nth i niveaux-x-enable) 'passe))
+               )
+          (go loop)
+          fin
+          (return (reverse courbe-finale))))
+       
+      
+                  
+
+(de conclusion-elementaire-courbe-de-probabilite (celem slot)
+    (prog ((echeance (get-slot-value celem 'echeance))
+           (objectif-de-prix (get-slot-value celem 'objectif-de-prix))
+           (intervalle-de-prix (get-slot-value celem 'intervalle-de-prix))
+           (rapport (get-slot-value celem 'rapport))
+           (importance (user-get-value celem 'importance))
+           courbe dernier-point volatilite n delta-t s0 courbe1 courbe2 norme)
+        
+          (setq n 10)
+          (setq courbe ($ (get-slot-value (get-slot-value rapport 'courbe) 'dernier-cours) 'convert-time))
+          (setq volatilite (user-get-value courbe 'volatilite))
+          (setq dernier-point ($ courbe 'dernier-point))
+          (setq delta-t (- echeance (car dernier-point)))
+          (setq s0 (cadr dernier-point))
+          (setq courbe (cond (objectif-de-prix (genere-courbe-2d-from-objectif objectif-de-prix n s0 courbe celem))
+                             (intervalle-de-prix (genere-courbe-2d-from-intervalle intervalle-de-prix n courbe celem))))
+          (setq courbe1 (courbe-operation-unaire courbe
+                                                 '(lambda (x)
+                                                    (exp (- (/ (* (- x s0) (- x s0))
+                                                               (* s0 s0 volatilite volatilite delta-t)))))
+                                                 'real))
+          (setq norme ($ courbe1 'integrale))
+          (setq courbe2 ($ courbe1 '* (/ importance norme)))
+          (return courbe2)
+          ))
+
+(de genere-courbe-2d-from-intervalle (intervalle n c celem)
+  (prog (d v  c1 w)
+	    (setq v 0)
+            (setq d (makevector (1+ n) ()))
+	    loop
+            (setq w  (+ (* (/ (- (cadr intervalle) (car intervalle)) n) v) (car intervalle)))
+	    (setf (vref d v) (list w w))
+	    (setq v (1+ v) )
+	    (when (> v n) (go fin))
+	    (go loop)
+	    fin
+	    (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+	    (setf (get-slot-value c1 'body) d)
+	    (setf (get-slot-value c1 'xtype) 'real)
+	    (setf (get-slot-value c1 'pointeur) 0)
+	    (setf (get-slot-value c1 'pointeur-max) n)
+	    (setf (get-slot-value c1 'courbe-origine) (list c))
+	    (setf (get-slot-value c1 'transformation) (list 'courbe-de-probabilite-associee celem))
+	    (setf (get-slot-value c1 'ytype) nil)
+	    (return c1)))
+
+    )
+
+(de genere-courbe-2d-from-objectif (objectif n dernier-cours c celem)
+      (prog (d v  c1 w)
+	    (setq v 0)
+            (setq d (makevector (1+ n) ()))
+	    loop
+            (setq w (+ (* (/ (abs (- objectif dernier-cours)) n) v 2) dernier-cours))
+	    (setf (vref d  v) (list w w))
+	    (setq v (1+ v) )
+	    (when (> v n) (go fin))
+	    (go loop)
+	    fin
+	    (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+	    (setf (get-slot-value c1 'body) d)
+	    (setf (get-slot-value c1 'xtype) 'real)
+	    (setf (get-slot-value c1 'pointeur) 0)
+	    (setf (get-slot-value c1 'pointeur-max) n)
+	    (setf (get-slot-value c1 'courbe-origine) (list c))
+	    (setf (get-slot-value c1 'transformation) (list 'courbe-de-probabilite-associee celem ))
+	    (setf (get-slot-value c1 'ytype) nil)
+	    (return c1)))
+
+
+ 
+
+(de multiplie-courbe (courbe n)
+    (mapc '(lambda (x) (rplacd x (list (* n (cadr x))))) courbe))
+
+
+
+
+(add-forward-chainer 'meta-analysis '(courbe techniques-examinees conclusion courbes objectif))
+
+
+
+
+(add-forward-rule 
+ 'meta-r01
+ 'meta-analysis 
+ '(existing (c 'courbe-2d) (and (eq c  courbe{select-parameters})
+                                (existing (echeance 'echeance)
+                                          (eq objectif{echeance} objectif{meta-analysis})
+                                          (not (memq echeance echeances-deja-traitees{expert-meta})))))
+ '(let (prevision-prix courbe-de-probabilite)
+    (setq courbe-de-probabilite   (forme-courbe-finale-de-probabilite-de-cours courbe{meta-analysis} 
+                                                                               date-entiere{echeance}))
+    (setf (get-slot-value meta-analysis 'courbes)
+          (cons courbe-de-probabilite (get-slot-value meta-analysis 'courbes) ))
+    (setq prevision-prix moyenne{courbe-de-probabilite})
+    (setf (get-slot-value courbe-de-probabilite 'echeance) date-entiere{echeance})
+    (setf (get-slot-value echeance 'courbe-de-probabilite) courbe-de-probabilite)
+    (conclusion{meta-analysis} @a `((meilleure-prevision ,prevision-prix)
+                                    (echeance ,(inverse-convert-time date-entiere{echeance})))))
+     
+ "interpretation grossiere de l analyse technique")
+                              
+
+
+
+
+                            ;description du language commun
+
+
+
+;((mot-cle1 . argument-1) (mot-cle2 . argument2) .... (mot-cleN . argumentN));
+;
+;l ensemble des mot-cle  de 1 a N depends de la signification de mot-cle0
+;
+; 
+; sont obligatoire :
+;   mot-cle1  = technique-utilisee
+;
+; sont facultatif :
+;   mot-cle2  = objectif-de-prix
+;   mot-cle3  = echeance
+;   mot-cle3' = intervalle-de-prix
+;
+; si argument1 = expert-canal
+;
+;   sont facultatif : 
+;  mot-cle4  = situation-de-la-figure
+;  mot-cle5  = figure
+;
+;
+
+;
+;  sont facultatifs :
+;
+;  mot-cle6  = objectifs-de-prix-maximum
+;  mot-cle7  = objectifs-de-prix-minimum
+;  mot-cle8  = probabilite-de-hausse
+;  mot-cle8' = probabilite-de-baisse
+
+
+
+
+
+;(add-forward-rule 
+; 'meta-analysis
+; '(existing (c cours) 
+;            (and (eq c  courbe{meta-analysis})
+;                 (for-all (r rapport)
+;                          such-that (eq courbe{r} c)
+;                          (or (null conclusion{r})
+;                              (every '(lambda(x) (eq (car x) 'hausse-probable)) conclusion{r})))))
+; '(let (objectif-prix)
+;    (setq objectif-prix (moyenne-des-objectif-de-prix 
+;                         (mapcan '(lambda(x) (copy conclusion{x}))
+;                                 (mapcan '(lambda (x)(cond ((and (eq courbe{x} c)
+;                                                                 conclusion{x})
+;                                                            (list x))
+;                                                           (t nil)))
+;                                         (get-all-instances 'rapport)))))
+;    (conclusion{meta-analysis} @a  (copy `(hausse-probable (objectif-de-prix ,objectif-prix)))))
+; "si tous les rapports font etat d une hausse")
+
+
+
+;(add-forward-rule 
+; 'meta-analysis
+; '(existing (c cours) 
+;            (and (eq c  courbe{meta-analysis})
+;                 (for-all (r rapport)
+;                          such-that (eq courbe{r} c)
+;                          (or (null conclusion{r})
+;                              (every '(lambda(x) (eq (car x) 'baisse-probable)) conclusion{r})))))
+;
+; '(let (objectif-prix)
+;    (setq objectif-prix (moyenne-des-objectifs-de-prix 
+;                                                 (mapcan '(lambda(x) (copy conclusion{x}))
+;                                                         (mapcan '(lambda (x)(cond ((and (eq courbe{x} c)
+;                                                                                         conclusion{x})
+;                                                                                    (list x))
+;                                                                                   (t nil)))
+;                                                                 (get-all-instances 'rapport)))))
+;    (conclusion{meta-analysis} @a (copy `(baisse-probable (objectif-de-prix  ,objectif-prix)))))
+; "si tous les rapports font etat d une baisse")
+
+
+
+
+;(add-forward-rule
+; 'meta-analysis
+; '(and (existing (r1 rapport)
+;                 (and  (eq courbe{r1} courbe{meta-analysis})
+;                       (any  '(lambda(x) (eq (car x) 'baisse-probable)) conclusion{r1})))
+;       (existing (r2 rapport)
+;                 (and  (eq courbe{r2} courbe{meta-analysis})
+;                       (any  '(lambda(x) (eq (car x) 'hausse-probable)) conclusion{r2}))))
+;'(let (conclusion-hausse conclusion-baisse hausse-max baisse-max)
+;   (setq conclusion-hausse (mapcan '(lambda (z) (cond ((eq (car z) 'hausse-probable) (list z))
+;                                                      (t  nil)))
+;                                   (mapcan '(lambda(x) (copy conclusion{x}))
+;                                           (mapcan '(lambda (x)(cond ((and (eq courbe{x} courbe{meta-analysis})
+;                                                                           conclusion{x})
+;                                                                      (list x))
+;                                                                     (t nil)))
+;                                                   (get-all-instances 'rapport)))))
+;        
+;   (setq conclusion-baisse (mapcan '(lambda (z) (cond ((eq (car z) 'baisse-probable) (list z))
+;                                                      (t  nil)))
+;                                   (mapcan '(lambda(x) (copy conclusion{x}))
+;                                           (mapcan '(lambda (x)(cond ((and (eq courbe{x} courbe{meta-analysis})
+;                                                                           conclusion{x})
+;                                                                      (list x))
+;                                                                     (t nil)))
+;                                                   (get-all-instances 'rapport)))))
+;   (setq baisse-max (minimum-des-objectifs-de-prix conclusion-baisse))
+;   (setq hausse-max (maximum-des-objectifs-de-prix conclusion-hausse))
+;   (conclusion{meta-analysis} @a
+;                              `(divergence  (objectif-de-prix-maximum ,hausse-max)
+;                                            (objectif-de-prix-minimum ,baisse-max))))
+; " en cas de divergence entre plusieurs conclusions")
+                              
+
+ 
+
+    
+
+
+
+(de moyenne-des-objectifs-de-prix (liste-de-conclusions)
+
+    (prog ((lc liste-de-conclusions)
+           (nb (length liste-de-conclusions))
+           (moy 0))
+          loop
+          (when (null lc) (return (/ moy nb)))
+          (setq moy (+ moy (cadr (assoc 'objectif-de-prix (cdar lc)))))
+          (setq lc (cdr lc))
+          (go loop)))
+
+
+
+(de maximum-des-objectifs-de-prix (liste-de-conclusions)
+
+    (prog ((lc liste-de-conclusions)
+           (nb (length liste-de-conclusions))
+           (maxp 0))
+          loop
+          (when (null lc) (return maxp))
+          (when (>  (cadr (assoc 'objectif-de-prix (cdar lc))) maxp)
+                (setq maxp (cadr (assoc 'objectif-de-prix (cdar lc)))))
+          (setq lc (cdr lc))
+          (go loop)))
+
+
+
+
+(de minimum-des-objectifs-de-prix (liste-de-conclusions)
+
+    (prog ((lc liste-de-conclusions)
+           (nb (length liste-de-conclusions))
+           (minp  (cadr (assoc 'objectif-de-prix (cdar liste-de-conclusions)))))
+          loop
+          (when (null lc) (return minp))
+          (when (<  (cadr (assoc 'objectif-de-prix (cdar lc))) minp)
+                (setq minp (cadr (assoc 'objectif-de-prix (cdar lc)))))
+          (setq lc (cdr lc))
+          (go loop)))
+

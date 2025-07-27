@@ -1,0 +1,1617 @@
+;modification des objects necessaires pour etudier la theorie des vagues d eliot
+(add-knowledge-base 'eliot.kb)
+
+
+                                 ;BASE DE CONNAISSANCE D EXPLOITATION DES FONCTIONS DE RECHERCHE
+
+
+
+(user-instanciate 'expert 'expert-eliot nil)
+(setf (get-slot-value 'expert-eliot 'body '(c-eliot b-eliot f-eliot g-eliot)))
+(add-method 'expert-eliot 'expert-eliot-what-do-you-think-about 'what-do-you-think-about 'superseed)
+
+
+(de expert-eliot-what-do-you-think-about (expert courbe )
+    (prog (r)
+	  (setq c ($ courbe 'expand 'convert-time))                   ;on s assure que les dates de la courbe 
+                                                                      ;ont ete converti en jours
+	  ($ c 'expand 'extremum-local 'objects nil)                  ;on recherche les extremums de la courbe
+	  (mapc '(lambda (x)                                          ;on initialise les variables de travail des chaineurs
+		   (undetermine b-eliot x)
+		   (initialize-slot b-eliot x 
+				    '((determination-means (b-eliot)))))
+		'(eliot-v1
+		  eliot-v2
+		  eliot-v3
+		  eliot-v4
+		  eliot-v5
+		  b-eliot-caracteristiques))
+	  (setf (get-slot-value b-eliot 'courbe) c)                   ;on initie les chaineur avec la courbe
+	  ($ c-eliot 'go)                                             ;initiation des hypotheses de trend avec une
+	                                                              ;presomption de vague
+	  ($ b-eliot 'determine b-eliot 'b-eliot-caracteristiques)    ;selection des vagues les plus pertinentes
+	  (setf (get-slot-value b-eliot 'polygone) nil)
+	  ($ f-eliot 'go )                                            ; objectivisation des figures
+	  (setf (get-slot-value g-eliot 'conclusion) nil)
+	  ($ g-eliot 'go)                                             ;prediction relatives aux figures
+	  (setq r (create-instance-rapport '(polygone-1 conclusion-1
+					     polygone-2 conclusion-2
+					     polygone-3 conclusion-3)))     
+	  ;on cree un rapport adapte a eliot
+	  (setf (get-slot-value g-eliot 'rapport) r)
+	  (setf (get-slot-value r 'technique) 'eliot)
+	  (setf (get-slot-value r 'description-technique)
+		"analyse des vagues d eliot  presentes dans la courbe")
+	  (setf (get-slot-value r 'courbe) courbe)
+	  (setf (get-slot-value r 'conclusion) (get-slot-value g-eliot 'conclusion)) 
+	  (setf (get-slot-value r 'conclusion-1) (get-slot-value g-eliot 'conclusion)) 
+	  (setf (get-slot-value r 'polygone-1)  (get-slot-value b-eliot 'polygone))
+		(mapc '(lambda (x)                                       
+			 ;on reinitialise les variables de travail des chaineurs
+		   (undetermine b-eliot x)
+		   (setf (get-slot-value b-eliot x) nil)
+		   (initialize-slot b-eliot x 
+				    '((determination-means (b-eliot)))))
+		'(eliot-v1
+		  eliot-v2
+		  eliot-v3
+		  eliot-v4
+		  eliot-v5
+		  b-eliot-caracteristiques))
+	  ($ c-eliot-1 'go)                                             ;reinitiation des hypotheses de trend avec une
+	                                                              ;autre tentative d explication de vague
+	  ($ b-eliot 'determine b-eliot 'b-eliot-caracteristiques) 
+	  (setf (get-slot-value b-eliot 'polygone) nil)
+	  ($ f-eliot 'go )                                          
+	  (setf (get-slot-value g-eliot 'conclusion) nil)
+	  ($ g-eliot 'go)                                             ;prediction relatives aux figures
+	  (setf (get-slot-value r 'conclusion) (append (get-slot-value g-eliot 'conclusion)
+						       (get-slot-value r 'conclusion)))
+	  (setf (get-slot-value r 'conclusion-2) (get-slot-value g-eliot 'conclusion)) 
+	  (setf (get-slot-value r 'polygone-2)  (get-slot-value b-eliot 'polygone))
+	  ($ c-eliot-2 'go)                                             ;reinitiation des hypotheses de trend avec une	   
+                                                                        ;autre tentative d explication de vague
+	  ($ b-eliot 'determine b-eliot 'b-eliot-caracteristiques)  
+	  (setf (get-slot-value b-eliot 'polygone) nil)
+	  ($ f-eliot 'go )                                          
+	  (setf (get-slot-value g-eliot 'conclusion) nil)
+	  ($ g-eliot 'go)                                             ;prediction relatives aux figures
+	  (setf (get-slot-value r 'conclusion) (append (get-slot-value g-eliot 'conclusion)
+						       (get-slot-value r 'conclusion)))
+	  (setf (get-slot-value r 'conclusion-3) (get-slot-value g-eliot 'conclusion)) 
+	  (setf (get-slot-value r 'polygone-3)  (get-slot-value b-eliot 'polygone))
+	  (return r)                                                  ;on retourne le rapport rempli
+	  ))
+    
+		    
+
+
+                      ; REGLES QUI INITIENT LA TENDANCE FONDAMENTALE
+
+(add-forward-chainer 'c-eliot '(extremum-initial extremum-final))
+					 
+
+(add-forward-rule       
+ c-eliot
+ '(existing (max 'maximum-local)
+	    (and (eq max (plus-haut-maximum courbe{b-eliot}))
+		 (existing (min 'minimum-local) (and  (eq min (plus-bas-minimum courbe{b-eliot}))
+						      (not (eq max ($ courbe{b-eliot} 'dernier-extremum)))
+						   
+
+						      (>  (car hauteur{max})
+							  (car hauteur{min}))
+
+						      (>= (cadr hauteur{max})
+							  (cadr (dernier-point courbe{b-eliot})))
+
+						      (>= (cadr hauteur{max})
+							  (cadr (premier-point courbe{b-eliot})))
+
+						      (>= (cadr hauteur{min})
+							  (cadr (premier-point courbe{b-eliot})))
+
+						      (>= (cadr hauteur{min})
+							  (cadr (dernier-point courbe{b-eliot})))))))
+ '(progn (extremum-initial{b-eliot} @= max)
+	 (extremum-final{b-eliot} @= ($ courbe{b-eliot} 'dernier-extremum)))
+ nil)
+
+(add-forward-rule       
+ c-eliot
+ '(existing (max 'maximum-local)
+	    (and (eq max (plus-haut-maximum courbe{b-eliot}))
+		 (existing (min 'minimum-local) (and  (eq min (plus-bas-minimum courbe{b-eliot}))
+						      (not (eq min ($ courbe{b-eliot} 'dernier-extremum)))
+
+						      (<  (car hauteur{max})
+							  (car hauteur{min}))
+
+						      (>= (cadr hauteur{max})
+							  (cadr (dernier-point courbe{b-eliot})))
+
+						      (>= (cadr hauteur{max})
+							  (cadr (premier-point courbe{b-eliot})))
+
+						      (>= (cadr hauteur{min})
+							  (cadr (premier-point courbe{b-eliot})))
+
+						      (>= (cadr hauteur{min})
+							  (cadr (dernier-point courbe{b-eliot})))))))
+ '(progn (extremum-initial{b-eliot} @= min)
+	 (extremum-final{b-eliot} @= ($ courbe{b-eliot} 'dernier-extremum)))
+ nil)
+
+
+
+(add-forward-rule      
+ c-eliot
+ '(existing (max 'maximum-local)
+	    (and (eq max (plus-haut-maximum courbe{b-eliot}))
+		 (not (eq max ($ courbe{b-eliot} 'dernier-extremum)))
+		 (>  (cadr hauteur{max})
+		     (cadr (dernier-point courbe{b-eliot})))
+
+		 (>  (cadr hauteur{max})
+		     (cadr (premier-point courbe{b-eliot})))
+		 (not (existing (min 'minimum-local)
+				(and (eq min (plus-bas-minimum courbe{b-eliot}))
+				     (<  (cadr hauteur{min})
+					 (cadr (dernier-point courbe{b-eliot})))
+				     
+				     (<  (cadr hauteur{min})
+					 (cadr (premier-point courbe{b-eliot}))))))))
+ '(progn (extremum-initial{b-eliot} @= max)
+	 (extremum-final{b-eliot} @= ($ courbe{b-eliot} 'dernier-extremum)))
+ nil)
+
+(add-forward-rule      
+ c-eliot
+ '(existing (min 'minimum-local)
+	    (and (eq min (plus-bas-minimum courbe{b-eliot}))
+		 (not (eq min ($ courbe{b-eliot} 'dernier-extremum)))
+		 (<  (cadr  hauteur{min})
+		     (cadr (dernier-point courbe{b-eliot})))
+
+		 (<  (cadr hauteur{min})
+		     (cadr (premier-point courbe{b-eliot})))
+		 (not (existing (max 'maximum-local)
+				(and (eq max (plus-haut-maximum courbe{b-eliot}))
+				     (>  (cadr  hauteur{max})
+					 (cadr (dernier-point courbe{b-eliot})))
+				     
+				     (>  (cadr  hauteur{max})
+					 (cadr (premier-point courbe{b-eliot}))))))))
+ '(progn (extremum-initial{b-eliot} @= min)
+	 (extremum-final{b-eliot} @= ($ courbe{b-eliot} 'dernier-extremum)))
+ nil)
+
+
+(add-forward-rule       
+ c-eliot
+ '(existing (max 'maximum-local)
+	    (and  (eq max (plus-haut-maximum courbe{b-eliot}))
+		  (existing (min 'minimum-local) (and (eq min (plus-bas-minimum courbe{b-eliot}))
+						      (not (eq max ($ courbe{b-eliot} 'dernier-extremum)))
+						      (>  (car hauteur{max})
+							  (car hauteur{min}))
+					       
+						      (>  (cadr hauteur{max})
+							  (cadr (dernier-point courbe{b-eliot})))
+					       
+						      (>  (cadr hauteur{max})
+							  (cadr (premier-point courbe{b-eliot})))
+					       
+						      (<  (cadr hauteur{min})
+							  (cadr (dernier-point courbe{b-eliot})))
+					       
+						      (<  (cadr hauteur{min})
+							  (cadr (premier-point courbe{b-eliot})))))))
+ '(progn (extremum-initial{b-eliot} @= max)
+	 (extremum-final{b-eliot} @= ($ courbe{b-eliot} 'dernier-extremum)))
+ nil)
+	   
+	
+(add-forward-rule       
+ c-eliot
+ '(existing (max 'maximum-local)
+	    (and (eq max (plus-haut-maximum courbe{b-eliot}))
+		 (existing (min 'minimum-local) (and (eq min (plus-bas-minimum courbe{b-eliot}))
+						     (not (eq min ($ courbe{b-eliot} 'dernier-extremum)))
+						     (<  (car hauteur{max})
+							 (car hauteur{min}))
+					       
+						     (>  (cadr hauteur{max})
+							 (cadr (dernier-point courbe{b-eliot})))
+					       
+						     (>  (cadr hauteur{max})
+							 (cadr (premier-point courbe{b-eliot})))
+					       
+						     (<  (cadr hauteur{min})
+							 (cadr (dernier-point courbe{b-eliot})))
+					       
+						     (<  (cadr hauteur{min})
+							 (cadr (premier-point courbe{b-eliot})))))))
+ '(progn (extremum-initial{b-eliot} @= min)
+	 (extremum-final{b-eliot} @= ($ courbe{b-eliot} 'dernier-extremum)))
+ nil)
+
+	   
+ (add-forward-rule       
+  c-eliot
+  '(existing (max 'maximum-local)
+	     (and (eq max (plus-haut-maximum courbe{b-eliot}))
+		  (existing (min 'minimum-local) (and (eq min (plus-bas-minimum courbe{b-eliot}))
+						      (eq min ($ courbe{b-eliot} 'dernier-extremum))))))
+					     
+  '(progn (extremum-initial{b-eliot} @= max)
+	  (extremum-final{b-eliot} @= ($ courbe{b-eliot} 'dernier-extremum)))
+  nil)
+	   
+	
+
+ (add-forward-rule       
+  c-eliot
+  '(existing (max 'maximum-local)
+	     (and (eq max (plus-haut-maximum courbe{b-eliot}))
+		  (existing (min 'minimum-local) (and (eq min (plus-bas-minimum courbe{b-eliot}))
+						      (eq max ($ courbe{b-eliot} 'dernier-extremum))))))
+					     
+  '(progn (extremum-initial{b-eliot} @= min)
+	  (extremum-final{b-eliot} @= ($ courbe{b-eliot} 'dernier-extremum)))
+  nil)
+	   
+	
+   
+                      ;REGLES QUI INITIE LA TENDANCE D UNE DEUXIEME MANIERE (PLUS INCERTAINE)
+
+(add-forward-chainer 'c-eliot-1 '())
+
+(add-forward-rule       
+ c-eliot-1
+ '(existing (ext1 'extremum-local)
+	    (and (eq ext1 ($ courbe{b-eliot} 'premier-extremum))
+		 (not (eq ext1 ($ courbe{b-eliot} 'dernier-extremum)))))
+					       
+ '(progn (extremum-initial{b-eliot} @= ext1)
+	 (extremum-final{b-eliot} @= ($ courbe{b-eliot} 'dernier-extremum)))
+ nil)
+	
+
+                       ;REGLES QUI INITIE LA TENDANCE D UNE TROISIEME MANIERE (PLUS INCERTAINE)
+
+(add-forward-chainer 'c-eliot-2 '())
+
+(add-forward-rule       
+ c-eliot-2
+ '(existing (ext1 'extremum-local)
+	    (and (eq ext1 (get-slot-value ($ courbe{b-eliot} 'premier-extremum) 'extremum-droit))
+		 (not (eq ext1 ($ courbe{b-eliot} 'dernier-extremum)))))
+					       
+ '(progn (extremum-initial{b-eliot} @= ext1)
+	 (extremum-final{b-eliot} @= ($ courbe{b-eliot} 'dernier-extremum)))
+ nil)
+	
+
+
+                      ;REGLES QUI JUGENT DE LA PERTINENCE DES DIFFERENTES VAGUES
+
+
+ (add-backward-chainer 'b-eliot '(courbe b-eliot-caracteristiques eliot-v1 eliot-v2 eliot-v3 eliot-v4 eliot-v5
+					 extremum-initial extremum-final polygone))
+ (set-determination-slot 'b-eliot '( b-eliot-caracteristiques eliot-v1 eliot-v2 eliot-v3 eliot-v4 eliot-v5))
+
+
+(add-backward-rule
+ b-eliot
+ '(and eliot-v1{b-eliot}
+       eliot-v2{b-eliot}
+       eliot-v3{b-eliot}
+       eliot-v4{b-eliot}
+       eliot-v5{b-eliot})
+       
+ '(selection-du-plus-faible-d2 (list eliot-v1{b-eliot}
+				     eliot-v2{b-eliot}
+				     eliot-v3{b-eliot}
+				     eliot-v4{b-eliot}
+				     eliot-v5{b-eliot}))
+
+ '(b-eliot-caracteristiques{b-eliot} backward-chainer)
+ nil)
+
+(add-backward-rule
+ b-eliot
+ '(and eliot-v1{b-eliot}
+       eliot-v2{b-eliot}
+       eliot-v3{b-eliot}
+       eliot-v4{b-eliot}
+       (null eliot-v5{b-eliot}))
+       
+ '(selection-du-plus-faible-d2 (list eliot-v1{b-eliot}
+				     eliot-v2{b-eliot}
+				     eliot-v3{b-eliot}
+				     eliot-v4{b-eliot}))
+
+ '(b-eliot-caracteristiques{b-eliot} backward-chainer)
+ nil)
+
+
+(add-backward-rule
+ b-eliot
+ '(and eliot-v1{b-eliot}
+       eliot-v2{b-eliot}
+       eliot-v3{b-eliot}
+       (null eliot-v4{b-eliot})
+       (null eliot-v5{b-eliot}))
+       
+ '(selection-du-plus-faible-d2 (list eliot-v1{b-eliot}
+				     eliot-v2{b-eliot}
+				     eliot-v3{b-eliot}))
+
+ '(b-eliot-caracteristiques{b-eliot} backward-chainer)
+ nil)
+
+
+(add-backward-rule
+ b-eliot
+ '(and eliot-v1{b-eliot}
+       eliot-v2{b-eliot}
+       (null eliot-v3{b-eliot})
+       (null eliot-v4{b-eliot})
+       (null eliot-v5{b-eliot}))
+       
+ '(selection-du-plus-faible-d2 (list eliot-v1{b-eliot}
+				     eliot-v2{b-eliot}))
+
+ '(b-eliot-caracteristiques{b-eliot} backward-chainer)
+ nil)
+
+
+(add-backward-rule
+ b-eliot
+ '(and eliot-v1{b-eliot}
+       (null eliot-v2{b-eliot})
+       (null eliot-v3{b-eliot})
+       (null eliot-v4{b-eliot})
+       (null eliot-v5{b-eliot}))
+       
+ '(selection-du-plus-faible-d2 (list eliot-v1{b-eliot}))
+
+ '(b-eliot-caracteristiques{b-eliot} backward-chainer)
+ nil)
+
+
+
+
+                    ;regles qui coordonnent l exploration des possibilites de vagues d eliot 
+                    ; en 1 (v1), 2 (v2), 3 (v3), 4 (v4)  et 5 (v5) vagues
+
+(add-backward-rule 
+  b-eliot
+  '(existing  (a 'anything)(let ((courbe courbe{b-eliot})
+				 (extremum-initial extremum-initial{b-eliot})
+				 (extremum-final extremum-final{b-eliot}))
+			     (setq a (courbe-determine-best-v1 courbe
+							       extremum-initial
+							       extremum-final
+							       ))))
+              
+  '(list a )
+  '(eliot-v1{b-eliot} backward-chainer)
+  nil)
+
+ (add-backward-rule 
+  b-eliot
+  '(existing  (a 'anything)(let ((courbe courbe{b-eliot})
+				  (extremum-initial extremum-initial{b-eliot})
+				  (extremum-final extremum-final{b-eliot}))
+			      (and (is-a extremum-initial 'maximum-local)
+				   (any '(lambda (x1) 
+					   (setq a (courbe-determine-best-v2b courbe
+									      extremum-initial
+									      extremum-final
+									      x1)))
+					'(5 4 3 2 1)))))
+  '(list a 'baissier)
+  '(eliot-v2{b-eliot} backward-chainer)
+  nil)
+
+ (add-backward-rule 
+  b-eliot
+  '(existing  (a 'anything)(let ((courbe courbe{b-eliot})
+				  (extremum-initial extremum-initial{b-eliot})
+				  (extremum-final extremum-final{b-eliot}))
+			      (and (is-a extremum-initial 'minimum-local)
+				   (any '(lambda (x1) 
+					   (setq a (courbe-determine-best-v2h courbe
+									      extremum-initial
+									      extremum-final
+									      x1)))
+					'(5 4 3 2 1)))))
+  '(list a 'haussier)
+  '(eliot-v2{b-eliot} backward-chainer)
+  nil)
+
+
+(add-backward-rule 
+  b-eliot
+  '(existing  (a 'anything)(let ((courbe courbe{b-eliot})
+				  (extremum-initial extremum-initial{b-eliot})
+				  (extremum-final extremum-final{b-eliot}))
+			     (and (is-a extremum-initial 'maximum-local)
+				  (any '(lambda (x1)
+					  (any '(lambda (x2) 
+						  (setq a (courbe-determine-best-v3b courbe
+										     extremum-initial
+										     extremum-final
+										     x1 x2)))
+					       '(5 4 3 2 1)))
+				       '(5 4 3 2 1)))))
+  '(list a 'baissier)
+  '(eliot-v3{b-eliot} backward-chainer)
+  nil)
+
+(add-backward-rule 
+  b-eliot
+  '(existing  (a 'anything)(let ((courbe courbe{b-eliot})
+				  (extremum-initial extremum-initial{b-eliot})
+				  (extremum-final extremum-final{b-eliot}))
+			     (and (is-a extremum-initial 'minimum-local)
+				  (any '(lambda (x1)
+					  (any '(lambda (x2) 
+						  (setq a (courbe-determine-best-v3h courbe
+										     extremum-initial
+										     extremum-final
+										     x1 x2)))
+					       '(5 4 3 2 1)))
+				       '(5 4 3 2 1)))))
+  '(list a 'haussier)
+  '(eliot-v3{b-eliot} backward-chainer)
+  nil)
+
+(add-backward-rule 
+  b-eliot
+  '(existing  (a 'anything)(let ((courbe courbe{b-eliot})
+				  (extremum-initial extremum-initial{b-eliot})
+				  (extremum-final extremum-final{b-eliot}))
+			     (and (is-a extremum-initial 'maximum-local)
+				  (any '(lambda (x1)
+					  (any '(lambda (x2)
+						  (any '(lambda (x3)
+							  (setq a (courbe-determine-best-v4b  courbe
+											      extremum-initial
+											      extremum-final
+											      x1 x2 x3)))
+						       '(5 4 3 2 1)))
+					       '(5 4 3 2 1)))
+				       '(5 4 3 2 1)))))
+  '(list a 'baissier)
+  '(eliot-v4{b-eliot} backward-chainer)
+  nil)
+
+
+(add-backward-rule 
+  b-eliot
+  '(existing  (a 'anything)(let ((courbe courbe{b-eliot})
+				  (extremum-initial extremum-initial{b-eliot})
+				  (extremum-final extremum-final{b-eliot}))
+			     (and (is-a extremum-initial 'minimum-local)
+				  (any '(lambda (x1)
+					  (any '(lambda (x2)
+						  (any '(lambda (x3)
+							  (setq a (courbe-determine-best-v4h  courbe
+											      extremum-initial
+											      extremum-final
+											      x1 x2 x3)))
+						       '(5 4 3 2 1)))
+					       '(5 4 3 2 1)))
+				       '(5 4 3 2 1)))))
+  '(list a 'haussier)
+  '(eliot-v4{b-eliot} backward-chainer)
+  nil)
+
+(add-backward-rule 
+  b-eliot
+  '(existing  (a 'anything)(let ((courbe courbe{b-eliot})
+				  (extremum-initial extremum-initial{b-eliot})
+				  (extremum-final extremum-final{b-eliot}))
+			     (and (is-a extremum-initial 'maximum-local)
+				  (any '(lambda (x1)
+					  (any '(lambda (x2)
+						  (any '(lambda (x3)
+							  (any '(lambda (x4)
+								  (setq a (courbe-determine-best-v5b courbe
+												     extremum-initial
+												     extremum-final
+												     x1 x2 x3 x4)))
+							       '(5 4 3 2 1)))
+						       '(5 4 3 2 1)))
+					       '(5 4 3 2 1)))
+				       '(5 4 3 2 1)))))
+  '(list a 'baissier)
+  '(eliot-v5{b-eliot} backward-chainer)
+  nil)
+
+
+(add-backward-rule 
+  b-eliot
+  '(existing  (a 'anything)(let ((courbe courbe{b-eliot})
+				  (extremum-initial extremum-initial{b-eliot})
+				  (extremum-final extremum-final{b-eliot}))
+			     (and (is-a extremum-initial 'minimum-local)
+				  (any '(lambda (x1)
+					  (any '(lambda (x2)
+						  (any '(lambda (x3)
+							  (any '(lambda (x4)
+								  (setq a (courbe-determine-best-v5h courbe
+												     extremum-initial
+												     extremum-final
+												     x1 x2 x3 x4)))
+							       '(5 4 3 2 1)))
+						       '(5 4 3 2 1)))
+					       '(5 4 3 2 1)))
+				       '(5 4 3 2 1)))))
+  '(list a 'haussier)
+  '(eliot-v5{b-eliot} backward-chainer)
+  nil)
+
+
+                                           ;CHAINEUR DE FORMATION DES FIGURES
+
+(add-forward-chainer 'f-eliot ())
+
+(add-forward-rule 
+ 'f-eliot
+ '(existing (c 'courbe-2d) (and (eq c  courbe{b-eliot})
+			       (eq (length (cadar  b-eliot-caracteristiques{b-eliot})) 0)))
+    
+ '(let (p)
+    (setq p ($ polygone-v1 'instanciate nil nil))
+    (segment-a{p} @= (list extremum-initial{b-eliot}
+				     extremum-final{b-eliot}))
+    (tendance-initiale{p} @= (cond((>= (segment-delta-h segment-a{p}) 0) 'haussier)
+					    (t 'baissier)))
+    (courbe{p} @= c)
+    (d2{p} @= (caar b-eliot-caracteristiques{b-eliot}))
+    (polygone{b-eliot} @a p))
+ nil)
+
+(add-forward-rule ;rule forward-rule-26
+ 'f-eliot
+ '(existing (c 'courbe-2d) (and (eq c  courbe{b-eliot})
+			       (eq (length (cadar  b-eliot-caracteristiques{b-eliot})) 1)))
+    
+ '(let (p)
+    (setq p ($ polygone-v2 'instanciate nil nil))
+    (segment-a{p} @= (list extremum-initial{b-eliot}
+				     (car (cadar b-eliot-caracteristiques{b-eliot}))))
+    (segment-b{p} @= (list (car (cadar b-eliot-caracteristiques{b-eliot})) 
+				     extremum-final{b-eliot}))
+    (tendance-initiale{p} @= (cadr b-eliot-caracteristiques{b-eliot}))
+
+    (courbe{p} @= c)
+    (d2{p} @= (caar b-eliot-caracteristiques{b-eliot}))
+    (polygone{b-eliot} @a p))
+ nil)
+
+(add-forward-rule 
+ 'f-eliot
+ '(existing (c 'courbe-2d) (and (eq c  courbe{b-eliot})
+			       (eq (length (cadar  b-eliot-caracteristiques{b-eliot})) 2)))
+    
+ '(let (p)
+    (setq p ($ polygone-v3 'instanciate nil nil))
+    (segment-a{p} @= (list extremum-initial{b-eliot}
+				     (car (cadar b-eliot-caracteristiques{b-eliot}))))
+    (segment-b{p} @= (list (car (cadar b-eliot-caracteristiques{b-eliot})) 
+				     (cadr (cadar b-eliot-caracteristiques{b-eliot}))))
+    (segment-c{p} @= (list (cadr (cadar b-eliot-caracteristiques{b-eliot})) 
+				     extremum-final{b-eliot}))
+    (tendance-initiale{p} @= (cadr b-eliot-caracteristiques{b-eliot}))
+
+    (courbe{p} @= c)
+    (d2{p} @= (caar b-eliot-caracteristiques{b-eliot}))
+    (polygone{b-eliot} @a p))
+ nil)
+
+
+(add-forward-rule 
+ 'f-eliot
+ '(existing (c 'courbe-2d) (and (eq c  courbe{b-eliot})
+			       (eq (length (cadar  b-eliot-caracteristiques{b-eliot})) 3)))
+    
+ '(let (p)
+
+    (setq p ($ polygone-v4 'instanciate nil nil))
+    (segment-a{p} @= (list extremum-initial{b-eliot} 
+				     (car (cadar b-eliot-caracteristiques{b-eliot}))))
+    (segment-b{p} @= (list (car (cadar b-eliot-caracteristiques{b-eliot}))
+				     (cadr (cadar b-eliot-caracteristiques{b-eliot}))))
+    (segment-c{p} @= (list (cadr (cadar b-eliot-caracteristiques{b-eliot}))
+				     (caddr (cadar b-eliot-caracteristiques{b-eliot}))))
+    (segment-d{p} @= (list (caddr (cadar b-eliot-caracteristiques{b-eliot}))
+				     extremum-final{b-eliot}))
+    (tendance-initiale{p} @= (cadr b-eliot-caracteristiques{b-eliot}))
+    (courbe{p} @= c)
+    (d2{p} @= (caar b-eliot-caracteristiques{b-eliot}))
+    (polygone{b-eliot} @a p))
+ nil)
+
+
+(add-forward-rule 
+ 'f-eliot
+ '(existing (c 'courbe-2d) (and (eq c  courbe{b-eliot})
+			       (eq (length (cadar  b-eliot-caracteristiques{b-eliot})) 4)))
+    
+ '(let (p)
+    (setq p ($ polygone-v5 'instanciate nil nil))
+    (segment-a{p} @= (list extremum-initial{b-eliot} 
+				     (car (cadar b-eliot-caracteristiques{b-eliot}))))
+    (segment-b{p} @= (list (car (cadar b-eliot-caracteristiques{b-eliot}))
+				     (cadr (cadar b-eliot-caracteristiques{b-eliot}))))
+    (segment-c{p} @= (list (cadr (cadar b-eliot-caracteristiques{b-eliot}))
+				     (caddr (cadar b-eliot-caracteristiques{b-eliot}))))
+    (segment-d{p} @= (list (caddr (cadar b-eliot-caracteristiques{b-eliot}))
+				     (cadddr (cadar b-eliot-caracteristiques{b-eliot}))))
+    (segment-e{p} @= (list (cadddr (cadar b-eliot-caracteristiques{b-eliot}))
+				     extremum-final{b-eliot}))
+    (tendance-initiale{p} @= (cadr b-eliot-caracteristiques{b-eliot}))
+
+    (courbe{p} @= c)
+    (d2{p} @= (caar b-eliot-caracteristiques{b-eliot}))
+    (polygone{b-eliot} @a p))
+ nil)
+
+
+
+
+                                  ;CHAINEUR D INTERPRETATION D ELIOT ET DE FORMATION DE LA CONCLUSION
+
+(add-forward-chainer 'g-eliot '(conclusion rapport))
+
+
+
+
+(add-forward-rule
+ 'g-eliot
+ '(existing (c courbe-2d) (and (eq c courbe{b-eliot})
+			       (existing (p 'polygone-v2)
+					(and (eq courbe{p} c)
+					    (> (segment-retracement segment-a{p} segment-b{p}) 0.33 )
+					    (<= (segment-retracement segment-a{p} segment-b{p}) 0.66 )))))
+'(let (result objectif-prix)
+   (setq objectif-prix (+ (cadr (get-slot-value (car segment-b{p}) 'hauteur))
+			  (* (segment-delta-h segment-a{p}) 0.33)))
+   (setq result (list (segment-tendance segment-b{p}) (list 'objectif-de-prix objectif-prix)))
+   (conclusion{g-eliot} @a result))
+nil)
+
+
+(add-forward-rule
+ 'g-eliot
+ '(existing (c courbe-2d) (and (eq c courbe{b-eliot})
+			       (existing (p 'polygone-v2)
+					(and (eq courbe{p} c)
+					     (<= (segment-retracement segment-a{p} segment-b{p}) 0.33 )))))
+'(let (result objectif-prix)
+   (setq objectif-prix (+ (cadr (get-slot-value (car segment-b{p}) 'hauteur))
+			  (* (segment-delta-h segment-a{p}) 0.66)))
+   (setq result (list  (segment-tendance segment-b{p}) (list 'objectif-de-prix objectif-prix)))
+   (conclusion{g-eliot} @a result))
+nil)
+
+
+(add-forward-rule
+ 'g-eliot
+ '(existing (c courbe-2d) (and (eq c courbe{b-eliot})
+			       (existing (p 'polygone-v2)
+					(and (eq courbe{p} c)
+					    (> (segment-retracement segment-a{p} segment-b{p}) 0.66 )))))
+					  
+'(let (result objectif-prix)
+   (raison-exclusion{p} @= "retracement b trop important")
+   (conclusion{g-eliot} @= nil))
+nil)
+
+(add-forward-rule
+ 'g-eliot
+ '(existing (c courbe-2d) (and (eq c courbe{b-eliot})
+			       (existing (p 'polygone-v3)
+					(and (eq courbe{p} c)
+					     (<=  (segment-retracement segment-a{p} segment-b{p}) 0.66 )
+					     (<=  (segment-retracement segment-c{p} segment-a{p}) 1.618 )))))
+'(let (result objectif-prix)
+   (setq objectif-prix (+ (cadr (get-slot-value (car segment-c{p}) 'hauteur))
+			  (* (segment-delta-h segment-a{p}) 1.618)))
+   (setq result (list   (segment-tendance segment-c{p}) (list 'objectif-de-prix objectif-prix)))
+   (conclusion{g-eliot} @a result))
+nil)
+
+(add-forward-rule
+ 'g-eliot
+ '(existing (c courbe-2d) (and (eq c courbe{b-eliot})
+			       (existing (p 'polygone-v3)
+					(and (eq courbe{p} c)
+					    (> (segment-retracement segment-a{p} segment-b{p}) 0.66 )))))
+					  
+'(let (result objectif-prix)
+   (raison-exclusion{p} @= "retracement b trop important")
+   (conclusion{g-eliot} @= nil))
+nil)
+
+
+(add-forward-rule
+ 'g-eliot
+ '(existing (c courbe-2d) (and (eq c courbe{b-eliot})
+			       (existing (p 'polygone-v4)
+					(and (eq courbe{p} c)
+					     (<=  (segment-retracement segment-a{p} segment-b{p}) 0.66 )
+					     (<  (segment-retracement segment-c{p} segment-a{p}) 2 )
+					     (<  (segment-retracement segment-d{p} segment-c{p}) 0.33 )))))
+'(let (result objectif-prix)
+   (setq objectif-prix (+ (cadr (get-slot-value (car segment-d{p}) 'hauteur))
+			  (* (segment-delta-h segment-c{p}) 0.33)))
+   (setq result (list  (segment-tendance segment-d{p}) (list 'objectif-de-prix objectif-prix)))
+   (conclusion{g-eliot} @a result))
+nil)
+
+(add-forward-rule
+ 'g-eliot
+ '(existing (c courbe-2d) (and (eq c courbe{b-eliot})
+			       (existing (p 'polygone-v4)
+					(and (eq courbe{p} c)
+					     (<=  (segment-retracement segment-a{p} segment-b{p}) 0.66 )
+					     (<  (segment-retracement segment-c{p} segment-a{p}) 2 )
+					     (>=  (segment-retracement segment-d{p} segment-c{p}) 0.33 )
+					     (<  (segment-retracement segment-d{p} segment-c{p}) 0.66 )))))
+'(let (result objectif-prix)
+   (setq objectif-prix (+ (cadr (get-slot-value (car segment-d{p}) 'hauteur))
+			  (* (segment-delta-h segment-c{p}) 0.66)))
+   (setq result (list  (segment-tendance segment-d{p}) (list 'objectif-de-prix objectif-prix)))
+   (conclusion{g-eliot} @a result))
+nil)
+
+(add-forward-rule
+ 'g-eliot
+ '(existing (c courbe-2d) (and (eq c courbe{b-eliot})
+			       (existing (p 'polygone-v4)
+					(and (eq courbe{p} c)
+					    (> (segment-retracement segment-a{p} segment-b{p}) 0.66 )))))
+					  
+'(let (result objectif-prix)
+   (raison-exclusion{p} @= "retracement b trop important")
+   (conclusion{g-eliot} @= nil))
+nil)
+
+(add-forward-rule
+ 'g-eliot
+ '(existing (c courbe-2d) (and (eq c courbe{b-eliot})
+			       (existing (p 'polygone-v4)
+					(and (eq courbe{p} c)
+					    (> (segment-retracement segment-c{p} segment-d{p}) 0.66 )))))
+					  
+'(let (result objectif-prix)
+   (raison-exclusion{p} @= "retracement d trop important")
+   (conclusion{g-eliot} @= nil))
+nil)
+
+(add-forward-rule
+ 'g-eliot
+ '(existing (c courbe-2d) (and (eq c courbe{b-eliot})
+			       (existing (p 'polygone-v5)
+					 (and (eq courbe{p} c)
+					      (<=  (segment-retracement segment-a{p} segment-b{p}) 0.66 )
+					      (<  (segment-retracement segment-c{p} segment-a{p}) 2 )
+					      (<  (segment-retracement segment-d{p} segment-c{p}) 0.66 )
+					      (< (+ (segment-delta-h segment-c{p})
+						    (segment-delta-h segment-d{p})
+						    (segment-delta-h segment-e{p}))
+						 (* 3.3 (segment-delta-h segment-a{a})))))))
+ '(let (result objectif-prix)
+    (setq objectif-prix (+ (cadr (get-slot-value (car segment-c{p}) 'hauteur))
+			   (+ (segment-delta-h segment-c{p})
+			      (segment-delta-h segment-d{p})
+			      (segment-delta-h segment-e{p}))
+			   (* 3.3 (segment-delta-h segment-a{a}))))
+    (setq result (list  (segment-tendance segment-e{p}) (list 'objectif-de-prix objectif-prix)))
+    (conclusion{g-eliot} @a result))
+ nil)
+
+(add-forward-rule
+ 'g-eliot
+ '(existing (c courbe-2d) (and (eq c courbe{b-eliot})
+			       (existing (p 'polygone-v5)
+					(and (eq courbe{p} c)
+					    (> (segment-retracement segment-a{p} segment-b{p}) 0.66 )))))
+					  
+'(let (result objectif-prix)
+   (raison-exclusion{p} @= "retracement b trop important")
+   (conclusion{g-eliot} @= nil))
+nil)
+
+	
+(add-forward-rule
+ 'g-eliot
+ '(existing (c courbe-2d) (and (eq c courbe{b-eliot})
+			       (existing (p 'polygone-v5)
+					(and (eq courbe{p} c)
+					    (> (segment-retracement segment-c{p} segment-d{p}) 0.66 )))))
+					  
+'(let (result objectif-prix)
+   (raison-exclusion{p} @= "retracement d trop important")
+   (conclusion{g-eliot} @= nil))
+nil)
+
+				 
+                                  ;DIVERS
+(de segment-delta-h (segment)
+    (- (cadr (get-slot-value (cadr segment) 'hauteur))
+       (cadr (get-slot-value (car segment) 'hauteur))))
+    
+(de segment-retracement (segment1 segment2)
+    (/  (segment-delta-h segment2)
+	(segment-delta-h segment1)))
+
+(de tendance-inverse (tendance)
+    (cond ((eq tendance 'haussier) 'baissier)
+	  ((eq tendance 'baissier) 'haussier)))
+
+(de selection-du-plus-faible-d2 (vi-list)
+    (prog (vi d2 best-vi best-d2 vi-list-p)
+	  (setq vi-list-p vi-list)
+	  (when (null vi-list-p) (return nil))
+	  (setq best-vi (car vi-list-p))
+	  (setq best-d2 (caar best-vi))
+	  loop
+	  (setq vi-list-p (cdr vi-list-p))
+	  (when (null vi-list-p) (return best-vi))
+	  (setq vi (car vi-list-p))
+	  (setq d2 (caar vi))
+	  (when (<= d2 best-d2)
+		(setq best-vi vi)
+		(setq best-d2 d2))
+	  (go loop)))
+		
+(de segment-tendance (segment)
+    (cond ((> (cadr (get-slot-value (car segment) 'hauteur)) (cadr (get-slot-value  (cadr segment) 'hauteur)))
+	   'baissier)
+	  (t 'haussier)))
+
+				 
+
+
+                                  ;DEFINITION DES OBJECTS POLYGONAUX
+
+ (user-instanciate 'metaclass 'polygone nil)
+ (add-slot-user 'polygone 'raison-exclusion 'instance)
+ (add-slot-user 'polygone 'tendance-initiale 'instance)
+ (add-slot-user 'polygone 'courbe 'instance)
+ (add-slot-user 'polygone 'd2 'instance)
+
+;  la liste-d-extremums est a utiliser apres que les
+;  segement aient ete tous rentres
+
+ (add-attribute-user 'polygone 'liste-d-extremums
+		     '(lambda (object slot) 
+			(prog (w)
+			      (setq w (list (list (get-slot-facet-value object segment-a 'x-debut)
+						  (get-slot-facet-value object segment-a 'y-debut))))
+			      (when (get-slot-value object 'segment-b)
+				    (setq w (cons (list (get-slot-facet-value object 'segment-b 'x-fin)
+							(get-slot-facet-value object 'segment-b 'y-fin))
+						  w)))
+			      (when (get-slot-value object 'segment-c)
+				    (setq w (cons (list (get-slot-facet-value object 'segment-c 'x-fin)
+							(get-slot-facet-value object 'segment-c 'y-fin))
+						  w)))
+			      (when (get-slot-value object 'segment-d)
+				    (setq w (cons (list (get-slot-facet-value object 'segment-d 'x-fin)
+							(get-slot-facet-value object 'segment-d 'y-fin))
+						  w)))
+			      (when (get-slot-value object 'segment-e)
+				    (setq w (cons (list (get-slot-facet-value object 'segment-e 'x-fin)
+							(get-slot-facet-value object 'segment-e 'y-fin))
+						  w)))
+			      (return w)))
+		     'instance)
+
+(add-method 'polygone 'polygone-interpole 'interpole 'superseed)
+(add-method 'courbe-2d 'courbe-polygone-fantome-determine-d2 'polygone-fantome-determine-d2 'superseed)
+
+ (user-instanciate 'metaclass 'polygone-v1 '(polygone))
+ (add-slot-user 'polygone-v1 'segment-a 'instance)
+ (add-slot-facet-user 'polygone-v1 'segment-a 'x-debut nil)
+ (add-slot-facet-user 'polygone-v1 'segment-a 'y-debut nil)
+ (add-slot-facet-user 'polygone-v1 'segment-a 'x-fin nil)
+ (add-slot-facet-user 'polygone-v1 'segment-a 'y-fin nil)
+ (add-slot-facet-user 'polygone-v1 'segment-a 'pente nil)
+ (add-slot-facet-user 'polygone-v1 'segment-a 'ordonnee-zero nil)
+
+ (add-write-after-demon 'polygone-v1 'segment-a 'polygone-write-after-demon  'merge-after)
+			
+
+(de polygone-write-after-demon (object slot)
+				 (prog (x1 x2 y1 y2 pente y-zero)
+				       (setq x1 (car (get-slot-value (car (get-slot-value object slot)) 'hauteur)))
+				       (setq y1 (cadr (get-slot-value (car (get-slot-value object slot)) 'hauteur)))
+				       (setq x2 (car (get-slot-value (cadr (get-slot-value object slot)) 'hauteur)))
+				       (setq y2 (cadr (get-slot-value (cadr (get-slot-value object slot)) 'hauteur)))
+				       (setq pente (/ (- y2 y1) (- x2 x1)))
+				       (setq y-zero (- y1 (* x1 pente)))
+				       (setf (get-slot-facet-value object slot 'x-debut) x1)
+				       (setf (get-slot-facet-value object slot 'y-debut) y1)
+				       (setf (get-slot-facet-value object slot 'x-fin) x2)
+				       (setf (get-slot-facet-value object slot 'y-fin) y2)
+				       (setf (get-slot-facet-value object slot 'pente) pente)
+				       (setf (get-slot-facet-value object slot 'ordonnee-zero) y-zero)))
+
+
+;le segment est une liste de 2 extremum
+
+ (user-instanciate 'metaclass 'polygone-v2 '(polygone-v1))
+ (add-slot-user 'polygone-v2 'segment-b 'instance)
+ (add-slot-facet-user 'polygone-v2 'segment-b 'x-debut nil)
+ (add-slot-facet-user 'polygone-v2 'segment-b 'y-debut nil)
+ (add-slot-facet-user 'polygone-v2 'segment-b 'x-fin nil)
+ (add-slot-facet-user 'polygone-v2 'segment-b 'y-fin nil)
+ (add-slot-facet-user 'polygone-v2 'segment-b 'pente nil)
+ (add-slot-facet-user 'polygone-v2 'segment-b 'ordonnee-zero nil)
+
+ (add-write-after-demon 'polygone-v2 'segment-a 'polygone-write-after-demon  'merge-after)
+	
+
+ (user-instanciate 'metaclass 'polygone-v3 '(polygone-v2))
+ (add-slot-user 'polygone-v3 'segment-c 'instance)
+ (add-slot-facet-user 'polygone-v3 'segment-c 'x-debut nil)
+ (add-slot-facet-user 'polygone-v3 'segment-c 'y-debut nil)
+ (add-slot-facet-user 'polygone-v3 'segment-c 'x-fin nil)
+ (add-slot-facet-user 'polygone-v3 'segment-c 'y-fin nil)
+ (add-slot-facet-user 'polygone-v3 'segment-c 'pente nil)
+ (add-slot-facet-user 'polygone-v3 'segment-c 'ordonnee-zero nil)
+
+ (add-write-after-demon 'polygone-v3 'segment-a 'polygone-write-after-demon  'merge-after)
+	
+
+ (user-instanciate 'metaclass 'polygone-v4 '(polygone-v3))
+ (add-slot-user 'polygone-v4 'segment-d 'instance)
+ (add-slot-facet-user 'polygone-v4 'segment-d 'x-debut nil)
+ (add-slot-facet-user 'polygone-v4 'segment-d 'y-debut nil)
+ (add-slot-facet-user 'polygone-v4 'segment-d 'x-fin nil)
+ (add-slot-facet-user 'polygone-v4 'segment-d 'y-fin nil)
+ (add-slot-facet-user 'polygone-v4 'segment-d 'pente nil)
+ (add-slot-facet-user 'polygone-v4 'segment-d 'ordonnee-zero nil)
+
+ (add-write-after-demon 'polygone-v4 'segment-a 'polygone-write-after-demon  'merge-after)
+	
+ (user-instanciate 'metaclass 'polygone-v5 '(polygone-v4))
+ (add-slot-user 'polygone-v5 'segment-e 'instance)
+ (add-slot-facet-user 'polygone-v5 'segment-e 'x-debut nil)
+ (add-slot-facet-user 'polygone-v5 'segment-e 'y-debut nil)
+ (add-slot-facet-user 'polygone-v5 'segment-e 'x-fin nil)
+ (add-slot-facet-user 'polygone-v5 'segment-e 'y-fin nil)
+ (add-slot-facet-user 'polygone-v5 'segment-e 'pente nil)
+ (add-slot-facet-user 'polygone-v5 'segment-e 'ordonnee-zero nil)
+
+ (add-write-after-demon 'polygone-v5 'segment-a 'polygone-write-after-demon  'merge-after)
+	
+
+                                  ;DEFINITION DES MESSAGES DE BASE
+
+ (de polygone-interpole (object x)
+     (prog (point-list)
+	   (setq point-list (user-get-value object 'liste-d-extremums))
+	   (cond ((<= x (car (cadr point-list))) (return (+ (get-slot-facet-value object 'segment-a 'ordonne-zero)
+							    (* (get-slot-facet-value object 'segment-a 'pente) x))))
+		 ((and (> (length point-list) 2)
+		       (<= x (car (caddr point-list))) (return (+ (get-slot-facet-value object 'segment-b 'ordonne-zero)
+							    (* (get-slot-facet-value object 'segment-b 'pente) x)))))
+		 ((and (> (length point-list) 3)
+		       (<= x (car (cadddr point-list))) (return (+ (get-slot-facet-value object 'segment-c 'ordonne-zero)
+							    (* (get-slot-facet-value object 'segment-c 'pente) x)))))
+		 ((and (> (length point-list) 4)
+		       (<= x (car (cadddr (cdr point-list)))) (return (+ (get-slot-facet-value object 'segment-d 'ordonne-zero)
+							    (* (get-slot-facet-value object 'segment-d 'pente) x)))))
+		 ((> (length point-list) 5)
+		  (return (+ (get-slot-facet-value object 'segment-e 'ordonne-zero)
+							    (* (get-slot-facet-value object 'segment-e 'pente) x)))))))
+		
+		  
+
+
+ (de polygone-fantome-interpole (point-list c-list x)
+     (prog (pente ordonnee-zero)
+      (cond ((<= x (car (cadr point-list))) 
+	      (return (+ (cadr (car c-list))
+			(* (car (car c-list)) x))))
+	    ((and (> (length point-list) 2)
+		  (<= x (car (caddr point-list))))
+	    (return (+ (cadr (cadr c-list))
+			(* (car (cadr c-list)) x))))
+	    ((and (> (length point-list) 3)
+		  (<= x (car (cadddr point-list))))
+	      (return (+ (cadr (caddr c-list))
+			(* (car (caddr c-list)) x))))
+	    ((and (> (length point-list) 4)
+		  (<= x (car (cadddr (cdr point-list)))))
+	     (return (+ (cadr (cadddr c-list))
+			(* (car (cadddr c-list)) x))))
+	    ((> (length point-list) 5)
+	    (return (+ (cadr (cadddr (cdr c-list)))
+			(* (car (cadddr (cdr c-list))) x)))))))
+
+		
+(de polygone-fantome-determine-c-list (point-list)
+    (prog (w point-list-p precedent-point point p)
+	  (setq point-list-p (cdr point-list))
+	  (setq point (car point-list))
+	  loop
+	  (when (null point-list-p) (go fin))
+	  (setq precedent-point point)
+	  (setq point (car point-list-p))
+	  (setq p (/ (- (cadr point) (cadr precedent-point))
+					 (- (car point) (car precedent-point))))
+	  (setq w (cons (list p
+			      (- (cadr point) (* p (car point)))) w))
+	  (setq point-list-p (cdr point-list-p))
+	  (go loop)
+	  fin
+	  (return w)))
+
+
+(de courbe-polygone-fantome-determine-d2 (courbe extremum-list)
+    (prog (point-list rang1 rang2)
+	  (setq point-list (mapcar '(lambda (x) (get-slot-value x 'hauteur))
+				   extremum-list))
+	  (setq rang1 (get-slot-value (car extremum-list) 'rang))
+	  (setq rang2 (get-slot-value (car (last extremum-list)) 'rang))
+	  (return (courbe-polygone-fantome-determine-d2-1 courbe point-list rang1 rang2))))
+
+(de courbe-polygone-fantome-determine-d2-1 (courbe point-list rang1 rang2)
+    (prog(c-list v w h)
+	 (setq c-list (polygone-fantome-determine-c-list point-list))
+	 (setq h (get-slot-value courbe 'body))
+	 (setq v rang1)
+	 (setq w 0)
+	 loop
+	 (when (> v rang2) (go fin))
+	 (setq w (+ (polygone-fantome-interpole point-list c-list (car(vref h v))) w))
+	 (setq v (1+ v))
+	 (go loop)
+	 fin
+	 (return w)))
+
+
+(de maximums-intermediaires (extremum-1 extremum-2 niveau)
+    (prog(extremum-list (extremum-1p (get-slot-value extremum-1 'extremum-droit)) (extremum-2p extremum-2) extremum)
+	 (when (is-a extremum-1 'minimum-local) (setq extremum-1p (get-slot-value extremum-1 'extremum-droit)))
+	 (when (is-a extremum-2 'minimum-local) (setq extremum-2p (get-slot-value extremum-2 'extremum-gauche)))
+	 (when (or (null extremum-1p) (null extremum-2p)) (return nil))
+	 ;(when (<= (car (get-slot-value extremum-2p 'hauteur)) (car (get-slot-value extremum-1p 'hauteur)))
+	 ;      (return nil))
+	 (setq extremum-list nil)
+	 (setq extremum extremum-1p)
+	 loop
+	 (when (or (null extremum) 
+		   (eq extremum extremum-2p))
+	       (return extremum-list))
+	 (when (extremum-niveau-p extremum niveau) (setq extremum-list (cons extremum extremum-list)))
+	 (setq extremum (get-slot-value (get-slot-value extremum 'extremum-droit) 'extremum-droit))
+	 (go loop)))
+
+
+(de minimums-intermediaires (extremum-1 extremum-2 niveau)
+    (prog(extremum-list (extremum-1p (get-slot-value extremum-1 'extremum-droit))(extremum-2p extremum-2) extremum)
+	 (when (is-a extremum-1 'maximum-local) (setq extremum-1p (get-slot-value extremum-1 'extremum-droit)))
+	 (when (is-a extremum-2 'maximum-local) (setq extremum-2p (get-slot-value extremum-2 'extremum-gauche)))
+	 (when (or (null extremum-1p) (null extremum-2p)) (return nil))
+	 ;(when (<= (car (get-slot-value extremum-2p 'hauteur)) (car (get-slot-value extremum-1p 'hauteur)))
+	 ;      (return nil))
+	 (setq extremum-list nil)
+	 (setq extremum extremum-1p)
+	 loop
+	 (when (or (null extremum) 
+		   (eq extremum extremum-2p))
+	       (return extremum-list))
+	 (when (extremum-niveau-p extremum niveau)(setq extremum-list (cons extremum extremum-list)))
+	 (setq extremum (get-slot-value (get-slot-value extremum 'extremum-droit) 'extremum-droit))
+	 (go loop)))
+	
+(de extremum-niveau-p (extremum niveau)
+    (cond ((eq niveau 1) extremum)
+	  ((eq niveau 2) (get-slot-value extremum 'extremum-niveau-2))
+	  ((eq niveau 3) (get-slot-value extremum 'extremum-niveau-3))
+	  ((eq niveau 4) (get-slot-value extremum 'extremum-niveau-4))
+	  ((eq niveau 5) (get-slot-value extremum 'extremum-niveau-5))
+	  (t nil)))
+ 
+
+	  
+(de courbe-determine-best-v1 (courbe extremum-1 extremum-2 )
+    (prog (d2)
+	  (setq d2 ($ courbe 'polygone-fantome-determine-d2 (list extremum-1 extremum-2)))
+	  (return (list d2 nil))))
+
+(de courbe-determine-best-v2h (courbe extremum-1 extremum-2 niveau-a)
+    (prog (d2 extremum extremum-list best-extremum best-d2)
+	  (setq extremum-list (maximums-intermediaires extremum-1 extremum-2 niveau-a))
+	  (when (null extremum-list) 
+		(return nil))
+	  (setq best-extremum (car extremum-list))
+	  (setq best-d2 ($ courbe 'polygone-fantome-determine-d2 (list extremum-1 best-extremum extremum-2)))
+	  (setq extremum-list (cdr extremum-list))
+	  (when (null extremum-list) (return (list best-d2 (list best-extremum))))
+	  loop
+	  (when (null extremum-list) (go fin))
+	  (setq extremum (car extremum-list))
+	  (when (>= (cadr (get-slot-value extremum-1 'hauteur)) 
+		    (cadr (get-slot-value extremum 'hauteur)) )
+		(setq extremum-list (cdr extremum-list))
+		(go loop))
+	  (setq d2 ($ courbe 'polygone-fantome-determine-d2 (list extremum-1 extremum extremum-2)))
+	  (when (<= d2 best-d2)
+		(setq best-extremum extremum)
+		(setq best-d2 d2))
+	  (setq extremum-list (cdr extremum-list))
+	  (go loop)
+	  fin
+	  (return (list best-d2 (list best-extremum)))))
+
+(de courbe-determine-best-v2b (courbe extremum-1 extremum-2 niveau-a)
+    (prog (d2 extremum extremum-list best-extremum best-d2)
+	  (setq extremum-list (minimums-intermediaires extremum-1 extremum-2 niveau-a))
+	  (when (null extremum-list) 
+		(return nil))
+	  (setq best-extremum (car extremum-list))
+	  (setq best-d2 ($ courbe 'polygone-fantome-determine-d2 (list extremum-1 best-extremum extremum-2)))
+	  (setq extremum-list (cdr extremum-list))
+	  (when (null extremum-list) (return (list best-d2 (list best-extremum))))
+	  loop
+	  (when (null extremum-list) (go fin))
+	  (setq extremum (car extremum-list))
+	    (when (<= (cadr (get-slot-value extremum-1 'hauteur)) 
+		    (cadr (get-slot-value extremum 'hauteur)) )
+		(setq extremum-list (cdr extremum-list))
+		(go loop))
+	  (setq d2 ($ courbe 'polygone-fantome-determine-d2 (list extremum-1 extremum extremum-2)))
+	  (when (<= d2 best-d2)
+		(setq best-extremum extremum)
+		(setq best-d2 d2))
+	  (setq extremum-list (cdr extremum-list))
+	  (go loop)
+	  fin
+	  (return (list best-d2 (list best-extremum)))))
+
+
+(de courbe-determine-best-v3h (courbe extremum-1 extremum-2 niveau-a niveau-b)
+    (prog (d2 extremum1 extremum2 extremum-list1 extremum-list2 best-extremum1 best-extremum2 best-d2)
+	  (setq extremum-list1 (maximums-intermediaires extremum-1 extremum-2 niveau-a))
+	  (when (null extremum-list1) 
+		(return nil))
+	  (setq best-extremum1 (car extremum-list1))
+	  (setq extremum-list2 (minimums-intermediaires best-extremum1 extremum-2 niveau-b))
+	  (when (null extremum-list2) 
+		(return nil))
+	  (setq best-extremum2 (car extremum-list2))
+	  (setq best-d2 ($ courbe 'polygone-fantome-determine-d2 
+			   (list extremum-1 best-extremum1 best-extremum2 extremum-2)))
+	  (setq extremum-list2 (cdr extremum-list2))
+	  (setq extremum1 best-extremum1)
+	  (when (null extremum-list2) (return (list best-d2 (list best-extremum1 best-extremum2))))
+
+	  loop1
+	  (setq extremum1 (car extremum-list1))
+	  (when (>= (cadr (get-slot-value extremum-1 'hauteur)) 
+		    (cadr (get-slot-value extremum1 'hauteur)) )
+		(setq extremum-list1 (cdr extremum-list1))
+		(when (null extremum-list1) (go fin))
+		(go loop1))
+	  (setq extremum-list2 (minimums-intermediaires extremum1 extremum-2 niveau-b))
+	  loop2
+	  (setq extremum2 (car extremum-list2))
+	  (when (<= (cadr (get-slot-value extremum1 'hauteur)) 
+		    (cadr (get-slot-value extremum2 'hauteur)) )
+		(go fin-loop2))
+	  (setq d2 ($ courbe 'polygone-fantome-determine-d2 
+		      (list extremum-1 extremum1 extremum2 extremum-2)))
+	  (when (<= d2 best-d2)
+		(setq best-extremum1 extremum1)
+		(setq best-extremum2 extremum2)
+		(setq best-d2 d2))
+	  fin-loop2
+	  (setq extremum-list2 (cdr extremum-list2))
+	  (when (null extremum-list2)
+		(setq extremum-list1 (cdr extremum-list1))
+		(when (null extremum-list1) (go fin))
+		(go loop1))
+	  (go loop2)
+	  fin
+	  (return (list best-d2 (list best-extremum1 best-extremum2)))))
+
+
+(de courbe-determine-best-v3b (courbe extremum-1 extremum-2 niveau-a niveau-b)
+    (prog (d2 extremum1 extremum2 extremum-list1 extremum-list2 best-extremum1 best-extremum2 best-d2)
+	  (setq extremum-list1 (minimums-intermediaires extremum-1 extremum-2 niveau-a))
+	  (when (null extremum-list1) 
+		(return nil))
+	  (setq best-extremum1 (car extremum-list1))
+	  (setq extremum-list2 (maximums-intermediaires best-extremum1 extremum-2 niveau-b))
+	  (when (null extremum-list2) 
+		(return nil))
+	  (setq best-extremum2 (car extremum-list2))
+	  (setq best-d2 ($ courbe 'polygone-fantome-determine-d2 
+			   (list extremum-1 best-extremum1 best-extremum2 extremum-2)))
+	  (setq extremum-list2 (cdr extremum-list2))
+	  (setq extremum1 best-extremum1)
+	  (when (null extremum-list2) (return (list best-d2 (list best-extremum1 best-extremum2))))
+	  (go loop2)
+
+	  loop1
+	  (setq extremum1 (car extremum-list1))
+	  (when (<= (cadr (get-slot-value extremum-1 'hauteur)) 
+		    (cadr (get-slot-value extremum1 'hauteur)) )
+		(setq extremum-list1 (cdr extremum-list1))
+		(when (null extremum-list1) (go fin))
+		(go loop1))
+	  (setq extremum-list2 (maximums-intermediaires extremum1 extremum-2 niveau-b))
+
+	  loop2
+	  (setq extremum2 (car extremum-list2))
+	  (when (>= (cadr (get-slot-value extremum1 'hauteur)) 
+		    (cadr (get-slot-value extremum2 'hauteur)) )
+		(go fin-loop2))
+	  (setq d2 ($ courbe 'polygone-fantome-determine-d2 
+		      (list extremum-1 extremum1 extremum2 extremum-2)))
+	  (when (<= d2 best-d2)
+		(setq best-extremum1 extremum1)
+		(setq best-extremum2 extremum2)
+		(setq best-d2 d2))
+	  (setq extremum-list2 (cdr extremum-list2))
+	  (when (null extremum-list2)
+		(setq extremum-list1 (cdr extremum-list1))
+		(when (null extremum-list1) (go fin))
+		(go loop1))
+	  (go loop2)
+	  fin
+	  (return (list best-d2 (list best-extremum1 best-extremum2)))))
+
+
+
+       
+
+(de courbe-determine-best-v4h (courbe extremum-1 extremum-2 niveau-a niveau-b niveau-c)
+    (prog (d2 extremum1 extremum2 extremum3 extremum-list1 extremum-list2 extremum-list3 
+	      best-extremum1 best-extremum2 best-extremum3 best-d2)
+	  (setq extremum-list1 (maximums-intermediaires extremum-1 extremum-2 niveau-a))
+	  (when (null extremum-list1) 
+		(return nil))
+	  (setq best-extremum1 (car extremum-list1))
+	  (setq extremum-list2 (minimums-intermediaires best-extremum1 extremum-2 niveau-b))
+	  (when (null extremum-list2) 
+		(return nil))
+	  (setq best-extremum2 (car extremum-list2))
+	  (setq extremum-list3 (maximums-intermediaires best-extremum2 extremum-2 niveau-c))
+	  (when (null extremum-list3) 
+		(return nil))
+	  (setq best-extremum3 (car extremum-list3))
+	  (setq best-d2 ($ courbe 'polygone-fantome-determine-d2 
+			   (list extremum-1 best-extremum1 best-extremum2 best-extremum3 extremum-2)))
+	  (setq extremum-list3 (cdr extremum-list3))
+	  (setq extremum2 best-extremum2)
+	  (setq extremum1 best-extremum1)
+	  (when (null extremum-list3) (return (list best-d2 (list best-extremum1 best-extremum2 best-extremum3))))
+	  (go loop3)
+
+	  loop1 
+	  (setq extremum1 (car extremum-list1))
+	  (when (>= (cadr (get-slot-value extremum-1 'hauteur)) 
+		    (cadr (get-slot-value extremum1 'hauteur)) )
+		(setq extremum-list1 (cdr extremum-list1))
+		(when (null extremum-list1) (go fin))
+		(go loop1))
+	  (setq extremum-list2 (minimums-intermediaires extremum1 extremum-2 niveau-b))
+
+	  loop2
+	  (setq extremum2 (car extremum-list2))
+	  (when (<= (cadr (get-slot-value extremum1 'hauteur)) 
+		    (cadr (get-slot-value extremum2 'hauteur)) )
+		(setq extremum-list2 (cdr extremum-list2))
+		(when (null extremum-list2)  
+		      (setq extremum-list1 (cdr extremum-list1))
+		      (when (null extremum-list1) (go fin))
+		      (go loop1))
+		(go loop2))
+	  (setq extremum-list3 (maximums-intermediaires extremum2 extremum-2 niveau-c))
+
+	  loop3
+	  (setq extremum3 (car extremum-list3))
+	  (when (>= (cadr (get-slot-value extremum2 'hauteur)) 
+		    (cadr (get-slot-value extremum3 'hauteur)) )
+		(go fin-loop3))  
+	  (setq d2 ($ courbe 'polygone-fantome-determine-d2 
+		      (list extremum-1 extremum1 extremum2 extremum3 extremum-2)))
+	  (when (<= d2 best-d2)
+		(setq best-extremum1 extremum1)
+		(setq best-extremum2 extremum2)
+		(setq best-extremum3 extremum3)
+		(setq best-d2 d2))
+	  fin-loop3
+	  (setq extremum-list3 (cdr extremum-list3))
+	  (when (null extremum-list3) 
+		(setq extremum-list2 (cdr extremum-list2))
+		(when (null extremum-list2)
+		      (setq extremum-list1 (cdr extremum-list1))
+		      (when (null extremum-list1) (go fin))
+		      (go loop1))
+		(go loop2))
+	  (go loop3)
+	  fin
+	  (return (list best-d2 (list best-extremum1 best-extremum2 best-extremum3)))))
+	
+
+
+(de courbe-determine-best-v4b (courbe extremum-1 extremum-2 niveau-a niveau-b niveau-c)
+    (prog (d2 extremum1 extremum2 extremum3 extremum-list1 extremum-list2 extremum-list3 
+	      best-extremum1 best-extremum2 best-extremum3 best-d2)
+	  (setq extremum-list1 (minimums-intermediaires extremum-1 extremum-2 niveau-a))
+	  (when (null extremum-list1) 
+		(return nil))
+	  (setq best-extremum1 (car extremum-list1))
+	  (setq extremum-list2 (maximums-intermediaires best-extremum1 extremum-2 niveau-b))
+	  (when (null extremum-list2) 
+		(return nil))
+	  (setq best-extremum2 (car extremum-list2))
+	  (setq extremum-list3 (minimums-intermediaires best-extremum2 extremum-2 niveau-c))
+	  (when (null extremum-list3) 
+		(return nil))
+	  (setq best-extremum3 (car extremum-list3))
+	  (setq best-d2 ($ courbe 'polygone-fantome-determine-d2 
+			   (list extremum-1 best-extremum1 best-extremum2 best-extremum3 extremum-2)))
+	  (setq extremum-list3 (cdr extremum-list3))
+	  (setq extremum2 best-extremum2)
+	  (setq extremum1 best-extremum1)
+	  (when (null extremum-list3) (return (list best-d2 (list best-extremum1 best-extremum2 best-extremum3))))
+	  (go loop3)
+
+	  loop1 
+	  (setq extremum1 (car extremum-list1))
+	  (when (<= (cadr (get-slot-value extremum-1 'hauteur)) 
+		    (cadr (get-slot-value extremum1 'hauteur)) )
+		(setq extremum-list1 (cdr extremum-list1))
+		(when (null extremum-list1) (go fin))
+		(go loop1))
+	  (setq extremum-list2 (maximums-intermediaires extremum1 extremum-2 niveau-b))
+
+	  loop2
+	  (setq extremum2 (car extremum-list2))
+	  (when (>= (cadr (get-slot-value extremum1 'hauteur)) 
+		    (cadr (get-slot-value extremum2 'hauteur)) )
+		(setq extremum-list2 (cdr extremum-list2))
+		(when (null extremum-list2)  
+		      (setq extremum-list1 (cdr extremum-list1))
+		      (when (null extremum-list1) (go fin))
+		      (go loop1))
+		(go loop2))
+	  (setq extremum-list3 (minimums-intermediaires extremum2 extremum-2 niveau-c))
+
+	  loop3
+	  (setq extremum3 (car extremum-list3))
+	  (when (<= (cadr (get-slot-value extremum2 'hauteur)) 
+		    (cadr (get-slot-value extremum3 'hauteur)) )
+		(go fin-loop3))
+	  (setq d2 ($ courbe 'polygone-fantome-determine-d2 
+		      (list extremum-1 extremum1 extremum2 extremum3 extremum-2)))
+	  (when (<= d2 best-d2)
+		(setq best-extremum1 extremum1)
+		(setq best-extremum2 extremum2)
+		(setq best-extremum3 extremum3)
+		(setq best-d2 d2))
+	  fin-loop3
+	  (setq extremum-list3 (cdr extremum-list3))
+	  (when (null extremum-list3) 
+		(setq extremum-list2 (cdr extremum-list2))
+		(when (null extremum-list2)
+		      (setq extremum-list1 (cdr extremum-list1))
+		      (when (null extremum-list1) (go fin))
+		      (go loop1))
+		(go loop2))
+	  (go loop3)
+	  fin
+	  (return (list best-d2 (list best-extremum1 best-extremum2 best-extremum3)))))
+	
+     
+
+(de courbe-determine-best-v5h (courbe extremum-1 extremum-2 niveau-a niveau-b niveau-c niveau-d)
+    (prog (d2 extremum1 extremum2 extremum3 extremum4  extremum-list1 extremum-list2 extremum-list3 
+	      extremum-list4 best-extremum1 best-extremum2 best-extremum3 best-extremum4 best-d2)
+	  (setq extremum-list1 (maximums-intermediaires extremum-1 extremum-2 niveau-a))
+	  (when (null extremum-list1) 
+		(return nil))
+	  (setq best-extremum1 (car extremum-list1))
+	  (setq extremum-list2 (minimums-intermediaires best-extremum1 extremum-2 niveau-b))
+	  (when (null extremum-list2) 
+		(return nil))
+	  (setq best-extremum2 (car extremum-list2))
+	  (setq extremum-list3 (maximums-intermediaires best-extremum2 extremum-2 niveau-c))
+	  (when (null extremum-list3) 
+		(return nil))
+	  (setq best-extremum3 (car extremum-list3))
+	  (setq extremum-list4 (minimums-intermediaires best-extremum3 extremum-2 niveau-d))
+	  (when (null extremum-list4) 
+		(return nil))
+	  (setq best-extremum4 (car extremum-list4))
+	  (setq best-d2 ($ courbe 'polygone-fantome-determine-d2 
+			   (list extremum-1 best-extremum1 best-extremum2 best-extremum3 best-extremum4 extremum-2)))
+	  (setq extremum-list4 (cdr extremum-list4))
+	  (setq extremum3 best-extremum3)
+	  (setq extremum2 best-extremum2)
+	  (setq extremum1 best-extremum1)
+	  (when (null extremum-list4) (return (list best-d2 (list best-extremum1 best-extremum2
+								  best-extremum3 best-extremum4))))
+	  (go loop4)
+
+	  loop1 
+	  (setq extremum1 (car extremum-list1))
+	  (when (>= (cadr (get-slot-value extremum-1 'hauteur)) 
+		    (cadr (get-slot-value extremum1 'hauteur)) )
+		(setq extremum-list1 (cdr extremum-list1))
+		(when (null extremum-list1) (go fin))
+		(go loop1))
+	  (setq extremum-list2 (minimums-intermediaires extremum1 extremum-2 niveau-b))
+
+	  loop2
+	  (setq extremum2 (car extremum-list2))
+	  (when (<= (cadr (get-slot-value extremum1 'hauteur)) 
+		    (cadr (get-slot-value extremum2 'hauteur)) )
+		(setq extremum-list2 (cdr extremum-list2))
+		(when (null extremum-list2)  
+		      (setq extremum-list1 (cdr extremum-list1))
+		      (when (null extremum-list1) (go fin))
+		      (go loop1))
+		(go loop2))
+	  (setq extremum-list3 (maximums-intermediaires extremum2 extremum-2 niveau-c))
+
+	  loop3
+	  (setq extremum3 (car extremum-list3))
+	  (when (>= (cadr (get-slot-value extremum2 'hauteur)) 
+		    (cadr (get-slot-value extremum3 'hauteur)))
+		(setq extremum-list3 (cdr extremum-list3))
+		(when (null extremum-list3)
+		      (setq extremum-list2 (cdr extremum-list2))
+		      (when (null extremum-list2)
+			    (setq extremum-list1 (cdr extremum-list1))
+			    (when (null extremum-list1) (go fin))
+			    (go loop1))
+		      (go loop2))
+		(go loop3))
+	  (setq extremum-list4 (minimums-intermediaires extremum3 extremum-2 niveau-d))
+
+	  loop4
+	  (setq extremum4 (car extremum-list4))
+	  (when (<= (cadr (get-slot-value extremum3 'hauteur)) 
+		    (cadr (get-slot-value extremum4 'hauteur)) )
+		(go fin-loop4)) 
+	  (setq d2 ($ courbe 'polygone-fantome-determine-d2 
+		      (list extremum-1 extremum1 extremum2 extremum3 extremum4 extremum-2)))
+	  (when (<= d2 best-d2)
+		(setq best-extremum1 extremum1)
+		(setq best-extremum2 extremum2)
+		(setq best-extremum3 extremum3)
+		(setq best-extremum4 extremum4)
+		(setq best-d2 d2))
+	  fin-loop4
+	  (setq extremum-list4 (cdr extremum-list4))
+	  (when (null extremum-list4) 
+		(setq extremum-list3 (cdr extremum-list3))
+		(when (null extremum-list3)
+		      (setq extremum-list2 (cdr extremum-list2))
+		      (when (null extremum-list2)
+			    (setq extremum-list1 (cdr extremum-list1))
+			    (when (null extremum-list1) (go fin))
+			    (go loop1))
+		      (go loop2))
+		(go loop3))
+	  (go loop4)
+	  fin
+	  (return (list best-d2 (list best-extremum1 best-extremum2 best-extremum3 best-extremum4)))))
+	
+
+(de courbe-determine-best-v5b (courbe extremum-1 extremum-2 niveau-a niveau-b niveau-c niveau-d)
+    (prog (d2 extremum1 extremum2 extremum3 extremum4  extremum-list1 extremum-list2 extremum-list3 
+	      extremum-list4 best-extremum1 best-extremum2 best-extremum3 best-extremum4 best-d2)
+	  (setq extremum-list1 (minimums-intermediaires extremum-1 extremum-2 niveau-a))
+	  (when (null extremum-list1) 
+		(return nil))
+	  (setq best-extremum1 (car extremum-list1))
+	  (setq extremum-list2 (maximums-intermediaires best-extremum1 extremum-2 niveau-b))
+	  (when (null extremum-list2) 
+		(return nil))
+	  (setq best-extremum2 (car extremum-list2))
+	  (setq extremum-list3 (minimums-intermediaires best-extremum2 extremum-2 niveau-c))
+	  (when (null extremum-list3) 
+		(return nil))
+	  (setq best-extremum3 (car extremum-list3))
+	  (setq extremum-list4 (maximums-intermediaires best-extremum3 extremum-2 niveau-d))
+	  (when (null extremum-list4) 
+		(return nil))
+	  (setq best-extremum4 (car extremum-list4))
+	  (setq best-d2 ($ courbe 'polygone-fantome-determine-d2 
+			   (list extremum-1 best-extremum1 best-extremum2 best-extremum3 best-extremum4 extremum-2)))
+	  (setq extremum-list4 (cdr extremum-list4))
+	  (setq extremum3 best-extremum3)
+	  (setq extremum2 best-extremum2)
+	  (setq extremum1 best-extremum1)
+	  (when (null extremum-list4) (return (list best-d2 (list best-extremum1 best-extremum2
+								  best-extremum3 best-extremum4))))
+	  (go loop4)
+
+	  loop1 
+	  (setq extremum1 (car extremum-list1))
+	  (when (<= (cadr (get-slot-value extremum-1 'hauteur)) 
+		    (cadr (get-slot-value extremum1 'hauteur)) )
+		(setq extremum-list1 (cdr extremum-list1))
+		(when (null extremum-list1) (go fin))
+		(go loop1))
+	  (setq extremum-list2 (maximums-intermediaires extremum1 extremum-2 niveau-b))
+
+	  loop2
+	  (setq extremum2 (car extremum-list2))
+	  (when (>= (cadr (get-slot-value extremum1 'hauteur)) 
+		    (cadr (get-slot-value extremum2 'hauteur)) )
+		(setq extremum-list2 (cdr extremum-list2))
+		(when (null extremum-list2)  
+		      (setq extremum-list1 (cdr extremum-list1))
+		      (when (null extremum-list1) (go fin))
+		      (go loop1))
+		(go loop2))
+	  (setq extremum-list3 (minimums-intermediaires extremum2 extremum-2 niveau-c))
+
+	  loop3
+	  (setq extremum3 (car extremum-list3))
+	  (when (<= (cadr (get-slot-value extremum2 'hauteur)) 
+		    (cadr (get-slot-value extremum3 'hauteur)))
+		(setq extremum-list3 (cdr extremum-list3))
+		(when (null extremum-list3)
+		      (setq extremum-list2 (cdr extremum-list2))
+		      (when (null extremum-list2)
+			    (setq extremum-list1 (cdr extremum-list1))
+			    (when (null extremum-list1) (go fin))
+			    (go loop1))
+		      (go loop2))
+		(go loop3))
+	  (setq extremum-list4 (maximums-intermediaires extremum3 extremum-2 niveau-d))
+
+	  loop4
+	  (setq extremum4 (car extremum-list4))
+	  (when (>= (cadr (get-slot-value extremum3 'hauteur)) 
+		    (cadr (get-slot-value extremum4 'hauteur)) )
+		(go fin-loop4))
+	  (setq d2 ($ courbe 'polygone-fantome-determine-d2 
+		      (list extremum-1 extremum1 extremum2 extremum3 extremum4 extremum-2)))
+	  (when (<= d2 best-d2)
+		(setq best-extremum1 extremum1)
+		(setq best-extremum2 extremum2)
+		(setq best-extremum3 extremum3)
+		(setq best-extremum4 extremum4)
+		(setq best-d2 d2))
+	  fin-loop4
+	  (setq extremum-list4 (cdr extremum-list4))
+	  (when (null extremum-list4) 
+		(setq extremum-list3 (cdr extremum-list3))
+		(when (null extremum-list3)
+		      (setq extremum-list2 (cdr extremum-list2))
+		      (when (null extremum-list2)
+			    (setq extremum-list1 (cdr extremum-list1))
+			    (when (null extremum-list1) (go fin))
+			    (go loop1))
+		      (go loop2))
+		(go loop3))
+	  (go loop4)
+	  fin
+	  (return (list best-d2 (list best-extremum1 best-extremum2 best-extremum3 best-extremum4)))))
+	
+
+
+
+                      ;TESTS ET FONCTIONS DIVERSES
+
+

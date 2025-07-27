@@ -1,0 +1,463 @@
+;fichier contenant le savoir faire de suppression de droites ininterressantes pour l analyse en terme de canaux et triangles
+;nmm veut non-monotonic module
+
+
+(add-knowledge-base 'canalnm-kb
+                    'object-de-base
+                    '(nmm-suppression-de-droites-ininterressantes  nmm-suppression-de-droites-exterieures-ininterressantes
+                                                                   bi-droite canalnmm-r01 canalnmm-r02 canalnmm-r03 canalnmm-r04
+                                                                   classement-des-droites)
+                    nil)
+
+(add-backward-chainer 'nmm-suppression-de-droites-ininterressantes '(courbe))
+(add-backward-chainer 'nmm-suppression-de-droites-exterieures-ininterressantes '(courbe))
+(add-slot-user nmm-suppression-de-droites-ininterressantes 'precision-de-croisement 'instance)
+
+(add-slot-user 'droite-technique 'to-be-killed 'instance)
+(add-slot-user 'droite-technique 'rules-that-caused-killing 'instance)
+(add-slot-user 'droite-technique 'accummulation-list-replacement 'instance)
+
+
+(set-determination-slot 'droite-technique '(to-be-killed))
+
+(de check-for-killing-1 (droite)
+    (prog (to-be-killed)
+          (process-pending-events)
+          (setq to-be-killed ($ nmm-suppression-de-droites-ininterressantes 'determine droite 'to-be-killed))
+          (cond (to-be-killed 
+                 (setf (get-fondamental-value droite  'rules-that-caused-killing) *backward-rule-just-succeeded*)
+                 (when *wait-flag*
+                       (print "---break-point---") 
+                       (prog (rep)
+                             loop
+                             (setq rep (read))
+                             (when (eq rep 'c) 
+                                   (print "---end-of-break--")
+                                   (return))
+                             (print (eval rep))
+                             (go loop)))
+                 (when *search-delete-flag* (delete-object droite) )
+                 (when (get-slot-value expert-canal 'representation-graphique-transitoire)
+                       (setf (get-slot-value expert-canal 'graphique-liste-des-objects-affiches) 
+                             (remq droite (copy (get-slot-value expert-canal 'graphique-liste-des-objects-affiches) )))
+                       (setf (get-slot-value expert-canal 'graphique) 
+                             (display-courbe-a (get-slot-value expert-canal 'graphique-liste-des-objects-affiches ))))
+                 (return nil))
+                (t 
+                 (when *wait-flag*
+                       (print "---break-point---") 
+                       (prog (rep)
+                             loop
+                             (setq rep (read))
+                             (when (eq rep 'c) 
+                                   (print "---end-of-break--")
+                                   (return))
+                             (print (eval rep))
+                             (go loop)))
+                 (return droite)))))
+
+(de check-for-killing-2 (droite)
+    (prog (to-be-killed)
+          (setq to-be-killed ($ nmm-suppression-de-droites-exterieures-ininterressantes 'determine droite 'to-be-killed))
+          (cond ((eq to-be-killed t) 
+                 (when *wait-flag*
+                       (print "---break-point---") 
+                       (prog (rep)
+                             loop
+                             (setq rep (read))
+                             (when (eq rep 'c) 
+                                   (print "---end-of-break--")
+                                   (return))
+                             (print (eval rep))
+                             (go loop)))
+                 (delete-object droite) 
+                 (when (get-slot-value expert-canal 'representation-graphique-transitoire)
+                       (setf (get-slot-value expert-canal 'graphique-liste-des-objects-affiches) 
+                             (remq droite (copy (get-slot-value expert-canal 'graphique-liste-des-objects-affiches) )))
+                       (setf (get-slot-value expert-canal 'graphique) 
+                             (display-courbe-a (get-slot-value expert-canal 'graphique-liste-des-objects-affiches ))))
+                 (return nil))
+                (t 
+                 (when *wait-flag*
+                       (print "---break-point---") 
+                       (prog (rep)
+                             loop
+                             (setq rep (read))
+                             (when (eq rep 'c) 
+                                   (print "---end-of-break--")
+                                   (return))
+                             (print (eval rep))
+                             (go loop)))
+                 (return droite)))))
+
+
+;les regles qui suivent concluent ou non a la suppression de la droite fournie en argument
+
+; fixation de la precision d examen la plus favorable
+
+
+;droite-technique:derniere-position --> 'support ou 'resistance
+;droite-technique:force-de-la-derniere-position  --> nombre entier
+;droite-technique:nombre-de-brisures  --> nombre entier (a condition que cela soit deja un support ou une resistence)
+;droite-technique:nombre-de-croisements  --> nombre entier (croisements avec la courbe)
+;droite-technique:intervalle-de-support  --> une liste (plus-basse-abcisse-d-extremum plus-haute-abcisse-d-extremum)
+; c est l intervalle minimum qui contient tous les extremums de la droite
+;droite-technique:intervalle-de-support-strict  --> une liste (plus-basse-abcisse-d-extremum plus-haute-abcisse-d-extremum)
+; c est l intervalle minimum qui contient tous les dernier extremums de la derniere position
+
+;droite-technique:intervalle-de-support-super-strict  --> une liste (plus-basse-abcisse-d-extremum plus-haute-abcisse-d-extremum)
+; c est l intervalle minimum qui contient tous les dernier extremums de la derniere position et ou la courbe ne rencontre pas
+; la droite
+;droite-technique:dernierement-brise-a-la-baisse   --> vrai si la courbe a brise a la baisse la droite et n est jamais remonte
+;droite-technique:dernierement-brise-a-al-hausse   --> vrai si la courbe a brise a la hausse la droite et n est jamais remonte
+;   
+
+
+
+
+
+;cette regle supprime les droites qui sont relative a une trop petite partie de la courbe totale
+;ou qui sont trop loins
+(add-backward-rule
+'canalnmm-r01
+ 'nmm-suppression-de-droites-ininterressantes
+ '(let* ((c courbe-origine{d})
+         (lc intervalle-d-etude{c})
+         (ld intervalle-de-support{d})
+         (distance-au-support (- (cadr lc) (cadr ld)))
+         (largeur-de-la-courbe (- (cadr lc) (car lc)))
+         (largeur-du-support (- (cadr ld) (car ld))))
+    (and (< (/ largeur-du-support distance-au-support) 0.5)
+         (< (/ largeur-du-support largeur-de-la-courbe) 0.2)))
+ 't
+ '(to-be-killed{d} droite-technique)
+ "suppression des droites relative a une trop petite partie de la courbe ou trop loin 1")
+
+(add-backward-rule
+'canalnmm-r02
+ 'nmm-suppression-de-droites-ininterressantes
+ '(let* ((c courbe-origine{d})
+         (lc intervalle-d-etude{c})
+         (ld intervalle-de-support{d})
+         (largeur-de-la-courbe (- (cadr lc) (car lc)))
+         (largeur-du-support (- (cadr ld) (car ld))))
+    (< (/ largeur-du-support largeur-de-la-courbe) 0.05))
+         
+ 't
+ '(to-be-killed{d} droite-technique)
+ "suppression des droites relative a une trop petite partie de la courbe ou trop loin 2")
+
+
+
+                                             ;PURGE DES ENSEMBLES DE DROITES SEMBLABLES D UN POINT DE VUE ANALYSE TECHNIQUE
+
+
+(user-instanciate 'metaclass 'bi-droite nil)
+
+(add-slot-user 'bi-droite 'droite-1 'instance)
+(add-slot-user 'bi-droite 'droite-2 'instance)
+(add-slot-user 'bi-droite 'superiorite-de-droite-1-sur-droite-2 'instance) ;peut valoir {positive , neutre , negative}
+
+(set-determination-slot 'bi-droite '(superiorite-de-droite-1-sur-droite-2))
+
+(add-backward-chainer 'classement-des-droites nil)
+
+
+
+(de ss (f) (setq *accummulation-delete-flag* f)
+    (setq  *search-delete-flag* f))
+
+
+
+
+(de purge-groupe-de-droites (courbe droites)
+ (prog (liste-d-extremums a-b a b (h (get-fondamental-value courbe 'body)) dr dernier-extremum circonstance
+                          liste-des-droites-techniques c a1 a2 a3 dr-list)
+       (mapc '(lambda (x) (setq liste-d-extremums (nmm-union liste-d-extremums (get-fondamental-value x 'liste-d-extremums))))
+             droites)
+       ;(setq dernier-extremum (dernier-extremum liste-d-extremums))
+       ;(cond ((is-a dernier-extremum 'maximum-local) (setq circonstance 'convexite-haute))
+       ;      ((is-a dernier-extremum 'minimum-local) (setq circonstance 'convexite-basse))
+       ;      ((and (is-a dernier-extremum 'pseudo-extremum)
+       ;           (eq (user-get-value dernier-extremum 'convexite) 'haute)) (setq circonstance 'convexite-haute))
+       ;      ((and (is-a dernier-extremum 'pseudo-extremum)
+       ;           (eq (user-get-value dernier-extremum 'convexite) 'basse)) (setq circonstance 'convexite-basse))
+       ;     )
+       (cond ((> (facteur-de-forme-de-purge h liste-d-extremums) 0)  (setq circonstance 'convexite-haute))
+             (t  (setq circonstance 'convexite-basse)))
+       (setq a-b (canavex-create-final-a-b-couple h (mapcar '(lambda (x) (get-fondamental-value x 'rang)) 
+                                                            liste-d-extremums) 
+                                                  circonstance))
+       (setq a (car a-b))
+       (setq b (cadr a-b))
+       (setq dr ($ 'droite-technique 'instanciate nil nil))
+       (setq liste-des-droites-techniques (get-slot-value courbe 'liste-des-droites-techniques))
+       (setq c (* (/ (sqrt (1+ (* a a))) (+ (* *csurj* *csurj*) (* a a))) *csurj*))
+       (setq a1 c)
+       (setq a2 (* b c))
+       (setq a3 (* a c))
+       (setf liste-des-droites-techniques (cons (list a1 a2 a3 dr) liste-des-droites-techniques ))
+       (setf (get-slot-value courbe 'liste-des-droites-techniques) liste-des-droites-techniques )
+       (setf (get-slot-value dr 'courbe-origine) courbe)
+       (setf (get-slot-value dr 'pente) a)
+       (setf (get-slot-value dr 'ordonnee-zero) b)
+       (setf (get-slot-value dr 'force) (length liste-d-extremums))
+       (setf (get-slot-value dr 'liste-d-extremums ) liste-d-extremums)
+       (setf (get-slot-value dr 'sous-type) circonstance)
+       (mapc '(lambda (x) (when (memq x  (get-all-instances 'droite-technique))
+                                (cond   (*accummulation-delete-flag* (delete-object x))
+                                        (t (setf (get-fondamental-value x 'rules-that-caused-killing)
+                                                 (list 'accummulation-replacement-by dr))))
+                                (setq dr-list (cons x dr-list))
+                                (enleve-droite-graphique x)))
+             droites)
+       (setq rang1 0)
+       (montre-droite-graphique dr rang1)
+       (setf (get-fondamental-value dr 'accummulation-list-replacement) dr-list)
+       (trace-file (catenate (cat-list dr-list) " remplacees par " dr)  "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+       (cond ((check-for-killing-1 dr)
+              (rajoute-droite-graphique dr rang1))
+             (t nil))
+       
+       ))
+
+
+(de nmm-union (extre1 extre2)
+    (prog (ex (extre (copy extre2)) (extre-u (copy extre1)))
+          loop
+          (when (null extre) (return extre-u))
+          (setq ex (car extre))
+          (setq extre (cdr extre))
+          (when (memq ex extre-u) (go loop))
+          (setq extre-u (cons ex extre-u))
+          (go loop)))
+
+(de facteur-de-forme-de-purge (h liste-d-extremums-p)
+    (prog (extremum (liste-d-extremums liste-d-extremums-p) (nb 0) (nb-positif 0)  (nb-negatif 0))
+          loop
+          (when (null liste-d-extremums) (return  (/ (- nb-positif nb-negatif) nb)))
+          (setq extremum (car liste-d-extremums))
+          (setq liste-d-extremums (cdr liste-d-extremums))
+          (cond ((is-a extremum 'maximum-local) (setq nb-positif (1+ nb-positif)))
+                ((is-a extremum 'minimum-local) (setq nb-negatif (1+ nb-negatif)))
+                ((is-a extremum 'pseudo-extremum) (cond ((eq (get-fondamental-value extremum 'convexite) 'haute)
+                                                         (setq nb-positif (1+ nb-positif)))
+                                                        ((eq (get-fondamental-value extremum 'convexite) 'basse)
+                                                          (setq nb-negatif (1+ nb-negatif))))))
+          (setq nb (1+ nb))
+          (go loop)))
+
+
+(de purge-groupe-de-droites-1 (droites)
+    (prog ((droites-1 droites)
+           (droites-2 droites)
+           d-1 d-2 b)
+          (mapc '(lambda (x) (delete-object x)) 
+                (get-all-instances 'bi-droite))
+          (process-pending-events)
+          loop1 
+          (when (null droites-1) (go fin))
+          (setq d-1 (car droites-1))
+          (setq droites-1 (cdr droites-1))
+          (setq droites-2 droites-1)
+          loop2
+          (when (null droites-2) (go loop1))
+          (setq d-2 (car droites-2))
+          (setq droites-2 (cdr droites-2))
+          (when (eq d-1 d-2) (go loop2))
+          (setq b (user-instanciate 'bi-droite nil nil))
+          (setf (get-fondamental-value b 'droite-1) d-1)
+          (setf (get-fondamental-value b 'droite-2) d-2)
+          ($ 'classement-des-droites 'determine b 'superiorite-de-droite-1-sur-droite-2)
+          (go loop2)
+          fin
+          (mapc '(lambda (bb) (process-pending-events)
+                   (cond ((and (eq (get-fondamental-value bb 'superiorite-de-droite-1-sur-droite-2) 'positive)
+                               (memq  (get-fondamental-value bb 'droite-2) (get-all-instances 'droite-technique)))
+                          (delete-object (get-fondamental-value bb 'droite-2))
+                          (enleve-droite-graphique  (get-fondamental-value bb 'droite-2)))
+                         ((and (eq (get-fondamental-value bb 'superiorite-de-droite-1-sur-droite-2) 'negative)
+                               (memq  (get-fondamental-value bb 'droite-1) (get-all-instances 'droite-technique)))
+                          (delete-object (get-fondamental-value bb 'droite-1))
+                          (enleve-droite-graphique  (get-fondamental-value bb 'droite-1)))
+                         ))
+                   (get-all-instances 'bi-droites))
+          ))
+
+
+(add-backward-rule
+ 'canalnmm-r03
+ 'classement-des-droites
+ '(let ((droite-1 droite-1{bb})
+        (droite-2 droite-1{bb}) ls1 ls2)
+    (setq ls1 intervalle-de-support{droite-1})
+    (setq ls2 intervalle-de-support{droite-2})
+    (> (- (cadr ls2) (car ls2)) (- (cadr ls1) (car ls1))))
+ 'negative
+ '(superiorite-de-droite-1-sur-droite-2{bb} bi-droite)
+ "superiorite des droites de plus grand support 1")
+
+(add-backward-rule
+ 'canalnmm-r04
+ 'classement-des-droites
+ '(let ((droite-1 droite-1{bb})
+        (droite-2 droite-1{bb}) ls1 ls2)
+    (setq ls1 intervalle-de-support{droite-1})
+    (setq ls2 intervalle-de-support{droite-2})
+    (< (- (cadr ls2) (car ls2)) (- (cadr ls1) (car ls1))))
+ 'positive
+ '(superiorite-de-droite-1-sur-droite-2{bb} bi-droite)
+ "superiorite des droites de plus grand support 2")
+
+    
+
+
+(de nombre-de-croisements-localises (droite a1 a2)
+    ;calcule le nombre de croisement de la droite avec sa courbe origine entre deux abcisses a1 et a2
+    (prog* ((c (get-slot-value droite 'courbe-origine))
+            (h (get-slot-value c 'body))
+            (l (vlength h))
+            (v 0)
+            (nb 0)
+            (epsilon (/ (get-fondamental-value select-parameters  'precision) 2.))
+            (precedente-position 'incertain)
+            (position 'incertain)
+            v1)
+           loop1
+           (when (>= v l) (return 0))
+           (when (> (car (vref h v)) a1)
+                 (setq v1 v)
+                 (go fin1))
+           (setq v (1+ v))
+           (go loop1)
+           fin1
+           (setq v v1)
+           loop
+           (when (or (>= v l)
+                     (>= (car (vref h v)) a2))
+                 (return nb))
+           (when (neq position 'incertain) (setq precedente-position position))
+           (setq position (point-droite-position-floue (vref h v) droite epsilon))
+           (when (and (neq position precedente-position)
+                      (neq position 'incertain)
+                      (neq precedente-position 'incertain))
+                 (setq nb (1+ nb)))
+           (setq v (1+ v))
+           (go loop)))
+
+          
+
+(de force-maximum-par-position (droite)
+    (prog((liste-d-extremums (get-slot-value droite 'liste-d-extremums))
+          (nb 1)
+          (nb-max 1)
+          type
+          type-precedent)
+         loop
+         (when (null liste-d-extremums)
+               (when (> nb nb-max)
+                     (setq nb-max nb))
+               (return nb-max))
+         (setq type-precedent type)
+         (setq type (get-slot-value (car liste-d-extremums) 'metaclass))
+         (cond ((eq type type-precedent)
+                (setq nb (1+ nb)))
+               (t (when (> nb nb-max)
+                        (setq nb-max nb))
+                  (setq nb 1)))
+         (setq liste-d-extremums (cdr liste-d-extremums))
+         (go loop)))
+
+         
+         
+;cette regle supprime les droites qui sont relative a une trop petite partie de la courbe totale
+;(add-backward-rule
+; 'nmm-suppression-de-droites-ininterressantes
+; '(let* ((c courbe-origine{d})
+;         (lc intervalle-d-etude{c})
+;         (ld intervalle-de-support-strict{d}))
+;    (< (/ (- (cadr ld) (car ld))
+;          (- (cadr lc) (car lc)))
+;       .05))
+; 't
+; '(to-be-killed{d} droite-technique)
+; "suppression des droites de derniere position relative a une trop petite partie de la courbe")
+
+
+
+;cette regle supprime les droites qui n ont aucun point d appui dans la seconde moitie du graphe (trop ancienne)
+;(add-backward-rule
+; 'nmm-suppression-de-droites-ininterressantes
+; '(let* ((c courbe-origine{d})
+;         (lc intervalle-d-etude{c})
+;         (ld intervalle-de-support{d}))
+;    (< (cadr ld) 
+;       (/ (+ (cadr lc) (car lc)) 2.)))
+;      
+; 't
+; '(to-be-killed{d} droite-technique)
+; "suppression des droites sans point d appui recent") ;****
+
+
+
+;cette regle supprime les droites qui ne sont jamais arrivee a conserver une position plus de 2 extremum
+;(add-backward-rule
+; 'nmm-suppression-de-droites-ininterressantes
+; '(<= (force-maximum-par-position d)  2)
+; 't
+; '(to-be-killed{d} droite-technique)
+; "suppression des droites qui ne conserve pas deux fois la position") ;****
+
+
+; cette regle supprime les droites qui rencontrent trop souvent la courbe
+;(add-backward-rule
+; 'nmm-suppression-de-droites-ininterressantes
+; '(> nombre-de-croisements{d} 3)
+; 't
+; '(to-be-killed{d} droite-technique)
+; "suppression des droites qui rencontre trop souvent la courbe")
+
+
+
+; cette regle supprime les droites qui rencontrent tres souvent la courbe et qui la coupe deux fois
+; dans la partie droite de la courbe
+;(add-backward-rule
+; 'nmm-suppression-de-droites-ininterressantes
+; '(and (= nombre-de-croisements{d} 3)
+;       (let* ((c courbe-origine{d})
+;              (lc intervalle-d-etude{c})
+;              (ld intervalle-de-support{d}))
+;         (> (nombre-de-croisements-localises d  (/ (+ (car lc) (* 2. (cadr lc))) 3.)  (cadr lc)) 2)))
+;)
+
+
+; cette regle supprime les droites qui rencontrent tres souvent la courbe et qui la coupe deux fois
+; dans le support strict de la droite
+;(add-backward-rule
+; 'nmm-suppression-de-droites-ininterressantes
+; '(let* ((c courbe-origine{d})
+;              (lc intervalle-d-etude{c})
+;              (ld intervalle-de-support-strict{d})
+;             )
+;         (>= (nombre-de-croisements-localises d   (car ld) (cadr ld) ) 2))      
+; 't
+; '(to-be-killed{d} droite-technique)
+; "suppression des droites qui rencontre trop souvent la courbe 2")
+
+; cette regle supprime les droites qui rencontrent tres souvent la courbe et qui la coupe deux fois
+; dans le support strict de la droite
+;(add-backward-rule
+; 'nmm-suppression-de-droites-ininterressantes
+; '(let* ((c courbe-origine{d})
+;              (lc intervalle-d-etude{c})
+;              (ld intervalle-de-support-strict{d})
+;              (le intervalle-de-support-super-strict{d})
+;              )
+;         (and (>= (nombre-de-croisements-localises d   (car ld) (cadr ld) ) 2)
+;              (<  (/ (- (cadr le) (car le))
+;                     (- (cadr lc) (car lc)))
+;                  .05)))
+; 't
+; '(to-be-killed{d} droite-technique)
+; "suppression des droites qui rencontre trop souvent la courbe 2") ;****
+

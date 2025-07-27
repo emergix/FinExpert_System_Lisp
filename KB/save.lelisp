@@ -1,0 +1,238 @@
+;fichier contenant les regles de savoir-faire concernant l'utilisation de fourier pour 
+
+;obtenir des rapports 
+
+(add-knowledge-base 'fourier.kb)
+
+(de lld ()
+ (load "fourier.lisp"))
+
+(user-instanciate 'expert 'expert-fourier nil
+)
+
+(setf (get-slot-value 'expert-fourier 'body '(rrb-fourier rrf-fourier)))
+
+(add-method 'expert-fourier 'expert-fourier-what-do-you-think-about 'what-do-you-think-about 'superseed)
+
+(de expert-fourier-what-do-you-think-about (expert courbe )
+    (prog  (r c spectre butterworth-limit-up current-courbe
+	       filtre  spectre-final courbe-filtree liste-de-dates-adequates wlist)
+	   (setq c ($ courbe 'expand 'convert-time))
+	   (setq spectre ($ c 'somme-de-fourier))
+	   (setq wlist (abcisse-list spectre))
+	   (setq butterworth-limit-up (determine-slot-value rrb-fourier  'butterworth-limit-up))
+	   (setq filtre (synthetize-butterworth  butterworth-limit-up wlist 3))
+	   (setq spectre-final ($ spectre '* filtre))
+	   (setq liste-de-dates-adequates (mapcar  'convert-time 
+						   (determine-slot-value rrb-fourier 'liste-de-dates-adequates)))
+	   (setq courbe-filtree ($ ($ spectre-final 'inverse-de-fourier liste-de-dates-adequates) 'module))
+	   (setq r  (create-instance-rapport 
+		      '(spectre  filtre courbe-filtree)))
+	   (setf (get-slot-value r 'courbe) courbe )
+	   (setf (get-slot-value r 'spectre) spectre)
+	   (setf (get-slot-value r 'filtre) filtre)
+	   (setf (get-slot-value r 'courbe-filtree) courbe-filtree)
+	   (setf (get-slot-value r 'technique) 'fourier)
+	   (setf (get-slot-value r 'description-technique)
+		 "analyse de fourier par une somme et un filtre de butterworth avec prevision de tendance")
+	   ($ courbe-filtree 'expand 'extremum-local 'objects nil)
+	   (setf (get-slot-value rrb-fourier 'courbe) c)
+	   (setf (get-slot-value rrf-fourier-2 'courbe-a-analyser) courbe-filtree)
+	   (setf (get-slot-value rrf-fourier-2 'conclusion) nil)
+	   ($ 'rrf-fourier-2 'go)
+	   (setf (get-slot-value r 'conclusion) (get-slot-value 'rrf-fourier-2 'conclusion)) 
+	   (return r)))
+
+(add-slot-user 'courbe-2d 'analyse-de-fourier-avec-somme-et-butterworth 'instance)
+
+(initialize-slot 'courbe-2d 'analyse-de-fourier-avec-somme-et-butterworth
+		 '((determination-means (analyse-de-fourier-avec-somme-et-butterworth ))
+		   (determination-predicat (lambda (object slot conclusion) t))))
+
+(add-slot-user 'courbe-2d 'analyse-de-fourier-avec-somme-et-selection-de-pic 'instance)
+
+(initialize-slot 'courbe-2d 'analyse-de-fourier-avec-somme-et-selection-de-pic 
+		 '((determination-means (analyse-de-fourier-avec-somme-et-selection-de-pic))
+		   (determination-predicat (lambda (object slot conclusion) t))))
+
+;base de regle de determination du filtre
+
+(add-forward-chainer 'sf-fourier '(spectre-initial spectre-final spectre-a-construire)
+)
+
+(add-forward-rule 'sf-fourier
+ '(and (not (existing (m 'maximum) (and (eq courbe{m} spectre-initial{sf-fourier})
+					traite-par-fourier{m})))
+       (not (null  spectre-a-construire{sf-fourier} ))) '(spectre-a-construire{sf-fourier} @= nil))
+
+(add-forward-rule 'sf-fourier
+ '(existing (m 'maximum-local) (and (eq courbe{m} spectre-initial{sf-fourier}) 
+				    (> rang-gauche{m} 0) 
+				    (< (car hauteur-du-maximum{m}) 0.5)
+				    (not traite-par-fourier{m}))) '(spectre-a-contruire{sf-fourier} @a (list 'gaussienne hauteur-du-maximum{m} sigma{m} )))
+
+(add-forward-rule 'sf-fourier
+ '(not (existing (m 'maximum-local) (and (eq courbe{m} spectre-initial{sf-fourier})
+					 (> rang-gauche{m} 0) 
+					 (< (car hauteur-du-maximum{m}) 0.5)
+					 (not traite-par-fourier{m})))) '(prog (ll) (setq ll (abcisse-list spectre-initial{sf-fourier}))
+	(spectre-final{sf-fourier} @= (courbe-synthetize spectre-a-construire{sf-fourier} ll))))
+
+(add-backward-chainer 'rrb-fourier '(courbe liste-de-dates-adequates butterworth-limit-up)
+)
+
+(initialize-slot 'rrb-fourier 'liste-de-dates-adequates 
+		 '((determination-means  (rrb-fourier))
+		   (determination-predicat (lambda (object slot conclusion) t))))
+
+(initialize-slot 'rrb-fourier 'butterworth-limit-up 
+		 '((determination-means  (rrb-fourier))
+		   (determination-predicat (lambda (object slot conclusion) t))))
+
+(add-backward-rule 'rrb-fourier
+ '(existing (o 'objectif) (eq echeance-d-etude{o} 'courte)) '( let (current-courbe) 
+        (setq current-courbe courbe-etudiee{o})
+        (genere-date-list (time- ($ current-courbe 'derniere-date) 10) 30)) '(liste-de-dates-adequates{b} backward-chainer)
+)
+
+(add-backward-rule 'rrb-fourier
+ '(existing (o 'objectif) (eq echeance-d-etude{o} 'moyenne)) '( let (current-courbe) 
+        (setq current-courbe courbe-etudiee{o})
+        (genere-date-list (time- ($ current-courbe 'derniere-date) 30) 90)) '(liste-de-dates-adequates{b} backward-chainer)
+)
+
+(add-backward-rule 'rrb-fourier
+ '(existing (o 'objectif) (eq echeance-d-etude{o} 'longue)) '( let (current-courbe) 
+        (setq current-courbe courbe-etudiee{o})
+        (genere-date-list (time- ($ current-courbe 'derniere-date)  90) 360 )) '(liste-de-dates-adequates{b} backward-chainer)
+)
+
+(add-backward-rule 'rrb-fourier
+ '(existing (o 'objectif)  (eq echeance-d-etude{o} 'courte)) '4.0 '(butterworth-limit-up{b} backward-chainer)
+)
+
+(add-backward-rule 'rrb-fourier
+ '(existing (o 'objectif)  (eq echeance-d-etude{o} 'moyenne)) '12.0 '(butterworth-limit-up{b} backward-chainer)
+)
+
+(add-backward-rule 'rrb-fourier
+ '(existing (o 'objectif)  (eq echeance-d-etude{o} 'longue)) '30.0 '(butterworth-limit-up{b} backward-chainer)
+)
+
+;base de regle de redaction du rapport
+
+(add-forward-chainer 'rrf-fourier '(courbe-a-analyser conclusion )
+)
+
+(add-forward-rule 'rrf-fourier
+ '(existing (o 'objectif) 
+	    (existing (m 'extremum-local) (and (eq courbe{m}  courbe-a-analyser{rrf-fourier})
+					       (time-> (car hauteur{m})
+						       (car ($ courbe{rrb-fourier} 'dernier-point)))
+					       (not (existing (g 'extremum-local)
+							      (and (eq courbe{g}  courbe-a-analyser{rrf-fourier})
+								   (time-> (car hauteur{g})
+									   (car ($ courbe{rrb-fourier} 'dernier-point)))
+								   (< rang{g} rang{m})))))))					    
+ '(let (result sens objectif-prix echeance) 
+    (setq sens (cond ((is-a m 'maximum-local) 'haussier)
+		     ((is-a m 'minimum-local) 'baissier)))
+    (setq objectif-prix (+ (cadr ($ courbe{rrb-fourier} 'dernier-point))
+			   (-  (cadr hauteur{m})
+			       (cadr ($ courbe-a-analyser{rrf-fourier} 'dernier-point)))))
+    (setq echeance (courbe-distance-time (car ($ courbe{rrb-fourier} 'dernier-point))
+					 (car hauteur{m})))
+    (setq result (list sens 
+		       (list 'objectif-prix objectif-prix)
+		       (list 'echeance echeance 'jours)))
+    (conclusion{rrf-fourier} @= result)))
+
+;base de regle de redaction du rapport 2
+
+(add-forward-chainer 'rrf-fourier-2 '(courbe-a-analyser conclusion )
+)
+
+(add-forward-rule 'rrf-fourier-2
+ '(existing (o 'objectif) 
+	    (existing (m 'extremum-local) (and (eq courbe{m}  courbe-a-analyser{rrf-fourier-2})
+					       (> (car hauteur{m})
+						  (car ($ courbe{rrb-fourier} 'dernier-point)))
+					       (not (existing (g 'extremum-local)
+							      (and (eq courbe{g}  courbe-a-analyser{rrf-fourier-2})
+								   (> (car hauteur{g})
+								      (car ($ courbe{rrb-fourier} 'dernier-point)))
+								   (< rang{g} rang{m})))))))					    
+ '(let (result sens objectif-prix echeance) 
+    (setq sens (cond ((is-a m 'maximum-local) 'haussier)
+		     ((is-a m 'minimum-local) 'baissier)))
+    (setq objectif-prix (+ (cadr ($ courbe{rrb-fourier} 'dernier-point))
+			   (-  (cadr hauteur{m})
+			       (cadr ($ courbe-a-analyser{rrf-fourier-2} 'dernier-point)))))
+    (setq echeance (-  (car hauteur{m})
+		       (car ($ courbe{rrb-fourier} 'dernier-point))))
+    (setq result (list sens 
+		       (list 'objectif-prix objectif-prix)
+		       (list 'echeance echeance 'jours)))
+    (conclusion{rrf-fourier-2} @= result)))
+
+;TESTS ET FONCTIONS DIVERSES
+
+(de dpp1 ()
+    (setq a ($ 'courbe-2d 'instanciate nil nil))
+
+    ($ a 'put-value 'body 
+       '#[((87 1 1 0 0 0)  10.) ((87 1 2 0 0 0)  12.) ((87 1 3 0 0 0) 13.) ((87 1 4 0 0 0)  12.) ((87 1 5 0 0 0) 11.)
+       ((87 1 6 0 0 0)  10.) ((87 1 7 0 0 0)  12.) ((87 1 8 0 0 0) 13.) ((87 1 9 0 0 0)  12.) ((87 1 10 0 0 0) 11.)])
+ 
+    ($ a 'put-value 'xtype 'time)
+    ($ a 'put-value 'ytype 'real)
+    ($ a 'put-value 'pointeur 0)
+    ($ a 'put-value 'pointeur-max 9)
+    (print (get-slot-value a 'body))
+    (setq b ($ a 'somme-de-fourier))
+    (print (get-slot-value b 'body))
+    (setq c ($ b 'inverse-de-fourier (courbe-list-de-date a)))
+    (print (get-slot-value c 'body))
+    nil)
+
+(de dpp2 ()
+    (setq a '(0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1 1.1 1.2 1.3 1.4 1.5 1.6))
+    (setq b (synthetize-butterworth 0.6 a 3))
+    (print (get-slot-value b 'body))
+    nil)
+
+(de dpp3 ()
+    (prog (w a r)
+	  (setq *creation-trace-flag* t)
+	  (setq w ($ 'objectif 'instanciate nil nil))
+	  (determine w 'echeance-d-etude)
+	  (setq a ($ 'courbe-2d 'instanciate nil nil))
+
+	  ($ a 'put-value 'body 
+	     '#[((87 1 1 0 0 0)  10.) ((87 1 2 0 0 0)  12.) ((87 1 3 0 0 0) 13.) ((87 1 4 0 0 0)  12.) ((87 1 5 0 0 0) 11.)
+	     ((87 1 6 0 0 0)  10.) ((87 1 7 0 0 0)  12.) ((87 1 8 0 0 0) 13.) ((87 1 9 0 0 0)  12.) ((87 1 10 0 0 0) 11.)]) 
+	  ($ a 'put-value 'xtype 'date)
+	  ($ a 'put-value 'ytype 'real)
+	  ($ a 'put-value 'pointeur 0)
+	  ($ a 'put-value 'pointeur-max 9)
+
+	  ($  w 'put-value 'courbe-etudiee a)
+    
+	  (setq r ($ 'expert-fourier 'what-do-you-think-about a))
+	  (print "la conclusion du rapport est " (get-slot-value r 'conclusion))
+	  nil
+	  ))
+
+(de dpp4 ()
+    (let (r)
+      (setq w ($ 'objectif 'instanciate nil nil))
+      (determine w 'echeance-d-etude)
+      (epp1)
+      ($  w 'put-value 'courbe-etudiee as)
+      (setq r ($ 'expert-fourier 'what-do-you-think-about as))
+      (print "la conclusion du rapport est " (get-slot-value r 'conclusion))
+      nil))
+
+(de dd ()
+     (dpp4))
+

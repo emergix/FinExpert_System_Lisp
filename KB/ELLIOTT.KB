@@ -1,0 +1,926 @@
+
+;fichier contenant les objects et fonctions intervenant dans l 'implantation du savoir-faire
+; d'elliott a l aide du paradigme scanner-parser
+
+
+
+
+                                 ;BASE DE CONNAISSANCE D EXPLOITATION DES FONCTIONS DE RECHERCHE
+
+
+
+(user-instanciate 'expert 'expert-elliott nil)
+(setf (get-slot-value 'expert-elliott 'body '(b1-elliott b2-elliott b3-elliott f-elliott f2-elliott)))
+(add-method 'expert-elliott 'expert-elliott-what-do-you-think-about 'what-do-you-think-about 'superseed)
+
+
+(de expert-elliott-what-do-you-think-about (expert courbe )
+    (prog (x0 r)
+	  (setq c ($ courbe 'expand 'convert-time))                   ;on s assure que les dates de la courbe 
+                                                                      ;ont ete converti en jours
+	  ($ c 'expand 'extremum-local 'objects nil)                  ;et que la courbe a ete analysee en terme
+                                                                      ;d extremums
+          (setf (get-slot-value f-elliott 'courbe) c)
+          (setq x0 ($ b3-elliott 'determine b3-elliott 'rang-debut-de-vague))
+          (setf (get-slot-value f-elliott 'rang-debut-de-vague-superieur) x0)
+          (setf (get-slot-value f-elliott 'rang-debut-de-vague-cherchee) x0)
+          ($ f-elliott 'sature)
+          (setf (get-slot-value f2-elliott 'courbe) c)
+          ($ f2-elliott 'sature)
+          (setq r (create-instance-rapport '()))
+	  (setf (get-slot-value r 'technique) 'elliott)
+	  (setf (get-slot-value r 'description-technique)
+		"analyse des vagues d elliott presentes dans la courbe")
+	  (setf (get-slot-value r 'courbe) c)
+	  (setf (get-slot-value r 'conclusion) (get-slot-value 'f2-elliott 'conclusion)) 
+	  (return r)))
+          
+
+
+;forward-chaineur effectuant le travail d'ordonnancement et de backtracking dans le  scanning et le parsing
+;figure est le slot ou l on stocke la construction en phase de realisation
+(add-forward-chainer 'f-elliott '(courbe
+                                  vague-superieure
+                                  sens-superieur
+                                  rang-debut-de-vague-superieur
+                                  vague-cherchee
+                                  sens-cherche
+                                  rang-debut-de-vague-cherchee
+                                  figure
+                                  pret-a-scanner))
+
+(de vague-de-base-traite (vg )
+    (or (null (get-slot-value vg 'courbe) )               ;afin que que l on ne s occupe plus des vagues d un autre monde
+        (and (get-slot-value vg 'figure) 
+             (get-slot-value vg 'vague))))
+
+
+(add-forward-rule
+ 'f-elliott
+ '(existing (cc 'courbe-2d) 
+           (and (for-all (vg 'vague-de-base) (vague-de-base-traite vg))
+                (< (get-slot-value f-elliott 'rang-debut-de-vague-cherchee) 
+                   (get-slot-value (get-slot-value f-elliott 'courbe) 'pointeur-max))))
+ 
+ '(progn (create-possibilities '( 
+                                 (progn (setf (get-slot-value f-elliott 'vague-superieure) 
+                                              (user-instanciate 'figure-en-5-vagues nil nil))
+                                        (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure) 
+                                                              'courbe) (get-slot-value f-elliott 'courbe))
+                                        (setf (get-slot-value f-elliott 'sens-superieur) 'haussier)
+                                        (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure) 
+                                                              'sens) (get-slot-value f-elliott 'sens-superieur))
+                                        (setf (get-slot-value f-elliott 'vague-cherchee) 'vague-1)
+                                        (setf (get-slot-value f-elliott 'pret-a-scanner) 'oui)
+                                        
+                                        )
+
+                                 (progn (setf (get-slot-value f-elliott 'vague-superieure)
+                                              (user-instanciate 'figure-en-5-vagues nil nil))
+                                        (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure) 
+                                                              'courbe) (get-slot-value f-elliott 'courbe))
+                                        (setf (get-slot-value f-elliott 'sens-superieur) 'baissier)
+                                        (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure) 
+                                                              'sens) (get-slot-value f-elliott 'sens-superieur))
+                                        (setf (get-slot-value f-elliott 'vague-cherchee) 'vague-1)
+                                        (setf (get-slot-value f-elliott 'pret-a-scanner) 'oui)
+                                        )
+
+                                 (progn (setf (get-slot-value f-elliott 'vague-superieure) 
+                                              (user-instanciate 'figure-en-3-vagues nil nil))
+                                        (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure) 
+                                                              'courbe) (get-slot-value f-elliott 'courbe))
+                                        (setf (get-slot-value f-elliott 'sens-superieur) 'haussier)
+                                        (setf (get-slot-value f-elliott 'vague-cherchee) 'vague-a)
+                                        (setf (get-slot-value f-elliott 'pret-a-scanner) 'oui)
+                                        )
+
+                                 (progn (setf (get-slot-value f-elliott 'vague-superieure) 
+                                              (user-instanciate 'figure-en-3-vagues nil nil))
+                                        (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure) 
+                                                              'courbe) (get-slot-value f-elliott 'courbe))
+                                        (setf (get-slot-value f-elliott 'sens-superieur) 'baissier)
+                                        (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure) 
+                                                              'sens) (get-slot-value f-elliott 'sens-superieur))
+                                        (setf (get-slot-value f-elliott 'vague-cherchee) 'vague-a)
+                                        (setf (get-slot-value f-elliott 'pret-a-scanner) 'oui)
+                                        )
+                                
+                                 (progn (setf (get-slot-value f-elliott 'vague-superieure) 
+                                              (user-instanciate 'figure-en-9-vagues nil nil))
+                                        (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure) 
+                                                              'courbe) (get-slot-value f-elliott 'courbe))
+                                        (setf (get-slot-value f-elliott 'sens-superieur) 'haussier)
+                                        (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure) 
+                                                              'sens) (get-slot-value f-elliott 'sens-superieur))
+                                        (setf (get-slot-value f-elliott 'vague-cherchee) 'vague-1)
+                                        (setf (get-slot-value f-elliott 'pret-a-scanner) 'oui))
+
+                                 (progn (setf (get-slot-value f-elliott 'vague-superieure) 
+                                              (user-instanciate 'figure-en-9-vagues nil nil))
+                                        (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure) 
+                                                              'courbe) (get-slot-value f-elliott 'courbe))
+                                        (setf (get-slot-value f-elliott 'sens-superieur) 'baissier)
+                                        (setf (get-slot-value (get-slot-value f-elliott 'vague-superieure) 
+                                                              'sens) (get-slot-value f-elliott 'sens-superieur))
+                                        (setf (get-slot-value f-elliott 'vague-cherchee) 'vague-1)
+                                        (setf (get-slot-value f-elliott 'pret-a-scanner) 'oui))
+                                
+                                   )
+                               nil 
+                               'hypothese-principale-sur-les-vagues
+                               'hypothetical-wawe)
+      )
+ "formulation des 6 formes possibles de vagues d elliott")
+
+(add-forward-rule
+ 'f-elliott
+ '(existing (cc 'courbe-2d) 
+            (and (eq (get-slot-value f-elliott 'pret-a-scanner) 'oui)
+                 (for-all (vg 'vague-de-base) (vague-de-base-traite vg))
+                 (< (get-slot-value f-elliott 'rang-debut-de-vague-cherchee) 
+                    (get-slot-value (get-slot-value f-elliott 'courbe) 'pointeur-max))))
+
+        
+ '(progn (elliott-scanning)
+         (setf (get-slot-value f-elliott 'pret-a-scanner) 'non))
+ "scanne une nouvelle premiere vague")
+         
+
+(de vague-superieure-traite (vgs)
+    (or (null vgs)
+        (every '(lambda (x) (get-slot-value vgs x)) 
+               (get-slot-value vgs 'liste-des-vagues))))
+
+(de prochaine-vague-a-traiter (vg-list vg)
+    (prog (vg-list-1)
+          (setq vg-list-1 vg-list)
+          loop
+          (cond ((and (eq (car vg-list-1) vg)
+                     (null (cadr vg-list-1)))
+                 (return nil))
+                ((and (eq (car vg-list-1) vg)
+                     (cadr vg-list-1))
+                 (return (cadr vg-list-1))))
+          (setq vg-list-1 (cdr vg-list-1))
+          (when (null vg-list-1) (return nil))
+          (go loop)))
+                    
+(add-forward-rule 
+ 'f-elliott
+ '(existing (vg 'vague-de-base) (and (not (vague-de-base-traite vg))
+                                     (not (vague-superieure-traite vague-superieure{f-elliott}))
+                                     (< (get-slot-value f-elliott 'rang-debut-de-vague-cherchee) 
+                                        (get-slot-value (get-slot-value f-elliott 'courbe) 'pointeur-max))
+                                     (get-slot-value f-elliott 'vague-cherchee)
+                                     (user-get-value vg 'acceptables-ratios)))
+'(prog  (vgn vgs nvg)
+        (setq vgn (get-slot-value f-elliott 'vague-cherchee))
+        (setq vgs (get-slot-value f-elliott 'vague-superieure))
+        (setf (get-slot-value vgs vgn) vg)
+        (setf (get-slot-value vg 'figure) vgs)
+        (setf (get-slot-value vg 'vague) vgn)
+        (setq nvg (prochaine-vague-a-traiter (get-slot-value vgs 'liste-des-vagues) vgn))
+        (cond(nvg (setf (get-slot-value f-elliott 'vague-cherchee) nvg)
+                  (setf (get-slot-value f-elliott 'rang-debut-de-vague-cherchee) (get-slot-value vg 'rang-fin))
+                  (elliott-scanning))
+             (t nil)))
+"integration du scanning d une vague")
+
+
+
+(add-forward-rule 
+ 'f-elliott
+ '(existing (vg 'vague-de-base) (and (not (vague-de-base-traite vg))
+                                     (not (vague-superieure-traite vague-superieure{f-elliott}))
+                                     (< (get-slot-value f-elliott 'rang-debut-de-vague-cherchee) 
+                                        (get-slot-value (get-slot-value f-elliott 'courbe) 'pointeur-max))
+                                     (get-slot-value f-elliott 'vague-cherchee)
+                                     (not (user-get-value vg 'acceptables-ratios))))
+ '(progn (elliott-rescanning))
+ "demande de rescanning d une vague")
+
+
+
+                                
+                                             
+(user-instanciate 'metaclass 'figure-d-elliott nil)
+(add-slot-user 'figure-d-elliott 'hauteur-debut 'instance)
+(add-slot-user 'figure-d-elliott 'hauteur-fin 'instance)
+(add-slot-user 'figure-d-elliott 'rang-debut 'instance)
+(add-slot-user 'figure-d-elliott 'rang-fin 'instance)
+(add-slot-user 'figure-d-elliott 'liste-des-vagues 'instance)
+(add-slot-user 'figure-d-elliott 'courbe 'instance)
+(add-slot-user 'figure-d-elliott 'sens 'instance)
+
+(user-instanciate 'metaclass 'figure-en-5-vagues '(figure-d-elliott))
+(add-slot-user 'figure-en-5-vagues 'vague-1 'instance)
+(add-slot-user 'figure-en-5-vagues 'vague-2 'instance)
+(add-slot-user 'figure-en-5-vagues 'vague-3 'instance)
+(add-slot-user 'figure-en-5-vagues 'vague-4 'instance)
+(add-slot-user 'figure-en-5-vagues 'vague-5 'instance)
+
+(setf (get-fondamental-value 'figure-en-5-vagues 'liste-des-vagues)
+      '(vague-1 vague-2 vague-3 vague-4 vague-5))
+
+(user-instanciate 'metaclass 'figure-en-3-vagues '(figure-d-elliott))
+(add-slot-user 'figure-en-3-vagues 'vague-a 'instance)
+(add-slot-user 'figure-en-3-vagues 'vague-b 'instance)
+(add-slot-user 'figure-en-3-vagues 'vague-c 'instance)
+
+(setf (get-fondamental-value 'figure-en-3-vagues 'liste-des-vagues)
+      '(vague-a vague-b vague-c))
+                     
+
+(user-instanciate 'metaclass 'figure-en-9-vagues '(figure-d-elliott))
+(add-slot-user 'figure-en-9-vagues 'vague-1 'instance)
+(add-slot-user 'figure-en-9-vagues 'vague-2 'instance)
+(add-slot-user 'figure-en-9-vagues 'vague-3 'instance)
+(add-slot-user 'figure-en-9-vagues 'vague-4 'instance)
+(add-slot-user 'figure-en-9-vagues 'vague-5 'instance)
+(add-slot-user 'figure-en-9-vagues 'vague-6 'instance)
+(add-slot-user 'figure-en-9-vagues 'vague-7 'instance)
+(add-slot-user 'figure-en-9-vagues 'vague-8 'instance)
+(add-slot-user 'figure-en-9-vagues 'vague-9 'instance)
+
+(setf (get-fondamental-value 'figure-en-9-vagues 'liste-des-vagues)
+      '(vague-1 vague-2 vague-3 vague-4 vague-5 vague-6 vague-7 vague-8 vague-9))
+                     
+
+
+
+(user-instanciate 'metaclass  'vague-de-base nil )
+(add-slot-user 'vague-de-base 'hauteur-debut 'instance)
+(add-slot-user 'vague-de-base 'hauteur-fin 'instance)
+(add-slot-user 'vague-de-base 'rang-debut 'instance)
+(add-slot-user 'vague-de-base 'rang-fin 'instance)
+(add-slot-user 'vague-de-base 'courbe 'instance)
+(add-slot-user 'vague-de-base 'extremum-debut 'instance)
+(add-slot-user 'vague-de-base 'extremum-fin 'instance)
+(add-slot-user 'vague-de-base 'sens 'instance)
+(add-slot-user 'vague-de-base 'figure 'instance)
+(add-slot-user 'vague-de-base 'vague 'instance)
+(add-slot-user 'vague-de-base 'achevee 'instance)
+(add-slot-user 'vague-de-base 'ratios-acceptabilite 'instance)
+(add-attribute-user 'vague-de-base 'acceptables-ratios 'vague-de-base-acceptables-ratios 'instance)
+
+
+(de vague-de-base-acceptables-ratios (object slot)
+    ($ b1-elliott 'determine object 'ratios-acceptabilite))
+
+
+;backward-chaineur qui determine ratios-acceptabilite{vg} ou vg est une vague de base
+;est un des piliers de la theorie d elliott
+;on accede au contexte de la constructio par les slots de f-elliott
+;doit retourner t si l analyse  a base de ratio s avere satisfaisante nil sinon
+
+(add-backward-chainer 'b1-elliott '())
+(set-determination-slot 'vague-de-base '(ratios-acceptabilite))
+
+;predicat flous utilises pour quantifier les notions floues
+; premierement predicats utilises pour exprimer les relations = , > et  < floues
+
+(de =p (x y deltapourcent)
+    (or (and (not (equal x 0.))
+              (< (/ (- y x) x) (/ deltapourcent 100.))
+              (> (/ (- y x) x) (/ deltapourcent 100.)))
+        (>= deltapourcent 100.)))
+
+(de >p (x y deltapourcent)
+    (> x (* (- 1 (/ deltapourcent 100.)) y)))
+
+
+
+(de <p (x y deltapourcent)
+    (< x (* (+ 1 (/ deltapourcent 100.)) y)))
+
+; deuxiemement predicats utilisee pour exprimer les relations >> et << (tres superieur et tres inferieur respectivement)
+
+(de >>p (x y deltapourcent)
+    (> x (* (+ 1 (/ deltapourcent 100.)) y)))
+
+
+
+(de <<p (x y deltapourcent)
+    (< x (* (/ deltapourcent 100.)) y))
+
+
+(de longueur-de-vague (vg)
+    (abs (- (cadr (get-slot-value vg 'hauteur-debut))
+            (cadr (get-slot-value vg 'hauteur-fin)))))
+
+
+;la premiere vague est toujours acceptee d office
+
+(add-backward-rule
+ 'b1-elliott
+ '(memq vague-cherchee{f-elliott} '(vague-1 vague-a))
+ 't
+ '(ratios-acceptabilite{vg} vague-de-base)
+ "acceptation de la premiere vague")
+
+
+;il faut que le retracement ne soit pas trop important
+
+(add-backward-rule
+ 'b1-elliott
+ '(and (memq vague-cherchee{f-elliott} '(vague-2))
+       (<p (longueur-de-vague vg)
+           (longueur-de-vague  (get-slot-value vague-superieure{f-elliott} 'vague-1)) 
+           50.))
+ 't
+ '(ratios-acceptabilite{vg} vague-de-base)
+ "acceptation de la deuxieme vague si retracement pas trop important")
+
+
+;comparaison de la longueur de la vague-3 avec celles des autres vagues
+
+(add-backward-rule
+ 'b1-elliott
+ '(and (memq vague-cherchee{f-elliott} '(vague-5))
+       (and (< (longueur-de-vague vg)
+               (longueur-de-vague (get-slot-value  vague-superieure{f-elliott} 'vague-4)))
+            (< (longueur-de-vague vg)
+               (longueur-de-vague (get-slot-value  vague-superieure{f-elliott} 'vague-3)))
+            (< (longueur-de-vague vg)
+               (longueur-de-vague (get-slot-value  vague-superieure{f-elliott} 'vague-2)))
+            (< (longueur-de-vague vg)
+               (longueur-de-vague (get-slot-value  vague-superieure{f-elliott} 'vague-1)))))
+            
+ 'nil
+ '(ratios-acceptabilite{vg} vague-de-base)
+ "comparaison de la vague-3 avec les autres vagues")
+
+
+;comparaison vague-1 vague-4
+
+(add-backward-rule
+ 'b1-elliott
+ '(and (memq vague-cherchee{f-elliott} '(vague-4))
+       (or (and (eq sens-superieur{f-elliott} 'haussier)
+                (< (cadr hauteur-fin{vg})
+                   (cadr (get-slot-value (get-slot-value  vague-superieure{f-elliott} 'vague-1) 'hauteur-fin))))
+           (and (eq sens-superieur{f-elliott} 'baissier)
+                (< (cadr (get-slot-value (get-slot-value  vague-superieure{f-elliott} 'vague-1) 'hauteur-fin))
+                   (cadr hauteur-fin{vg})))))           
+ 'nil
+ '(ratios-acceptabilite{vg} vague-de-base)
+ "comparaison de la vague 4 avec la vague 1")
+
+
+;comparaison vague-a vague-c
+
+(add-backward-rule
+ 'b1-elliott
+ '(and (memq vague-cherchee{f-elliott} '(vague-c))
+       (or (and (eq sens-superieur{f-elliott} 'haussier)
+                (< (cadr hauteur-debut{vg})
+                   (cadr (get-slot-value (get-slot-value  vague-superieure{f-elliott} 'vague-a) 'hauteur-debut))))
+           (and (eq sens-superieur{f-elliott} 'baissier)
+                (< (cadr (get-slot-value (get-slot-value  vague-superieure{f-elliott} 'vague-a) 'hauteur-debut))
+                   (cadr hauteur-debut{vg})))))           
+ 'nil
+ '(ratios-acceptabilite{vg} vague-de-base)
+ "comparaison de la vague a avec la vague c")
+
+
+;la longueur de la vague-9 et celle de la vague-1 doivent etre a peu pres egale
+
+(add-backward-rule
+ 'b1-elliott
+ '(and (eq vague-superieure{f-elliott} 'figure-en-9-vagues)
+       (eq vague-cherchee{f-elliott} 'vague-9)
+       (eq achevee{vg} 'oui)
+       (not (=p (longueur-de-vague vg)
+                (longueur-de-vague (get-slot-value  vague-superieure{f-elliott} 'vague-1))
+                10)))
+ 'nil
+ '(ratios-acceptabilite{vg} vague-de-base)
+ "comparaison de la vague 1 avec la vague 9")
+
+;si la vague-3 est egale a la vague-1 , la longueur de la vague-5 doit etre tres superieure a celle de la vague-1 
+
+(add-backward-rule
+ 'b1-elliott
+ '(and (eq vague-superieure{f-elliott} 'figure-en-5-vagues)
+       (eq vague-cherchee{f-elliott} 'vague-5)
+       (eq achevee{vg} 'oui)
+       (=p (longueur-de-vague (get-slot-value  vague-superieure{f-elliott} 'vague-1))
+           (longueur-de-vague (get-slot-value  vague-superieure{f-elliott} 'vague-3))
+                20)
+       (not (>>p (longueur-de-vague vg)
+                (longueur-de-vague (get-slot-value  vague-superieure{f-elliott} 'vague-1))
+                20.)))
+ 'nil
+ '(ratios-acceptabilite{vg} vague-de-base)
+ "vague-1=vague-3 => vague-5 >> vague-1")
+
+
+;si la vague-3 est egale a la vague-1 , la vague-5 doit mesurer aux alentour de 1.618 fois la progression jusqu au top de la vague-3
+
+(add-backward-rule
+ 'b1-elliott
+ '(and (eq vague-superieure{f-elliott} 'figure-en-5-vagues)
+       (eq vague-cherchee{f-elliott} 'vague-5)
+       (eq achevee{vg} 'oui)
+       (=p (longueur-de-vague (get-slot-value  vague-superieure{f-elliott} 'vague-1))
+           (longueur-de-vague (get-slot-value  vague-superieure{f-elliott} 'vague-3))
+                20)
+       (not (=p (* (+ (- (longueur-de-vague (get-slot-value  vague-superieure{f-elliott} 'vague-1))
+                         (longueur-de-vague (get-slot-value  vague-superieure{f-elliott} 'vague-2)))
+                      (longueur-de-vague (get-slot-value  vague-superieure{f-elliott} 'vague-3)))
+                   1.618)
+                (longueur-de-vague vg)
+                20)))
+ 'nil
+ '(ratios-acceptabilite{vg} vague-de-base)
+ "vague-3 = vague-5 et vague-5= 1.618 * progression")
+
+;la vague-c doit descendre par rapport au bottom de la vague-b de 0.618 fois la vague-a
+
+(add-backward-rule
+ 'b1-elliott
+ '(and (eq vague-superieure{f-elliott} 'figure-en-3-vagues)
+       (eq vague-cherchee{f-elliott} 'vague-c)
+       (eq achevee{vg} 'oui)
+       (not (=p (- (longueur-de-vague vg)
+                   (longueur-de-vague (get-slot-value  vague-superieure{f-elliott} 'vague-b)))
+                (* 0.618 (longueur-de-vague (get-slot-value  vague-superieure{f-elliott} 'vague-a)))
+                20)))
+ 'nil
+ '(ratios-acceptabilite{vg} vague-de-base)
+ "vague-c= bottom de vague-b - 0.618 * vague-a")
+
+
+ 
+
+
+(user-instanciate 'metaclass  'hypothetical-wawe '(hypothetical-world))
+(add-slot-user 'hypothetical-wawe 'wawe 'instance)
+; savoir faire d 'emploi des differentes methodes pour trouver les vagues pertinentes d elliott
+
+(de elliott-scanning ()
+
+ (prog(w)
+      (setq w (determine-vague-de-base (get-slot-value f-elliott 'courbe)
+                                       (get-slot-value f-elliott 'rang-debut-de-vague-cherchee)
+                                       2.1))
+      (trace-main-events (list 8 "scanning" (get-slot-value w 'rang-debut) (get-slot-value w 'rang-fin) ))
+      (return w)))
+
+
+
+       ;fonctions de scanning
+
+;une fonction de scanning ou scanner doit prendre en argument une courbe  une abcisse et des parametres et 
+;doit retourner une vague
+
+(de determine-vague-de-base (courbe rang-debut retracement-acceptable)
+    (prog (h rmax plus-haut plus-bas r c sens preceding-c preceding-sens d rang-plus-haut rang-plus-bas w wx)
+          (setq h (get-slot-value courbe 'body))
+          (setq rmax (get-slot-value courbe 'pointeur-max))
+          (when (>= rang-debut rmax) (return nil))
+          (setq r rang-debut)
+          (setq c (cadr (vref h r)))
+          (setq rang-plus-haut r)
+          (setq rang-plus-bas r)
+          (setq plus-haut c)
+          (setq plus-bas c)
+          (setq sens nil)
+          loop
+          (setq r (1+ r))
+          (when (> r rmax) 
+                (setq r (1- r))
+                (go fin))
+          (setq preceding-c c)
+          (setq preceding-sens sens)
+          (setq c (cadr (vref h r)))
+          (cond((> c plus-haut)
+                (setq plus-haut c)
+                (setq rang-plus-haut r)))
+          (cond((< c plus-bas)
+                (setq plus-bas c)
+                (setq rang-plus-bas r)))
+          (setq d (/(+ plus-haut plus-bas) 2.))
+          (cond((>= c d) (setq sens 'haussier))
+               (t (setq sens 'baissier)))
+          (when (and (eq sens 'haussier)
+                     (> (abs (- c plus-haut)) retracement-acceptable))
+                (go stop-hausse))
+          (when (and (eq sens 'baissier)
+                     (> (abs (- c plus-bas)) retracement-acceptable))
+                (go stop-baisse))
+          (go loop)
+          stop-hausse
+          (setq w (user-instanciate 'vague-de-base nil nil))
+          (setf (get-slot-value w 'hauteur-debut) (vref h rang-debut))
+          (setf (get-slot-value w 'hauteur-fin) (vref h rang-plus-haut))
+          (setf (get-slot-value w 'rang-debut) rang-debut)
+          (setf (get-slot-value w 'rang-fin) rang-plus-haut)
+          (setf (get-slot-value w 'courbe) courbe)
+          (setf (get-slot-value w 'extremum-debut) (find-extremum-already-found courbe rang-debut))
+          (setq wx (find-extremum-already-found courbe rang-plus-haut))
+          (setf (get-slot-value w 'extremum-fin) wx)
+          (setf (get-slot-value w 'sens ) sens)
+          (setf (get-slot-value w 'achevee) 'oui)
+          (setf (get-fondamental-value *current-hypothetical-world* 'wawe) w)
+          (when wx (setf (get-fondamental-value b2-elliott 'extremums-deja-essayes) (list wx)))
+          (setf (get-fondamental-value b2-elliott 'extremum-centre) wx)
+          (go fin-fin)
+          stop-baisse
+          (setq w (user-instanciate 'vague-de-base nil nil))
+          (setf (get-slot-value w 'hauteur-debut) (vref h rang-debut))
+          (setf (get-slot-value w 'hauteur-fin) (vref h rang-plus-bas))
+          (setf (get-slot-value w 'rang-debut) rang-debut)
+          (setf (get-slot-value w 'rang-fin) rang-plus-bas)
+          (setf (get-slot-value w 'courbe) courbe)
+          (setf (get-slot-value w 'extremum-debut) (find-extremum-already-found courbe rang-debut))
+          (setq wx (find-extremum-already-found courbe rang-plus-bas))
+          (setf (get-slot-value w 'extremum-fin) wx)
+          (setf (get-slot-value w 'sens ) sens)
+          (setf (get-slot-value w 'achevee) 'oui)
+          (setf (get-fondamental-value *current-hypothetical-world* 'wawe) w)
+          (when wx (setf (get-fondamental-value b2-elliott 'extremums-deja-essayes) (list wx)))
+          (setf (get-fondamental-value b2-elliott 'extremum-centre) wx)          
+          (go fin-fin)
+          fin
+          (setq w (user-instanciate 'vague-de-base nil nil))
+          (setf (get-slot-value w 'hauteur-debut) (vref h rang-debut))
+          (setf (get-slot-value w 'hauteur-fin) (vref h r))
+          (setf (get-slot-value w 'rang-debut) rang-debut)
+          (setf (get-slot-value w 'rang-fin) r)
+          (setf (get-slot-value w 'courbe) courbe)
+          (setf (get-slot-value w 'extremum-debut) (find-extremum-already-found courbe rang-debut))
+          (setq wx (find-extremum-already-found courbe r))
+          (setf (get-slot-value w 'extremum-fin) wx)
+          (setf (get-slot-value w 'sens ) sens)
+          (setf (get-slot-value w 'achevee) 'non)
+          (setf (get-fondamental-value *current-hypothetical-world* 'wawe) w)
+          (when wx (setf (get-fondamental-value b2-elliott 'extremums-deja-essayes) (list wx)))
+          (setf (get-fondamental-value b2-elliott 'extremum-centre) wx)
+          fin-fin
+          (trace-main-events (list 10 sens rang-plus-bas rang-plus-haut))
+          (return w)))
+
+          
+
+(de find-extremum-already-found (courbe rang)
+    (prog (extre-list extre)
+          (setq extre-list (get-all-instances extremum-local))
+          (any '(lambda (x) (when (and (eq (get-slot-value x 'rang) rang)
+                                       (eq (get-slot-value x 'courbe) courbe))
+                                  (setq extre x)))
+               extre-list)
+          (return extre)))
+
+
+       ;fonction de backtraking du scanneur
+
+(de elliott-rescanning ()
+    (prog (preceding-wawe next-move w wx)
+          (setq preceding-wawe (get-slot-value *current-hypothetical-world* 'wawe))
+          (setf (get-slot-value b2-elliott 'preceding-wawe) preceding-wawe)
+          (undetermine b2-elliott 'next-move)
+          (setf (get-slot-value b2-elliott 'next-move) nil)
+          (setq next-move ($ b2-elliott 'determine b2-elliott 'next-move))
+          (cond((eq (car next-move) 'start-other-extremum)
+                (trace-main-events (list 17 "start-other-extremum"))
+                (when (not (memq (cadr next-move)
+                                 (get-slot-value b2-elliott 'extremums-deja-essayes)))      
+                      (setf (get-slot-value b2-elliott 'extremums-deja-essayes)
+                            (cons (cadr next-move)
+                                  (get-slot-value b2-elliott 'extremums-deja-essayes))))
+                (setq w (user-instanciate 'vague-de-base nil nil))
+                (setf (get-slot-value w 'hauteur-debut) (get-slot-value preceding-wawe 'hauteur-debut))
+                (setf (get-slot-value w 'hauteur-fin) (get-slot-value (cadr next-move) 'hauteur))
+                (setf (get-slot-value w 'rang-debut) (get-slot-value preceding-wawe  'rang-debut))
+                (setf (get-slot-value w 'rang-fin)  (get-slot-value (cadr next-move) 'rang))
+                (setf (get-slot-value w 'courbe)  (get-slot-value (cadr next-move) 'courbe))
+                (setf (get-slot-value w 'extremum-debut) (get-slot-value preceding-wawe  'extremum-debut))
+                (setf (get-slot-value w 'extremum-fin) (cadr next-move))
+                (setf (get-slot-value w 'sens )  (get-slot-value preceding-wawe 'sens))
+                (setf (get-fondamental-value *current-hypothetical-world* 'wawe) w)
+                (setq wx (find-extremum-already-found (get-slot-value (cadr next-move) 'courbe)
+                                                      (get-slot-value (cadr next-move) 'rang)))
+                (when (not (memq wx
+                                 (get-slot-value b2-elliott 'extremums-deja-essayes)))     
+                      (setf (get-slot-value b2-elliott 'extremums-deja-essayes)
+                            (cons wx (get-slot-value b2-elliott 'extremums-deja-essayes))))
+                (go fin))
+               ((eq (car next-move) 'rescan)
+                (trace-main-events (list 17 "rescan"))
+                (setq w (determine-vague-de-base (get-slot-value f-elliott 'courbe) 
+                                                 (get-slot-value preceding-wawe 'rang-debut)
+                                                 (cadr next-move)))
+                (go fin))
+               (t
+                (trace-main-events (list 17 "bacvktrack"))
+                (backtrack)
+                (return nil)))
+          fin
+          (trace-main-events (list 8 "re-scanning" (get-slot-value w 'rang-debut) (get-slot-value w 'rang-fin) ))
+          (return w)))
+              
+
+
+; backward-chaineur servant a determiner quel prochaine vague prendre pour le scanneur
+; le slot preceding-wawe{b2-elliott} a ete rempli
+; le slot extremums-deja-essayes{b2-elliott} doit etre positionne
+; un des pole du savoir faire d elliott . le but est de determiner next-move{b2-elliot}
+; qui peut etre de la forme (start-other-extremum <extremum>)
+;                      ou   (rescan <parametre de retracement>)
+;                      ou vide si on a epuise les possibilite de rescanning
+
+(add-backward-chainer 'b2-elliott '(preceding-wawe 
+                                    extremums-deja-essayes 
+                                    extremum-centre 
+                                    nombre-limite-d-exploration-d-extremum
+                                    next-move))
+(set-determination-slot 'b2-elliott '(next-move))
+(setf (get-fondamental-value b2-elliott 'nombre-limite-d-exploration-d-extremum) 10)
+
+
+(add-backward-rule 
+ 'b2-elliott
+ '(and (eq (length extremums-deja-essayes{b2-elliott}) 1)
+       (let (extrem)
+         (setq extrem (car extremums-deja-essayes{b2-elliott}))
+         (setq extrem  extremum-droit{extrem})
+         extremum-droit{extrem}))
+       
+ ' (let (extrem)
+     (setq extrem (car extremums-deja-essayes{b2-elliott}))
+     (setq extrem  extremum-droit{extrem})
+     (list 'start-other-extremum extremum-droit{extrem}))
+ '(next-move{b} backward-chainer)
+ "si on a deja essaye qu un seul extremum , essayer celui a droite")
+
+(add-backward-rule 
+ 'b2-elliott
+ '(and (eq (length extremums-deja-essayes{b2-elliott}) 1)
+       (let (extrem)
+         (setq extrem (car extremums-deja-essayes{b2-elliott}))
+         (setq extrem  extremum-gauche{extrem})
+         (and (setq extrem  extremum-gauche{extrem})
+              (> rang{extrem} rang-debut-de-vague-cherchee{f-elliott}))
+               ))
+ ' (let (extrem)
+     (setq extrem (car extremums-deja-essayes{b2-elliott}))
+     (setq extrem  extremum-gauche{extrem})
+     (list 'start-other-extremum extremum-gauche{extrem}))
+ '(next-move{b} backward-chainer)
+ "si on a deja essaye qu un seul extremum , essayer celui a gauche")
+
+
+(add-backward-rule
+ 'b2-elliott
+ '(and (> (length extremums-deja-essayes{b2-elliott}) 1)
+       (< (length extremums-deja-essayes{b2-elliott}) nombre-limite-d-exploration-d-extremum{b2-elliott})
+       (existing (extrem anything)
+                 (let (s)
+                   (setq s (find-extremum-frontiere-next-extremum extremums-deja-essayes{b2-elliott} 
+                                                                  extremum-centre{b2-elliott}))
+                   (setq extrem s)
+                   (and s
+                        (> rang{extrem} rang-debut-de-vague-cherchee{f-elliott}))
+                        )))
+ '(list 'start-other-extremum extrem)
+ '(next-move{b} backward-chainer)
+ "si on a deja essaye plus d un extremum , essayer un autre")
+
+
+
+(de find-extremum-frontiere-next-extremum (extre-list centre)
+    (let (result) (setq result (prog (extre-inf extre-sup essai)
+                                     (setq extre-sup centre)
+                                     (setq extre-inf centre)
+                                     aller-dans-les-deux-sens
+                                     (setq extre-sup (get-slot-value extre-sup 'extremum-droit))
+                                     (setq extre-inf (get-slot-value extre-inf 'extremum-gauche)) 
+                                     (setq extre-sup (get-slot-value extre-sup 'extremum-droit))
+                                     (setq extre-inf (get-slot-value extre-inf 'extremum-gauche))
+                                     (cond((and (null extre-inf)
+                                                (null extre-sup))
+                                           (return nil))
+                                          ((and extre-sup
+                                                (not (memq extre-sup extre-list)))
+                                           (return extre-sup))
+                                          ((and extre-inf
+                                                (not (memq extre-inf extre-list)))
+                                           (return extre-inf))
+                                          ((and extre-inf
+                                                (null extre-sup))
+                                           (go aller-vers-le-bas))
+                                          ((and extre-sup
+                                                (null extre-inf))
+                                           (go aller-vers-le-haut)))
+                                     (go aller-dans-les-deux-sens)
+                                     aller-vers-le-haut
+                                     (setq extre-sup (get-slot-value extre-sup 'extremum-droit))
+                                     (setq extre-sup (get-slot-value extre-sup 'extremum-droit))
+                                     (cond((null extre-sup)
+                                           (return nil))
+                                          ((not (member extre-sup extre-list))
+                                           (return extre-sup)))
+                                     (go aller-vers-le-haut)
+                                     aller-vers-le-bas
+                                     (setq extre-inf (get-slot-value extre-inf 'extremum-gauche))
+                                     (setq extre-inf (get-slot-value extre-inf 'extremum-gauche))
+                                     (cond((null extre-inf)
+                                           (return nil))
+                                          ((not (member extre-inf extre-list))
+                                           (return extre-inf)))
+                                     (go aller-vers-le-bas)))
+         (trace-main-events (list 9 extre-list centre result))
+         result))
+            
+
+
+
+
+;backward-chaineur qui permet de demarrer la reconnaissance d'elliott
+; la variable a determiner est rang-debut-de-vague{b3-elliott}
+
+(add-backward-chainer 'b3-elliott '(rang-debut-de-vague))
+(set-determination-slot 'b3-elliott '(rang-debut-de-vague))
+
+
+
+(add-backward-rule 
+ 'b3-elliott
+ '(existing (a anything)           
+            (for-all (extrem-1 'extremum-local)
+                     such-that (eq courbe{extrem-1} courbe{f-elliott})
+                     (progn (cond ((and (is-a a extremum-local)
+                                        (< (cadr hauteur{extrem-1}) (cadr hauteur{a})))
+                                   (setq a extrem-1))
+                                  ((not (is-a a extremum-local)) (setq a extrem-1)))
+                            t)))
+                                
+                              
+ '( rang{a})
+ '(rang-debut-de-vague{b} backward-chainer)
+ "demarrer avec l extremum le plus bas de la coube")
+
+
+;chaineur servant a effectuer des previsions grace aux vagues d elliott observees
+
+(add-forward-chainer 'f2-elliott '(courbe conclusion))
+
+
+(add-forward-rule
+ 'f2-elliott
+ '(existing (f 'figure-d-elliott)
+            (and (eq courbe{f} courbe{f2-elliott})
+                 (is-a f figure-en-5-vagues)
+                 vague-1{f}
+                 vague-2{f}
+                 vague-3{f}
+                 vague-4{f}
+                 vague-5{f}
+                 (eq sens{f} 'haussier)
+                 (< (cadr (get-slot-value vague-5{f} 'hauteur-fin))
+                    (+ (cadr (get-slot-value vague-1{f} 'hauteur-debut)) 
+                       (* 3.236 (longueur-de-vague vague-1{f}))))))
+ '(progn (conclusion{f2-elliott} @a (list 'hausse-minimale (+ (cadr (get-slot-value vague-1{f} 'hauteur-debut)) 
+                                                              (* 3.236 (longueur-de-vague vague-1{f})))))
+         (conclusion{f2-elliott} @a (list 'hausse-maximale (+ (cadr (get-slot-value vague-4{f} 'hauteur-fin)) 
+                                                              (* 1.618 (+ (longueur-de-vague vague-1{f})
+                                                                          (- (longueur-de-vague vague-2{f}))
+                                                                          (longueur-de-vague vague-3{f})))))))
+         
+ "prevision pour figure d elliott haussiere a 5 vagues")
+
+(add-forward-rule
+ 'f2-elliott
+ '(existing (f 'figure-d-elliott)
+            (and (eq courbe{f} courbe{f2-elliott})
+                 (is-a f figure-en-5-vagues)
+                 vague-1{f}
+                 vague-2{f}
+                 vague-3{f}
+                 vague-4{f}
+                 vague-5{f}
+                 (eq sens{f} 'baissier)
+                 (> (cadr (get-slot-value vague-5{f} 'hauteur-fin))
+                    (- (cadr (get-slot-value vague-1{f} 'hauteur-debut)) 
+                       (* 3.236 (longueur-de-vague vague-1{f}))))))
+ '(progn (conclusion{f2-elliott} @a (list 'baisse-minimale (- (cadr (get-slot-value vague-1{f} 'hauteur-debut)) 
+                                                              (* 3.236 (longueur-de-vague vague-1{f})))))
+         (conclusion{f2-elliott} @a (list 'baisse-maximale (- (cadr (get-slot-value vague-4{f} 'hauteur-fin)) 
+                                                              (* 1.618 (+ (longueur-de-vague vague-1{f})
+                                                                          (- (longueur-de-vague vague-2{f}))
+                                                                          (longueur-de-vague vague-3{f})))))))
+         
+ "prevision pour figure d elliott baissiere a 5 vagues")
+
+
+
+(add-forward-rule
+ 'f2-elliott
+ '(existing (f 'figure-d-elliott)
+            (and (eq courbe{f} courbe{f2-elliott})
+                 (is-a f figure-en-9-vagues)
+                 vague-1{f}
+                 vague-2{f}
+                 vague-3{f}
+                 vague-4{f}
+                 vague-5{f}
+                 vague-6{f}
+                 vague-7{f}
+                 vague-8{f}
+                 vague-9{f}
+                 (eq sens{f} 'haussier)
+                 (< (cadr (get-slot-value vague-5{f} 'hauteur-fin))
+                    (+ (cadr (get-slot-value vague-1{f} 'hauteur-debut)) 
+                       (* 3.236 (longueur-de-vague vague-1{f}))))))
+ '(progn (conclusion{f2-elliott} @a (list 'hausse-minimale (+ (cadr (get-slot-value vague-1{f} 'hauteur-debut)) 
+                                                              (* 3.236 (longueur-de-vague vague-1{f})))))
+         (conclusion{f2-elliott} @a (list 'hausse-maximale (+ (cadr (get-slot-value vague-4{f} 'hauteur-fin)) 
+                                                              (* 1.618 (+ (longueur-de-vague vague-1{f})
+                                                                          (- (longueur-de-vague vague-2{f}))
+                                                                          (longueur-de-vague vague-3{f})
+                                                                          (-(longueur-de-vague vague-4{f}))
+                                                                          (longueur-de-vague vague-5{f})
+                                                                          (-(longueur-de-vague vague-6{f}))
+                                                                          (longueur-de-vague vague-7{f})
+                                                                          ))))))
+         
+ "prevision pour figure d elliott haussiere a 9 vagues")
+
+
+(add-forward-rule
+ 'f2-elliott
+ '(existing (f 'figure-d-elliott)
+            (and (eq courbe{f} courbe{f2-elliott})
+                 (is-a f figure-en-9-vagues)
+                 vague-1{f}
+                 vague-2{f}
+                 vague-3{f}
+                 vague-4{f}
+                 vague-5{f}
+                 vague-6{f}
+                 vague-7{f}
+                 vague-8{f}
+                 vague-9{f}
+                 (eq sens{f} 'baissier)
+                 (< (cadr (get-slot-value vague-5{f} 'hauteur-fin))
+                    (- (cadr (get-slot-value vague-1{f} 'hauteur-debut)) 
+                       (* 3.236 (longueur-de-vague vague-1{f}))))))
+ '(progn (conclusion{f2-elliott} @a (list 'baisse-minimale (- (cadr (get-slot-value vague-1{f} 'hauteur-debut)) 
+                                                              (* 3.236 (longueur-de-vague vague-1{f})))))
+         (conclusion{f2-elliott} @a (list 'baisse-maximale (- (cadr (get-slot-value vague-4{f} 'hauteur-fin)) 
+                                                              (* 1.618 (+ (longueur-de-vague vague-1{f})
+                                                                          (- (longueur-de-vague vague-2{f}))
+                                                                          (longueur-de-vague vague-3{f})
+                                                                          (-(longueur-de-vague vague-4{f}))
+                                                                          (longueur-de-vague vague-5{f})
+                                                                          (-(longueur-de-vague vague-6{f}))
+                                                                          (longueur-de-vague vague-7{f})
+                                                                          ))))))
+         
+ "prevision pour figure d elliott baissiere a 9 vagues")
+
+
+
+ 
+
+
+(add-forward-rule
+ 'f2-elliott
+ '(existing (f 'figure-d-elliott)
+            (and (eq courbe{f} courbe{f2-elliott})
+                 (is-a f figure-en-3-vagues)
+                 vague-1{f}
+                 vague-2{f}
+                 vague-3{f}
+                 (eq sens{f} 'haussier)
+                 (< (cadr (get-slot-value vague-3{f} 'hauteur-fin))
+                    (+ (cadr (get-slot-value vague-2{f} 'hauteur-fin)) 
+                       (* 1.618 (longueur-de-vague vague-1{f}))))))
+ '(progn (conclusion{f2-elliott} @a (list 'hausse-probable (+ (cadr (get-slot-value vague-2{f} 'hauteur-fin)) 
+                                                              (* 1.618 (longueur-de-vague vague-1{f}))))))
+         
+ "prevision pour figure d elliott haussiere a 3 vagues")
+
+
+(add-forward-rule
+ 'f2-elliott
+ '(existing (f 'figure-d-elliott)
+            (and (eq courbe{f} courbe{f2-elliott})
+                 (is-a f figure-en-3-vagues)
+                 vague-1{f}
+                 vague-2{f}
+                 vague-3{f}
+                 (eq sens{f} 'baissier)
+                 (> (cadr (get-slot-value vague-3{f} 'hauteur-fin))
+                    (- (cadr (get-slot-value vague-2{f} 'hauteur-fin)) 
+                       (* 1.618 (longueur-de-vague vague-1{f}))))))
+ '(progn (conclusion{f2-elliott} @a (list 'baisse-probable (- (cadr (get-slot-value vague-2{f} 'hauteur-fin)) 
+                                                              (* 1.618 (longueur-de-vague vague-1{f}))))))
+         
+ "prevision pour figure d elliott baissiere a 3 vagues")
+
+
+
+

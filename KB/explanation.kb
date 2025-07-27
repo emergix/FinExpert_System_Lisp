@@ -1,0 +1,56 @@
+;fichier contenant les fonction relatives aux mecanismes d explication
+
+
+(comline " rm /usr/jupiter/olivier/expert/explanation-and-trace/explanation.expl")
+
+(de trace-main-events (event-0)
+    (prog (event)
+          (setq event (trace-main-events-modify-event event-0))
+          (setq *trace-main-event-buffer* (cons event *trace-main-event-buffer*))
+          (setq *trace-main-event-buffer-count* (1+ *trace-main-event-buffer-count*))
+          (when (> *trace-main-event-buffer-count* 10)
+                (prog (r savechan chan) 
+                      (setq r (reverse *trace-main-event-buffer*))
+                      (setq chan (opena "/usr/jupiter/olivier/expert/explanation-and-trace/explanation.expl"))
+                      (setq savechan (outchan))
+                      (outchan chan)
+                      loop
+                      (when (null r) (go fin))
+                      (let ((#:system:print-for-read t))
+                            (print (car r)))
+                      (setq r (cdr r))
+                      (go loop)
+                      fin
+                      (outchan savechan)
+                      (close chan)
+                      (setq *trace-main-event-buffer* nil)
+                      (setq *trace-main-event-buffer-count* 0)
+                      ))))
+
+
+(de finish-trace-main-events ()
+     (prog (r savechan chan) 
+                      (setq r (reverse *trace-main-event-buffer*))
+                      (setq chan (opena "/usr/jupiter/olivier/expert/explanation-and-trace/explanation.expl"))
+                      (setq savechan (outchan))
+                      (outchan chan)
+                      loop
+                      (when (null r) (go fin))
+                      (let ((#:system:print-for-read t))
+                            (print (car r)))
+                      (setq r (cdr r))
+                      (go loop)
+                      fin
+                      (outchan savechan)
+                      (close chan)
+                      (setq *trace-main-event-buffer* nil)
+                      (setq *trace-main-event-buffer-count* 0)))
+                
+          
+
+(de trace-main-events-modify-event (event)
+    (prog ()
+          (when (eq (car event) 1) (return (append event (list (get-slot-value (caddr event) 'contens-description)))))
+          (when (eq (car event) 2) (return (append event (list (get-slot-value (caddr event) 'contens-description)))))
+          (return event)))
+                

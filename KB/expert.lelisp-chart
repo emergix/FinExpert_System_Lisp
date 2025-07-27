@@ -1,0 +1,67 @@
+(EDLIN)
+(debug t)
+(defun li ()
+  (load "/usr/jupiter/olivier/expert/ilog/loadinterface.lisp")
+  (load "/usr/jupiter/olivier/expert/kb/expertinterface.lisp"))
+(defun lk ()
+  (load "/usr/jupiter/olivier/expert/kb/setf.lisp")
+  (load-kb "/usr/jupiter/olivier/expert/kb/object.lisp")
+  (load-kb "/usr/jupiter/olivier/expert/kb/forward.lisp")
+  (load-kb "/usr/jupiter/olivier/expert/kb/editor.lisp")
+ 
+
+  (load-kb "/usr/jupiter/olivier/expert/kb/explanation.kb")
+  (load-kb "/usr/jupiter/olivier/expert/kb/rapport.kb")
+  (load-kb "/usr/jupiter/olivier/expert/kb/cours.kb")
+  (load-kb "/usr/jupiter/olivier/expert/kb/fonction.kb")
+  (load "/usr/jupiter/olivier/expert/kb/graphics.lisp")
+  (load-kb "/usr/jupiter/olivier/expert/kb/external.lisp")
+  (load-kb "/usr/jupiter/olivier/expert/kb/meta.kb")
+  (load-kb "/usr/jupiter/olivier/expert/kb/base.kb")
+  (load-kb "/usr/jupiter/olivier/expert/kb/technique.kb")
+  (load-kb "/usr/jupiter/olivier/expert/kb/canal.kb")
+  (load-kb "/usr/jupiter/olivier/expert/kb/canalnmm.kb")
+  (load-kb "/usr/jupiter/olivier/expert/kb/canavex.kb")
+  (load-kb "/usr/jupiter/olivier/expert/kb/moving-average.kb")
+  (load-kb "/usr/jupiter/olivier/expert/kb/chart.kb")
+  ;(load-kb "/usr/jupiter/olivier/expert/kb/test.lisp")
+                                        ; (load-kb "/usr/jupiter/olivier/expert/kb/eliot.kb")
+                                        ; (load-kb "/usr/jupiter/olivier/expert/kb/elliott.kb")
+                                        ; (load-kb "/usr/jupiter/olivier/expert/kb/fourier.kb")		
+  (load-kb "/usr/jupiter/olivier/expert/kb/lissage.kb")
+  (load-kb "/usr/jupiter/olivier/expert/kb/test.kb")
+
+
+
+
+
+
+
+  )
+	
+
+(de tp ()
+	(add-application
+		(verticalscroller 0 772 #wd 128
+			(setq *tty-aida-prevu-pour-expert-chart* (ttyapplication 0 0 #wd #hd))))
+	(add-application
+		(box 0 170 (div #wd 2) 300))
+	(add-application
+		(box (div #wd 2) 170 (div #wd 2) 300))
+	(add-application
+		(box 0 470 (div #wd 2) 300))
+	(add-application
+		(box (div #wd 2) 470 (div #wd 2) 300))
+	
+	
+	)
+	
+(let ((#:sys-package:tty 'tty)) (li)
+                                (lk)
+	                       )
+(tp)
+(kb-use)
+
+
+
+

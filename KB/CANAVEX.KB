@@ -1,0 +1,1207 @@
+; fichier comprennant l extracteur de droite interessantes
+
+;fixation du flag indiquant la mise en fonction du filtrage par regle du generateur
+
+(setq *generateur-de-droite-flag-de-filtrage-par-regle* t)
+
+
+;fixation du flag indiquant la mise en fonction du filtrage par distance du generateur
+
+(setq *generateur-de-droite-flag-de-filtrage-par-distance-et-mention* t)
+
+(de courbe-2d-canavex (courbe epsilon precision-brute pcentre rayon )
+    (setq *generateur-de-droite-flag-de-sens* nil)
+    (courbe-2d-canavex-haut courbe epsilon precision-brute pcentre rayon )
+    (courbe-2d-canavex-bas courbe epsilon precision-brute pcentre rayon ))
+
+
+(de courbe-2d-canavex-test (courbe epsilon precision-brute pcentre rayon cote)
+    (setq *generateur-de-droite-flag-de-sens* nil)
+    (cond ((eq cote 'superieur) (courbe-2d-canavex-haut-test courbe epsilon precision-brute pcentre rayon 'aller 'filtre 'retour 'filtre))
+          ((eq cote 'inferieur) (courbe-2d-canavex-bas-test courbe epsilon precision-brute pcentre rayon 'aller 'filtre 'retour 'filtre))
+           ((eq cote 'superieur-aller-non-filtre) (courbe-2d-canavex-haut-test courbe epsilon precision-brute pcentre rayon 
+                                                                                'aller nil nil nil))
+          ((eq cote 'inferieur-aller-non-filtre) (courbe-2d-canavex-bas-test courbe epsilon precision-brute pcentre rayon 
+                                                                              'aller nil nil nil))
+           ((eq cote 'superieur-retour-non-filtre) (courbe-2d-canavex-haut-test courbe epsilon precision-brute pcentre rayon
+                                                                                 nil nil 'retour nil))
+          ((eq cote 'inferieur-retour-non-filtre) (courbe-2d-canavex-bas-test courbe epsilon precision-brute pcentre rayon 
+                                                                               nil nil 'retour nil))
+           ((eq cote 'superieur-aller-filtre) (courbe-2d-canavex-haut-test courbe epsilon precision-brute pcentre rayon 
+                                                                            'aller 'filtre nil nil))
+          ((eq cote 'inferieur-aller-filtre) (courbe-2d-canavex-bas-test courbe epsilon precision-brute pcentre rayon 
+                                                                          'aller 'filtre nil nil))
+           ((eq cote 'superieur-retour-filtre) (courbe-2d-canavex-haut-test courbe epsilon precision-brute pcentre rayon 
+                                                                             nil nil 'retour 'filtre))
+          ((eq cote 'inferieur-retour-filtre) (courbe-2d-canavex-bas-test courbe epsilon precision-brute pcentre rayon 
+                                                                           nil nil 'retour 'filtre))
+          ))
+
+(de courbe-2d-canavex-haut (courbe  epsilon precision-brute pcentre rayon)
+    (prog (droites-n droites-r
+                     (h (get-slot-value courbe 'body)) 
+                     (dernier-rang (get-slot-value courbe 'pointeur-max))
+                     precision-brute* droites-n droites-r droites-n-f droites-r-f)
+          (setq droites-n (mapcan '(lambda (x) (car (courbe-2d-extract-droite-de-canal-haut-2 h x dernier-rang
+                                                                                              precision-brute 3)))
+                                  (mapcan '(lambda (y) (cond ((eq (get-slot-value (get-slot-value y 'courbe) 'body) h)
+                                                              (list (get-slot-value y 'rang)))
+                                                             (t nil)))
+                                          (get-all-instances 'minimum-local))))
+          (setq precision-brute* (* precision-brute (- (car (vref h dernier-rang)) (car (vref h 0)))))
+          (setq droites-n-f  (courbe-2d-search-filtrage h droites-n precision-brute* 'normal))
+          (mapc '(lambda (x) (courbe-2d-extract-contour-create-droite-technique courbe
+                                                                                (car (cdddr x)) (cadr (cdddr x))
+                                                                                epsilon pcentre rayon
+                                                                                'convexite-haute (cadr x) (caddr x) nil nil))
+                droites-n-f)
+          (trace-file "fin du parcours haut normal"  "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+          (setq droites-r (mapcan '(lambda (x) (car (courbe-2d-extract-droite-de-canal-haut-2-r h 0 x precision-brute 3)))
+                                  (cons (1- (vlength h))  (mapcan '(lambda (y)
+                                                                     (cond ((eq (get-slot-value (get-slot-value y 'courbe) 'body)
+                                                                                h)
+                                                                            (list (get-slot-value y 'rang)))
+                                                                           (t nil)))
+                                                                  (get-all-instances 'minimum-local)))))
+          (setq droites-r-f  (courbe-2d-search-filtrage h droites-r precision-brute* 'reverse))
+
+          (mapc '(lambda (x) (courbe-2d-extract-contour-create-droite-technique courbe
+                                                                                (car (cdddr x)) (cadr (cdddr x))
+                                                                                epsilon pcentre rayon
+                                                                                'convexite-haute (cadr x) (caddr x) nil nil))
+                droites-r-f)
+          (trace-file "fin du parcours haut reverse"  "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+
+
+          ))
+
+
+(de courbe-2d-canavex-haut-test (courbe  epsilon precision-brute pcentre rayon aller filtre-aller retour filtre-retour)
+    (prog (droites-n droites-r
+                     (h (get-slot-value courbe 'body)) 
+                     (dernier-rang (get-slot-value courbe 'pointeur-max))
+                     precision-brute* droites-n droites-r droites-n-f droites-r-f)
+          (when aller
+                (setq droites-n (mapcan '(lambda (x) (car (courbe-2d-extract-droite-de-canal-haut-2 h x dernier-rang
+                                                                                                    precision-brute 3)))
+                                        (mapcan '(lambda (y) (cond ((eq (get-slot-value (get-slot-value y 'courbe) 'body) h)
+                                                                    (list (get-slot-value y 'rang)))
+                                                                   (t nil)))
+                                                (get-all-instances 'minimum-local)))))
+          (setq precision-brute* (* precision-brute (- (car (vref h dernier-rang)) (car (vref h 0)))))
+          (when filtre-aller
+                (setq droites-n-f  (courbe-2d-search-filtrage h droites-n precision-brute* 'normal)))
+          (mapc '(lambda (x) (courbe-2d-extract-contour-create-droite-technique courbe
+                                                                                (car (cdddr x)) (cadr (cdddr x))
+                                                                                epsilon pcentre rayon
+                                                                                'convexite-haute (cadr x) (caddr x) nil nil))
+                droites-n-f)
+          (trace-file  "fin du parcours haut normal"  "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+          (when retour
+                (setq droites-r (mapcan '(lambda (x) (car (courbe-2d-extract-droite-de-canal-haut-2-r h 0 x precision-brute 3)))
+                                        (cons (1- (vlength h))  (mapcan '(lambda (y)
+                                                                           (cond ((eq (get-slot-value (get-slot-value y 'courbe) 'body)
+                                                                                      h)
+                                                                                  (list (get-slot-value y 'rang)))
+                                                                                 (t nil)))
+                                                                        (get-all-instances 'minimum-local))))))
+          (when filtre-retour
+                (setq droites-r-f  (courbe-2d-search-filtrage h droites-r precision-brute* 'reverse)))
+
+          (mapc '(lambda (x) (courbe-2d-extract-contour-create-droite-technique courbe
+                                                                                (car (cdddr x)) (cadr (cdddr x))
+                                                                                epsilon pcentre rayon
+                                                                                'convexite-haute (cadr x) (caddr x) nil nil))
+                droites-r-f)
+          (trace-file "fin du parcours haut reverse" "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+          ))
+
+
+
+(de courbe-2d-canavex-bas (courbe1  epsilon precision-brute pcentre rayon )
+    (prog (droites-n droites-r
+                     h dernier-rang courbe2 courbe max-de-ref droites-techniques
+                     precision-brute* droites-n droites-r droites-n-f droites-r-f)
+          (setq max-de-ref (* 1.2 (cadr (courbe-2d-point-maximum courbe1 0 (get-slot-value courbe1 'pointeur-max)))))
+          (setq courbe2 ($ courbe1 '* -1.))
+          (setq courbe  ($ courbe2 '+ max-de-ref))
+          (setq dernier-rang (get-slot-value courbe 'pointeur-max))
+          (setq h (get-slot-value courbe 'body)) 
+          ($ courbe 'expand 'extremum-local 'objects nil)
+          (setq droites-n (mapcan '(lambda (x) (car (courbe-2d-extract-droite-de-canal-haut-2 h x dernier-rang
+                                                                                              precision-brute 3)))
+                                  (mapcan '(lambda (y) (cond ((eq (get-slot-value (get-slot-value y 'courbe) 'body) h)
+                                                              (list (get-slot-value y 'rang)))
+                                                             (t nil)))
+                                          (get-all-instances 'minimum-local))))
+          (setq precision-brute* (* precision-brute (- (car (vref h dernier-rang)) (car (vref h 0)))))
+          (setq droites-n-f  (courbe-2d-search-filtrage h droites-n precision-brute* 'normal))
+          (mapc '(lambda (x) (courbe-2d-extract-contour-create-droite-technique courbe
+                                                                                (car (cdddr x)) (cadr (cdddr x))
+                                                                                epsilon pcentre rayon
+                                                                                'convexite-basse (cadr x) (caddr x) 
+                                                                                max-de-ref courbe1))
+                droites-n-f)
+          (trace-file  "fin du parcours bas normal"  "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+          (setq droites-r (mapcan '(lambda (x) (car (courbe-2d-extract-droite-de-canal-haut-2-r h 0 x precision-brute 3)))
+                                  (cons (1- (vlength h)) 
+                                        (mapcan '(lambda (y) 
+                                                   (cond ((eq (get-fondamental-value (get-fondamental-value y 'courbe)  'body)
+                                                                                          h)
+                                                                                      (list (get-slot-value y 'rang)))
+                                                                                     (t nil)))
+                                                                  (get-all-instances 'minimum-local)))))
+          (setq droites-r-f  (courbe-2d-search-filtrage h droites-r precision-brute* 'reverse))
+          (mapc '(lambda (x) (courbe-2d-extract-contour-create-droite-technique courbe
+                                                                                (car (cdddr x)) (cadr (cdddr x))
+                                                                                epsilon pcentre rayon
+                                                                                'convexite-basse (cadr x) (caddr x)
+                                                                                max-de-ref courbe1))
+                droites-r-f)
+          (trace-file  "fin du parcours bas reverse"  "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+          (setq droites-techniques (mapcan '(lambda (x) (cond ((eq (get-fondamental-value x 'courbe) courbe) (list x))
+                                                              (t nil)))
+                                           (get-all-instances 'droite-technique)))
+          
+          (setq aa1 droites-r-f)
+          (setq aa2 droites-n-f)
+
+          ))
+
+
+
+(de courbe-2d-canavex-bas-test (courbe1  epsilon precision-brute pcentre rayon aller filtre-aller retour filtre-retour)
+    (prog (droites-n droites-r
+                     h dernier-rang courbe2 courbe max-de-ref droites-techniques
+                     precision-brute* droites-n droites-r droites-n-f droites-r-f)
+          (setq max-de-ref (* 1.2 (cadr (courbe-2d-point-maximum courbe1 0 (get-slot-value courbe1 'pointeur-max)))))
+          (setq courbe2 ($ courbe1 '* -1.))
+          (setq courbe  ($ courbe2 '+ max-de-ref))
+          (setq dernier-rang (get-slot-value courbe 'pointeur-max))
+          (setq h (get-slot-value courbe 'body)) 
+          ($ courbe 'expand 'extremum-local 'objects nil)
+          (when aller
+                (setq droites-n (mapcan '(lambda (x) (car (courbe-2d-extract-droite-de-canal-haut-2 h x dernier-rang
+                                                                                                    precision-brute 3)))
+                                        (mapcan '(lambda (y) (cond ((eq (get-slot-value (get-slot-value y 'courbe) 'body) h)
+                                                                    (list (get-slot-value y 'rang)))
+                                                                   (t nil)))
+                                                (get-all-instances 'minimum-local)))))
+          (setq precision-brute* (* precision-brute (- (car (vref h dernier-rang)) (car (vref h 0)))))
+          (when filtre-aller
+                (setq droites-n-f  (courbe-2d-search-filtrage h droites-n precision-brute* 'normal)))
+          (mapc '(lambda (x) (courbe-2d-extract-contour-create-droite-technique courbe
+                                                                                (car (cdddr x)) (cadr (cdddr x))
+                                                                                epsilon pcentre rayon
+                                                                                'convexite-basse (cadr x) (caddr x) 
+                                                                                max-de-ref courbe1))
+                droites-n-f)
+          (trace-file  "fin du parcours bas normal"  "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+          (when retour
+                (setq droites-r (mapcan '(lambda (x) (car (courbe-2d-extract-droite-de-canal-haut-2-r h 0 x precision-brute 3)))
+                                        (cons (1- (vlength h)) 
+                                              (mapcan '(lambda (y) 
+                                                         (cond ((eq (get-fondamental-value (get-fondamental-value y 'courbe)  'body)
+                                                                    h)
+                                                                (list (get-slot-value y 'rang)))
+                                                               (t nil)))
+                                                      (get-all-instances 'minimum-local))))))
+          (when filtre-retour
+                (setq droites-r-f  (courbe-2d-search-filtrage h droites-r precision-brute* 'reverse)))
+          (mapc '(lambda (x) (courbe-2d-extract-contour-create-droite-technique courbe
+                                                                                (car (cdddr x)) (cadr (cdddr x))
+                                                                                epsilon pcentre rayon
+                                                                                'convexite-basse (cadr x) (caddr x)
+                                                                                max-de-ref courbe1))
+                droites-r-f)
+          (trace-file   "fin du parcours bas reverse" "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+          (setq droites-techniques (mapcan '(lambda (x) (cond ((eq (get-fondamental-value x 'courbe) courbe) (list x))
+                                                              (t nil)))
+                                           (get-all-instances 'droite-technique)))
+          
+          (setq aa1 droites-r-f)
+          (setq aa2 droites-n-f)
+
+          ))
+
+
+
+;courbe-2d-extract-droite-de-canal-haut-2 calcule la meme chose
+;que courbe-2d-extract-droite-de-canal-haut sauf pour la convexite et ne
+;comporte pas d appel recursif a courbe-2d-extract-droite-de-canal-haut-3
+;ce qui permet de tester la methode
+(de courbe-2d-extract-droite-de-canal-haut-2  (h rang1 rang2 precision-brute nombre-critique)
+;extrait les droites interessantes comprises entre rang1 et rang2 en partant de rang1
+    (prog ((rang-debut rang1)
+           (rang-try (1+ rang1))
+           rang-try-next
+           precision
+           x-min
+           x-max
+           a-courant
+           b-courant
+           points-courants
+           x0-courant
+           liste-de-droites
+           situation-du-point-courant
+           liste-de-droites-de-convexite
+           liste-de-points-a-se-rappeller
+           sous-liste)
+          (setq x-min (car (vref h 0)))
+          (setq x-max (car (vref h (1- (vlength h)))))
+          (setq points-courants (list rang-try rang-debut))
+          (setq a-courant (canavex-forme-a-b-courant h (list rang-debut rang-try)))
+          (setq b-courant (cadr a-courant))
+          (setq a-courant (car a-courant))
+          (setq x0-courant (car (vref h rang-debut)))
+          (setq precision (canavex-forme-precision precision-brute x-min x-max x0-courant))
+          (setq rang-try (1+ rang-try))
+          loop
+
+          (cond ((> rang-try rang2) (go fin)))        
+          (setq situation-du-point-courant
+                (canavex-forme-situation-du-point-courant  h rang-try a-courant b-courant points-courants x0-courant precision))
+     ; (print  "** points-courants=" (reverse points-courants) " deb=" rang-debut " rt=" rang-try ":" (car (vref h rang-try)) 
+     ;         " situation =" situation-du-point-courant )
+          (cond ((eq  situation-du-point-courant 'point-acceptable)
+                 (setq points-courants (cons rang-try points-courants))
+                 (when (eq (length points-courants) 2)
+                       (setq a-courant (canavex-forme-a-b-courant h  points-courants))
+                       (setq b-courant (cadr a-courant))
+                       (setq a-courant (car a-courant))
+                       (setq x0-courant (cadr points-courants))
+                       (setq precision (canavex-forme-precision precision-brute x-min x-max x0-courant)))
+                 (setq rang-try (1+ rang-try))
+                 (go loop))
+                ((eq  situation-du-point-courant 'point-non-acceptable)
+                 (setq rang-try (1+ rang-try))
+                 (go loop))
+                
+                ((eq  situation-du-point-courant 'brisure-vers-le-haut)
+                 (cond ((>= (length points-courants) nombre-critique)
+                        (setq point-de-sortie (1- rang-try))
+                        (setq liste-de-droites (cons (canavex-forme-droite  h rang1 a-courant b-courant points-courants
+                                                                           x0-courant rang-try point-de-sortie)
+                                                    liste-de-droites))
+                        (setq rang-try (canavex-eleve-jusqu-au-sommet h rang-try  rang-debut rang2
+                                                                        x0-courant precision))
+                        (setq points-courants (list rang-try rang-debut))
+                        (setq a-courant (canavex-forme-a-b-courant h points-courants))
+                        (setq b-courant (cadr a-courant))
+                        (setq a-courant (car a-courant))
+                        (setq x0-courant (car (vref h rang-debut)))
+                        (setq precision (canavex-forme-precision precision-brute x-min x-max x0-courant))
+                        (setq rang-try (1+ rang-try))
+                        
+                        (go loop))
+                       (t (setq rang-try (canavex-eleve-jusqu-au-sommet h rang-try  rang-debut rang2
+                                                                        x0-courant precision))
+                        
+                          (setq liste-de-points-a-se-rappeller (cons rang-try liste-de-points-a-se-rappeller))
+                          (setq points-courants (list rang-try rang-debut))
+                          (setq a-courant (canavex-forme-a-b-courant h points-courants))
+                          (setq b-courant (cadr a-courant))
+                          (setq a-courant (car a-courant))
+                          (setq x0-courant (car (vref h rang-debut)))
+                          (setq precision (canavex-forme-precision precision-brute x-min x-max x0-courant))
+                          (setq rang-try (1+ rang-try))
+                          (go loop))))
+                ((eq  situation-du-point-courant 'brisure-vers-le-bas)
+                 (setq rang-try-next (canavex-prochaine-rencontre-avec-la-droite h rang-try rang-debut rang2 x0-courant precision))
+                 (cond ((null rang-try-next)
+                                        ;(setq liste-de-droites-de-convexite
+                                        ;      (cons (canavex-forme-droite-de-convexite  h rang-debut rang-try)
+                                        ;            liste-de-droites-de-convexite))
+                        (cond ((>= (length points-courants) nombre-critique)
+                               (setq point-de-sortie (1- rang-try))
+                               (setq liste-de-droites (cons (canavex-forme-droite  h rang1 a-courant b-courant points-courants
+                                                                                  x0-courant rang-try point-de-sortie)
+                                                           liste-de-droites))
+                               (setq rang-debut (1- rang-try))
+                               (setq rang-try (1+ rang-debut))
+                               (setq points-courants (list rang-try rang-debut))
+                               (setq a-courant (canavex-forme-a-b-courant h points-courants))
+                               (setq b-courant (cadr a-courant))
+                               (setq a-courant (car a-courant))
+                               (setq x0-courant (car (vref h rang-debut)))
+                               (setq precision (canavex-forme-precision precision-brute x-min x-max x0-courant))
+                               (setq rang-try (1+ rang-try))
+                               (cond ((> rang-try rang2) (go fin)))        
+                               (go loop))
+                              (t (setq rang-debut (1- rang-try) )                                 
+                                 (setq rang-try (1+ rang-debut))
+                                 (setq points-courants (list rang-try rang-debut))
+                                 (setq a-courant (canavex-forme-a-b-courant h points-courants))
+                                 (setq b-courant (cadr a-courant))
+                                 (setq a-courant (car a-courant))
+                                 (setq x0-courant (car (vref h rang-debut)))
+                                 (setq precision (canavex-forme-precision precision-brute x-min x-max x0-courant))
+                                 (setq rang-try (1+ rang-try))
+                                 (cond ((> rang-try rang2) (go fin)))        
+                                 (go loop))))
+                      
+                    
+                       (t    
+       ; (setq sous-liste  (courbe-2d-extract-droite-de-canal-haut-2
+       ;                    h (canavex-remonte-jusqu-a-la-droite h  rang-try 
+       ;                             a-courant b-courant x0-courant precision)
+       ;                    rang-try-next precision nombre-critique))
+       ; (setq liste-de-droites (append (car sous-liste) liste-de-droites))
+       ;la sous-liste de convexite n est pas interessante et ne sera pas calcule
+                       
+                       
+                        (setq rang-try  rang-try-next)
+                        (go loop)))))
+          fin
+          (cond ((>= (length points-courants) nombre-critique)
+                 (setq point-de-sortie nil)
+                 (setq liste-de-droites (cons (canavex-forme-droite h rang1 a-courant b-courant points-courants
+                                                                   x0-courant rang-try point-de-sortie)
+                                             liste-de-droites))
+                 ;(mapc '(lambda (x) (print (mapcar '(lambda (y) (vref ww y)) (car x)))) liste-de-droites)
+                 (return (list (reverse liste-de-droites) (reverse liste-de-points-a-se-rappeller))))
+                (t
+                 ;  (mapc '(lambda (x)(print  (mapcar '(lambda (y) (vref ww y)) (car x)))) liste-de-droites)
+                 (return (list (reverse liste-de-droites)  (reverse liste-de-points-a-se-rappeller)))))))
+
+
+(de courbe-2d-extract-droite-de-canal-haut-2-r  (h rang1 rang2 precision-brute nombre-critique)
+;extrait les droites interessantes comprises entre rang1 et rang2 en partant de rang2
+    (prog ((rang-debut rang2)
+           (rang-try (1- rang2))
+           rang-try-next
+           precision
+           x-min
+           x-max
+           a-courant
+           b-courant
+           points-courants
+           x0-courant
+           liste-de-droites
+           situation-du-point-courant
+           liste-de-droites-de-convexite
+           liste-de-points-a-se-rappeller
+           sous-liste)
+          (setq x-min (car (vref h 0)))
+          (setq x-max (car (vref h (1- (vlength h)))))
+          (setq points-courants (list rang-try rang-debut))
+          (setq a-courant (canavex-forme-a-b-courant h (list rang-debut rang-try)))
+          (setq b-courant (cadr a-courant))
+          (setq a-courant (car a-courant))
+          (setq x0-courant (car (vref h rang-debut)))
+          (setq precision (canavex-forme-precision precision-brute x-min x-max x0-courant))
+          (setq rang-try (1- rang-try))
+          loop
+
+          (cond ((< rang-try rang1) (go fin)))        
+          (setq situation-du-point-courant
+                (canavex-forme-situation-du-point-courant-r  h rang-try a-courant b-courant points-courants x0-courant precision))
+          ;(print  "** points-courants=" (reverse points-courants) " deb=" rang-debut " rt=" rang-try ":" (car (vref h rang-try)) 
+          ;        " situation =" situation-du-point-courant )
+          (cond ((eq  situation-du-point-courant 'point-acceptable)
+                 (setq points-courants (cons rang-try points-courants))
+                 (when (eq (length points-courants) 2)
+                       (setq a-courant (canavex-forme-a-b-courant h  points-courants))
+                       (setq b-courant (cadr a-courant))
+                       (setq a-courant (car a-courant))
+                       (setq x0-courant (cadr points-courants))
+                       (setq precision (canavex-forme-precision precision-brute x-min x-max x0-courant)))
+                 (setq rang-try (1- rang-try))
+                 (go loop))
+                ((eq  situation-du-point-courant 'point-non-acceptable)
+                 (setq rang-try (1- rang-try))
+                 (go loop))
+                
+                ((eq  situation-du-point-courant 'brisure-vers-le-haut)
+                 (cond ((>= (length points-courants) nombre-critique)
+                        (setq point-de-sortie (1+ rang-try))
+                        (setq liste-de-droites (cons (canavex-forme-droite  h rang2 a-courant b-courant points-courants
+                                                                           x0-courant rang-try point-de-sortie)
+                                                    liste-de-droites))
+                        (setq rang-try (canavex-eleve-jusqu-au-sommet-r h rang-try  rang-debut rang1
+                                                                        x0-courant precision))
+                        (setq points-courants (list rang-try rang-debut))
+                        (setq a-courant (canavex-forme-a-b-courant h points-courants))
+                        (setq b-courant (cadr a-courant))
+                        (setq a-courant (car a-courant))
+                        (setq x0-courant (car (vref h rang-debut)))
+                        (setq precision (canavex-forme-precision precision-brute x-min x-max x0-courant))
+                        (setq rang-try (1- rang-try))
+                        
+                        (go loop))
+                       (t (setq rang-try (canavex-eleve-jusqu-au-sommet-r h rang-try  rang-debut rang1
+                                                                        x0-courant precision))
+                        
+                          (setq liste-de-points-a-se-rappeller (cons rang-try liste-de-points-a-se-rappeller))
+                          (setq points-courants (list rang-try rang-debut))
+                          (setq a-courant (canavex-forme-a-b-courant h points-courants))
+                          (setq b-courant (cadr a-courant))
+                          (setq a-courant (car a-courant))
+                          (setq x0-courant (car (vref h rang-debut)))
+                          (setq precision (canavex-forme-precision precision-brute x-min x-max x0-courant))
+                          (setq rang-try (1- rang-try))
+                          (go loop))))
+                ((eq  situation-du-point-courant 'brisure-vers-le-bas)
+                 (setq rang-try-next (canavex-prochaine-rencontre-avec-la-droite-r h rang-try rang-debut
+                                                                                   rang1 x0-courant precision))
+                 (cond ((null rang-try-next)
+                                        ;(setq liste-de-droites-de-convexite
+                                        ;      (cons (canavex-forme-droite-de-convexite  h rang-debut rang-try)
+                                        ;            liste-de-droites-de-convexite))
+                        (cond ((>= (length points-courants) nombre-critique)
+                               (setq point-de-sortie (1+ rang-try))
+                               (setq liste-de-droites (cons (canavex-forme-droite  h rang2 a-courant b-courant points-courants
+                                                                                  x0-courant rang-try point-de-sortie)
+                                                           liste-de-droites))
+                               (setq rang-debut (1+ rang-try))
+                               (setq rang-try (1- rang-debut))
+                               (setq points-courants (list rang-try rang-debut))
+                               (setq a-courant (canavex-forme-a-b-courant h points-courants))
+                               (setq b-courant (cadr a-courant))
+                               (setq a-courant (car a-courant))
+                               (setq x0-courant (car (vref h rang-debut)))
+                               (setq precision (canavex-forme-precision precision-brute x-min x-max x0-courant))
+                               (setq rang-try (1- rang-try))
+                               (cond ((< rang-try rang1) (go fin)))        
+                               (go loop))
+                              (t (setq rang-debut (1+ rang-try) )                                 
+                                 (setq rang-try (1- rang-debut))
+                                 (setq points-courants (list rang-try rang-debut))
+                                 (setq a-courant (canavex-forme-a-b-courant h points-courants))
+                                 (setq b-courant (cadr a-courant))
+                                 (setq a-courant (car a-courant))
+                                 (setq x0-courant (car (vref h rang-debut)))
+                                 (setq precision (canavex-forme-precision precision-brute x-min x-max x0-courant))
+                                 (setq rang-try (1- rang-try))
+                                 (cond ((< rang-try rang1) (go fin)))        
+                                 (go loop))))
+                      
+                    
+                       (t               ; (setq sous-liste  (courbe-2d-extract-droite-de-canal-haut-2
+                                        ;                    h (canavex-remonte-jusqu-a-la-droite-r h  rang-try 
+                                        ;                             a-courant b-courant x0-courant precision)
+                                        ;                    rang-try-next precision nombre-critique))
+                                        ; (setq liste-de-droites (append (car sous-liste) liste-de-droites))
+                                        ;la sous-liste de convexite n est pas interessante et ne sera pas calcule
+                       
+                       
+                        (setq rang-try  rang-try-next)
+                        (go loop)))))
+          fin
+          (cond ((>= (length points-courants) nombre-critique)
+                 (setq point-de-sortie nil)
+                 (setq liste-de-droites (cons (canavex-forme-droite h rang1 a-courant b-courant points-courants
+                                                                   x0-courant rang-try point-de-sortie)
+                                             liste-de-droites))
+                 (return (list liste-de-droites liste-de-points-a-se-rappeller)))
+                (t
+                 (return (list liste-de-droites  liste-de-points-a-se-rappeller))))))
+
+ (de canavex-create-final-a-b-couple (h points-courants circonstance) 
+; retourne une liste (a b) caracteristique de la droite passant par les points points-courants en restant
+; au dessus ou en dessous suivant circonstance ('convexite-superieure ou 'convexite-inferieure)                           
+    (let (s-xiyi
+          s-xixi
+          x-bar
+          (n (length points-courants)) a b d1 d2 dl1 dl2 rg1)
+      (setq x-bar (/  (apply '+ (mapcar '(lambda (x) (float (car (vref h x)))) points-courants)) n))
+ 
+      (setq s-xiyi (apply '+ (mapcar '(lambda (x) (* (float (- (car (vref h x)) x-bar))
+                                                     (float (cadr (vref h x))))) points-courants)))
+      (setq s-xixi (apply '+ (mapcar '(lambda (x) (* (float (- (car (vref h x)) x-bar))
+                                                     (float (- (car (vref h x)) x-bar)))) points-courants)))
+      (setq a (/  s-xiyi  s-xixi ))
+      (cond  ((eq circonstance 'convexite-haute)
+              (setq rg1 (find-car-max (mapcar '(lambda (x) (list  (- (cadr (vref h x)) (* a (car (vref h x)))) x)) points-courants)))
+              (setq dl1 (before-list points-courants rg1))
+              (setq dl2 (after-list points-courants rg1))
+              (setq d1 (largeur-list h  (cons rg1 dl1)))
+              (setq d2 (largeur-list h  (cons rg1 dl2)))
+              (cond ((>= d1 d2)
+                     (setq a  (apply 'min (mapcar '(lambda (x)(/ (- (cadr (vref h x)) (cadr (vref h rg1)))
+                                                                 (- (car (vref h x)) (car (vref h rg1)))))
+                                                  dl1))))
+                    (t         
+                     (setq a  (apply 'max (mapcar '(lambda (x)(/ (- (cadr (vref h x)) (cadr (vref h rg1)))
+                                                                 (- (car (vref h x)) (car (vref h rg1))))) 
+                                                  dl2))))))
+             ((eq circonstance 'convexite-basse)
+              (setq rg1 (find-car-min (mapcar '(lambda (x) (list  (- (cadr (vref h x)) (* a (car (vref h x)))) x)) points-courants)))
+              (setq dl1  (before-list points-courants rg1))
+              (setq dl2  (after-list points-courants rg1))
+              (setq d1 (largeur-list h (cons rg1 dl1)))
+              (setq d2 (largeur-list h (cons rg1 dl2)))
+              (cond ((>= d1 d2)
+                     (setq a  (apply 'max (mapcar '(lambda (x)(/ (- (cadr (vref h x)) (cadr (vref h rg1)))
+                                                                 (- (car (vref h x)) (car (vref h rg1)))))
+                                                  dl1))))
+                    (t         
+                     (setq a  (apply 'min (mapcar '(lambda (x)(/ (- (cadr (vref h x)) (cadr (vref h rg1)))
+                                                                 (- (car (vref h x)) (car (vref h rg1))))) 
+                                                  dl2)))))))
+      (setq b (- (cadr (vref h rg1)) (* a (car (vref h rg1)))))
+      (list a b)))
+
+
+
+(de before-list (x-list x0)
+;liste des elements de x-list qui sont inferieur a x0
+    (mapcan '(lambda (x) (cond ((< x x0) (list x))
+                               (t nil)))
+            x-list))
+
+
+(de after-list (x-list x0)
+;liste des elements de x-list qui sont superieur a x0
+    (mapcan '(lambda (x) (cond ((> x x0) (list x))
+                               (t nil)))
+            x-list))
+
+(de largeur-list (h x-list)
+;trouve la largeur maximale du canal horizontal dans lequel est les points repere par la liste de rangs x-list
+    (cond ((null x-list) 0)
+          (t (let ((c-list (mapcar '(lambda (x) (car (vref h x)))
+                                   x-list)))
+               (- (apply 'max c-list) (apply 'min c-list))))))
+
+(de find-car-max (x-y-list-p)
+;trouve l'element dont le car est le plus grand dans la liste x-y-list-p , retourne le cadr
+    (prog ((x-courant (caar x-y-list-p)) (y-courant (cadar x-y-list-p)) (x-y-list (cdr x-y-list-p)) x-y-courant)
+          loop
+          (when (null x-y-list) (return y-courant))
+          (setq x-y-courant (car x-y-list))
+          (when (> (car x-y-courant) x-courant)
+                (setq x-courant (car x-y-courant))
+                (setq y-courant (cadr x-y-courant)))
+          (setq x-y-list (cdr x-y-list))
+          (go loop)))
+
+(de find-car-min (x-y-list-p)
+;trouve l'element dont le car est le plus petit dans la liste x-y-list-p , retourne le cadr
+    (prog ((x-courant (caar x-y-list-p)) (y-courant (cadar x-y-list-p)) (x-y-list (cdr x-y-list-p)) x-y-courant)
+          loop
+          (when (null x-y-list) (return y-courant))
+          (setq x-y-courant (car x-y-list))
+          (when (< (car x-y-courant) x-courant)
+                (setq x-courant (car x-y-courant))
+                (setq y-courant (cadr x-y-courant)))
+          (setq x-y-list (cdr x-y-list))
+          (go loop)))
+
+
+
+                
+
+
+          
+ (de courbe-2d-extract-contour-create-droite-technique 
+
+; cree la droite trouve par le genrateur , la soumet au systeme de regles d elimination et l affiche dans le graphe
+
+     (courbe a-p b-p epsilon pcentre rayon circonstance points point-de-brisure max-de-ref courbe1)
+     (prog  ((extremum-groupe-total  (mapcan '(lambda (x) (cond ((eq (get-slot-value x 'courbe) (cond (max-de-ref courbe1)
+                                                                                                      (t courbe)))
+                                                                 (list x))
+                                                                (t nil)))
+                                             (get-all-instances 'extremum-local)))
+             extremum-liste-1 
+             (h (get-slot-value courbe 'body))
+             (h1 (get-slot-value courbe1 'body))
+             (liste-des-droites-techniques (get-slot-value (cond (max-de-ref courbe1)
+                                                                 (t courbe))
+                                                           'liste-des-droites-techniques)) 
+             p1 p2 c a1 a2 a3 dr p d liste-d-extremums a b a-b)
+            (setq a-b (canavex-create-final-a-b-couple (cond (max-de-ref h1)
+                                                             (t h)) 
+                                                       points circonstance))
+            (setq a (car a-b))
+            (setq b (cadr a-b))
+            (setq extremum-liste-1 (copy extremum-groupe-total))
+            (setq p1 (list (car (vref h 0)) (+ (* a  (car (vref h 0)) ) b)))
+            (setq p2 (list (car (vref h dernier-rang)) (+ (* a  (car (vref h dernier-rang)) ) b)))
+            (when (any '(lambda (x) (let ((a1 (car x)) (a2 (cadr x)) (a3 (caddr x)))
+                                      (and (< (abs (- (* (cadr p1) a1) (+ a2 (* (car p1) a3)))) (* 0.02 epsilon))
+                                           (<= (abs (- (* (cadr p2) a1) (+ a2 (* (car p2) a3)))) (* 0.02 epsilon)))))
+                       liste-des-droites-techniques )
+                  (when *surveillance-flag1*
+                        (trace-file   (catenate "droite deja mentionne :" points (cat-list p1) (cat-list p2)  )
+                                      "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+                        (when   *generateur-de-droite-flag-de-filtrage-par-distance-et-mention*
+                              (return nil)))
+                  (when  *generateur-de-droite-flag-de-filtrage-par-distance-et-mention*
+                        (return nil)))  ;si la droite a deja ete mentionnee
+          
+            (setq c (* (/ (sqrt (1+ (* a a))) (+ (* *csurj* *csurj*) (* a a))) *csurj*))
+            (setq a1 c)
+            (setq a2 (* b c))
+            (setq a3 (* a c))
+            (when *surveillance-flag1* 
+                  (trace-file 
+                   (catenate " droite = " points " distance centre = "
+                             (abs (- (* (cadr pcentre) a1) (+ a2 (*  (car pcentre) a3)))))
+                   "/usr/jupiter/olivier/expert/chart/consultation-log" t))                 
+            (when  (> (abs (- (* (cadr pcentre) a1) (+ a2 (*  (car pcentre) a3)))) rayon)
+                   (when *surveillance-flag1*
+                         (trace-file  (catenate "droite trop loin :"  (cat-list points ))
+                                      "/usr/jupiter/olivier/expert/chart/consultation-log" t))
+                   (return nil))        ;si la droite est trop loin de notre zone d interet
+            (setq liste-d-extremums (mapcar '(lambda (x)  (find-extremum-meme-pseudo x (cond (max-de-ref courbe1)
+                                                                                             (t courbe))
+                                                                                     extremum-groupe-total ))
+                                            points))
+            loop
+            (when (null extremum-liste-1) (go fin))
+            (setq point (car extremum-liste-1))
+
+            (setq p (get-fondamental-value point 'hauteur))
+            (setq d (abs (- (* (cadr p) a1)
+                            (+ a2 (* (car p) a3)))))
+            (when *surveillance-flag2* 
+                  (trace-file (catenate "point3 ="  (cat-list p) " distance = " d)
+                              "/usr/jupiter/olivier/expert/chart/consultation-log" t))                
+            (when (and (<= d epsilon)
+                       (not (memq point liste-d-extremums)))
+                  (setq liste-d-extremums (cons point liste-d-extremums)))
+            (setq extremum-liste-1 (cdr extremum-liste-1))
+            (go loop)
+            fin
+            (setq liste-d-extremums-1 liste-d-extremums)
+            (setq dr ($ 'droite-technique 'instanciate nil nil))
+            (setf liste-des-droites-techniques (cons (list a1 a2 a3 dr) liste-des-droites-techniques ))
+            (setf (get-slot-value courbe 'liste-des-droites-techniques) liste-des-droites-techniques )
+            (setf (get-slot-value dr 'courbe-origine)  (cond (max-de-ref courbe1)
+                                                             (t courbe)))
+            (setf (get-slot-value dr 'pente) a)
+            (setf (get-slot-value dr 'ordonnee-zero) b)
+            (setf (get-slot-value dr 'force) (length liste-d-extremums-1))
+            (setf (get-slot-value dr 'liste-d-extremums ) liste-d-extremums-1)
+            (setf (get-slot-value dr 'sous-type) circonstance)
+            (montre-droite-graphique dr (car points))
+            (cond ((cond (*generateur-de-droite-flag-de-filtrage-par-regle*
+                          (check-for-killing-1 dr))
+                         (t t))
+                   (when *surveillance-flag1*  (trace-file (catenate " droite accepte :" dr) 
+                                                           "/usr/jupiter/olivier/expert/chart/consultation-log" t))
+                   (rajoute-droite-graphique dr (car points)))
+                  (t  (when *surveillance-flag1* 
+                            (trace-file 
+                             (catenate " droite refusee a cause de : " *backward-rule-just-succeeded*)
+                             "/usr/jupiter/olivier/expert/chart/consultation-log" t))))
+            (return nil)))
+            
+
+               
+
+
+(de courbe-2d-search-filtrage (h liste-de-d precision flag)
+                ;liste-de-d est une liste d element de la forme ( rang-indicateur liste-de-rangs rang-de-sortie a b)
+    (prog ((indicateur t)
+           (liste-de-d-1 (courbe-2d-search-filtrage-1 liste-de-d))
+           liste-1 liste-2 dd d1 d2)
+          loop
+          (when (null indicateur) (go fin))
+          (setq liste-1 liste-de-d-1)
+          loop1
+          (when (null liste-1) (go fin))
+          (setq d1 (car liste-1))
+          (setq liste-1 (cdr liste-1))
+
+          (setq liste-2 (remove d1 (copy liste-de-d-1)))
+          loop2
+
+          (when (null liste-2) (go fin2))
+          (setq d2 (car liste-2))
+          (setq liste-2 (cdr liste-2))
+
+                                        ; place pour les differents cas d intervention dans la liste 
+
+          (setq dd (ss-intersection (cadr d1) (cadr d2) ))
+          (cond ((and (>= (length dd) 2)
+                      (setq  xmin (car (vref h (min (apply 'min (cadr d1)) (apply 'min (cadr d2))))))
+                      (setq  xmax (car (vref h (max (apply 'max (cadr d1)) (apply 'max (cadr d2))))))
+                      (setq a0 (- (cadddr d1) (cadddr d2)))
+                      (setq b0 (- (caddddr d1) (caddddr d2)))
+                      (< (max (abs (+ (* a0 xmin) b0)) (abs (+ (* a0 xmax) b0))) (/ precision (- xmax xmin))))
+                 (setq liste-de-d-1 (ss-remove d2 (ss-remove d1 liste-de-d-1)))
+                 (setq liste-de-d-1 (cons (ss-union d1 d2 dd h flag) liste-de-d-1))
+                 (setq indicateur t)
+                 (go loop))
+                )
+          (setq indicateur nil)
+          (go loop2)
+          fin2
+
+          (go loop1)
+          fin1
+          (go loop)
+          fin
+          (return liste-de-d-1)))
+
+
+(de courbe-2d-search-filtrage-1 (liste-de-d)
+    (cond ((null liste-de-d) nil)
+          (t (cons (car liste-de-d) (ss-remove (car liste-de-d) (courbe-2d-search-filtrage-1 (cdr liste-de-d)))))))
+
+
+     
+;canavex-forme-droite fabrique l element qui sera la memoire de la droite technique trouve
+(de canavex-forme-droite (h rang1 a-courant b-courant points-courants x0-courant rang-try point-de-sortie)
+    (list rang1 (reverse points-courants) point-de-sortie a-courant b-courant))
+
+;canavex-forme-droite-de-convexite fabrique la memoire de la droite de convexite trouvee
+(de canavex-forme-droite-de-convexite (h rang-debut rang-try)
+    (list rang-debut rang-try))
+
+;canavex-remonte-jusqu-a-la-droite debute une recherche reverse a partir de rang-try sur la courbe
+;recherche la premiere fois que le cours remonte dans la zone de la droite ou le 
+;debut de la phase de changement de pente dans l accentuation de la baisse
+(de canavex-remonte-jusqu-a-la-droite (h rang-try  a-courant b-courant x0-courant precision)
+    (1- rang-try))
+
+(de canavex-remonte-jusqu-a-la-droite-r (h rang-try  a-courant b-courant x0-courant precision)
+    (1+ rang-try))
+
+;canavex-descent-jusqu-a-la-droite debute une recherche reverse (qui remonte le temps) a partir de rang-try
+;qui doit aboutir a l endroit ou debute le mouvement de hausse qui a brise la droite comme droite de resistance
+(de canavex-descent-jusqu-a-la-droite (h  rang-try a-courant b-courant x0-courant precision)
+    (1- rang-try))
+
+
+; canavex-eleve-jusqu-au-sommet calcule le rang-p a partir duquel la distance en cours entre la droite unissant
+; rang-debut et rang-p et la courbe au point (1+ rang-p) est negative , la recherche debute en rang-try
+;si on atteint le sommet avant on renvoie ce sommet
+(de canavex-eleve-jusqu-au-sommet (h rang-try  rang-debut rang2 x0-courant precision)
+    (prog ((rang-p rang-try) a-courant b-courant distance)
+          loop
+          (when (>= rang-p rang2) (return rang2))
+          (setq a-courant (canavex-forme-a-b-courant h (list rang-p rang-debut)))
+          (setq b-courant (cadr a-courant))
+          (setq a-courant (car a-courant))
+          (setq distance1  (- (cadr (vref h (1- rang-p)))
+                                                         (+ (* a-courant (car (vref h (1- rang-p)))) b-courant)))
+          (setq distance2  (- (cadr (vref h (1+ rang-p)))
+                              (+ (* a-courant (car (vref h (1+ rang-p)))) b-courant)))
+          (setq distance   (- (cadr (vref h rang-p)) 
+                              (+ (* a-courant (car (vref h rang-p))) b-courant)))
+          (when (and (>=  distance distance1)
+                     (>=  distance distance2))
+                
+                (return rang-p))
+          (setq rang-p (1+ rang-p))
+          (go loop)))
+    
+(de canavex-eleve-jusqu-au-sommet-r (h rang-try  rang-debut rang1 x0-courant precision)
+    (prog ((rang-p rang-try) a-courant b-courant distance)
+          loop
+          (when (<= rang-p rang1) (return rang1))
+          (setq a-courant (canavex-forme-a-b-courant h (list rang-p rang-debut)))
+          (setq b-courant (cadr a-courant))
+          (setq a-courant (car a-courant))
+          (setq distance1  (- (cadr (vref h (1- rang-p)))
+                                                         (+ (* a-courant (car (vref h (1- rang-p)))) b-courant)))
+          (setq distance2  (- (cadr (vref h (1+ rang-p)))
+                              (+ (* a-courant (car (vref h (1+ rang-p)))) b-courant)))
+          (setq distance   (- (cadr (vref h rang-p)) 
+                              (+ (* a-courant (car (vref h rang-p))) b-courant)))
+          (when (and (>=  distance distance1)
+                     (>=  distance distance2))
+                
+                (return rang-p))
+          (setq rang-p (1- rang-p))
+          (go loop)))
+    
+
+;debute une recherche a pertir de rang-try qui vise a trouver le prochain point ou la courbe
+;remonte dans les parage de la droite , rends NIL si pas trouve
+
+(de canavex-prochaine-rencontre-avec-la-droite (h rang-try rang-debut rang2 x0-courant precision)
+    (prog ((rt (1+ rang-try)) distance comparaison)
+          loop
+          (when (> rt rang2) (return nil))
+          (setq distance (- (cadr (vref h rt)) (+ (* a-courant (car (vref h rt))) b-courant)))
+          (setq comparaison (abs (* precision (- (car (vref h rt)) x0-courant))))
+          (when (> distance (- comparaison))
+              ;  (print "prochaine rencontre avec la droite  : rang-try = " rang-try
+              ;         "rang-debut = " rang-debut " resultat = " rt )
+                (return rt))
+          (setq rt (1+ rt))
+          (go loop)))
+
+(de canavex-prochaine-rencontre-avec-la-droite-r (h rang-try rang-debut rang1 x0-courant precision)
+    (prog ((rt (1- rang-try)) distance comparaison)
+          loop
+          (when (< rt rang1) (return nil))
+          (setq distance (- (cadr (vref h rt)) (+ (* a-courant (car (vref h rt))) b-courant)))
+          (setq comparaison (abs (* precision (- (car (vref h rt)) x0-courant))))
+          (when (> distance (- comparaison))
+               ; (print "prochaine rencontre avec la droite  : rang-try = " rang-try
+               ;        "rang-debut = " rang-debut " resultat = " rt )
+                (return rt))
+          (setq rt (1- rt))
+          (go loop)))
+
+
+;retourne une liste (a b) des coefficients de la droite y = ax + b de la droite qui 
+;passe par rang-debut et rang-try
+
+(de canavex-forme-a-b-courant (h points-courants)
+                              
+    (let (s-xiyi
+          s-xixi 
+          y-bar
+          y-max
+          x-bar 
+          (n (length points-courants)) a b)
+      (setq x-bar (/  (apply '+ (mapcar '(lambda (x) (float (car (vref h x)))) points-courants)) n))
+      (setq y-bar (/  (apply '+ (mapcar '(lambda (x) (float (cadr (vref h x)))) points-courants)) n))
+      (setq s-xiyi (apply '+ (mapcar '(lambda (x) (* (float (- (car (vref h x)) x-bar))
+                                                     (float (cadr (vref h x))))) points-courants)))
+      (setq s-xixi (apply '+ (mapcar '(lambda (x) (* (float (- (car (vref h x)) x-bar))
+                                                     (float (- (car (vref h x)) x-bar)))) points-courants)))
+      (setq y-max (apply 'max (mapcar '(lambda (x) (cadr (vref h x))) points-courants)))
+      (setq a (/  s-xiyi  s-xixi ))
+      (setq b (- y-bar (* a x-bar)))
+      (list a b)))
+
+
+
+
+; lorsque points-courants comporte au minimum deux points on supose les autre parametre sont calcule
+; on calcule alors la distance en cours  de [ droite --> courbe ] en rang-try et on juge
+; sinon on renvoie la mention 'point-acceptable
+
+(de canavex-forme-situation-du-point-courant (h rang-try a-courant b-courant points-courants x0-courant precision)
+    (let (distance comparaison result distance1 distance2)
+      (setq result (cond ((< (length points-courants) 2) 'point-acceptable)
+                         (t 
+                          (setq distance (- (cadr (vref h rang-try)) (+ (* a-courant (car (vref h rang-try))) b-courant)))
+                          (setq comparaison (max (/ precision 5.) (abs (* precision (- (car (vref h rang-try)) x0-courant)))))
+                          (cond ((> distance comparaison) 'brisure-vers-le-haut)
+                                ((< distance (- comparaison)) 'brisure-vers-le-bas)
+                                (t 'point-acceptable)))))
+      (cond ((not (eq result 'point-acceptable)) result)
+            ((>= rang-try (1- (vlength h))) result)
+            ((setq distance1  (- (cadr (vref h (1- rang-try))) (+ (* a-courant (car (vref h (1- rang-try)))) b-courant)))
+             (setq distance2  (- (cadr (vref h (1+ rang-try))) (+ (* a-courant (car (vref h (1+ rang-try)))) b-courant)))
+             (cond ((and (>=  distance distance1)
+                         (>=  distance distance2))
+                    result)
+                   (t 'point-non-acceptable))))))
+
+(de canavex-forme-situation-du-point-courant-r (h rang-try a-courant b-courant points-courants x0-courant precision)
+    (let (distance comparaison result distance1 distance2)
+      (setq result (cond ((< (length points-courants) 2) 'point-acceptable)
+                         (t 
+                          (setq distance (- (cadr (vref h rang-try)) (+ (* a-courant (car (vref h rang-try))) b-courant)))
+                          (setq comparaison (max (/ precision 5.) (abs (* precision (- (car (vref h rang-try)) x0-courant)))))
+                        ;  (print "rt=" rang-try " d=" distance " c=" comparaison)
+                          (cond ((> distance comparaison) 'brisure-vers-le-haut)
+                                ((< distance (- comparaison)) 'brisure-vers-le-bas)
+                                (t 'point-acceptable)))))
+      (cond ((not (eq result 'point-acceptable)) result)
+            ((<= rang-try  0) result)
+            ((setq distance1  (- (cadr (vref h (1- rang-try))) (+ (* a-courant (car (vref h (1- rang-try)))) b-courant)))
+             (setq distance2  (- (cadr (vref h (1+ rang-try))) (+ (* a-courant (car (vref h (1+ rang-try)))) b-courant)))
+             (cond ((and (>=  distance distance1)
+                         (>=  distance distance2))
+                    result)
+                   (t 'point-non-acceptable))))))
+
+
+; canavex-forme-precision calcule le parametre precision
+; precision = precision-brute / max { | y-max - x0-courant| , | x0-courant - y-min |}
+; ceci permet d avoir une precision egale a precision-brute sur tous le graphe
+
+(de canavex-forme-precision (precision-brute x-min x-max x0-courant)
+    (/ precision-brute (max (abs (- x-max x0-courant)) (abs (- x-min x0-courant)))))
+
+
+
+(de ss-intersection (rd1 rd2)
+    (mapcan '(lambda (x) (cond ((memq x rd2) (list x))
+                               (t nil)))
+            rd1))
+(de ss-union (d1 d2 dd h flag)
+    (prog (d3 rd3 a-b)
+          (setq rd3 (mapcan '(lambda (x) (cond((memq x (cadr d2)) nil)
+                                              (t (list x))))
+                            (cadr d1)))
+          (setq rd3 (append (cadr d2)  rd3))
+          (setq a-b (canavex-forme-a-b-courant h rd3))
+          (setq d3 (list 0 rd3 (cond ((and (eq flag 'normal)
+                                           (caddr d1)
+                                           (caddr d2))
+                                      (max (caddr d1) (caddr d2)))
+                                     ((and (eq flag 'reverse) 
+                                           (caddr d1)
+                                           (caddr d2))
+                                      (min (caddr d1) (caddr d2)))
+                                     (t nil))
+                         (car a-b) (cadr a-b)))
+          (return d3)))
+
+
+(de ss-remove (d ld)
+    (mapcan '(lambda (x) (cond ((not (equal (cadr d) (cadr x)))  (list x))
+                                (t nil)))
+            ld))
+
+(add-method 'droite-technique 'droite-technique-changement-de-base-lineaire-en-y 'changement-de-base-lineaire-en-y 'superseed)
+(add-method 'droite-technique 'droite-technique-changement-de-courbe-origine 'changement-de-courbe-origine 'superseed)
+
+(de droite-technique-changement-de-base-lineaire-en-y (droite a0 b0)
+       (setf (get-fondamental-value droite 'ordonnee-zero) (+ b0
+                                                              (* (get-fondamental-value droite 'ordonnee-zero) a0)))
+       (setf (get-fondamental-value droite 'pente) (* (get-fondamental-value droite 'pente) a0))
+    )
+
+(de droite-technique-changement-de-courbe-origine (droite new-courbe)
+    (setf (get-fondamental-value droite 'courbe) new-courbe))
+
+
+
+ (de courbe-2d-extract-contour (courbe  epsilon precision pcentre rayon coefficient-max)
+     (prog ((rang1a (get-fondamental-value ($ courbe 'premier-maximum) 'rang))
+            (rang2a (get-fondamental-value ($ courbe 'dernier-maximum) 'rang))
+            (rang1b (get-fondamental-value ($ courbe 'premier-minimum) 'rang))
+            (rang2b (get-fondamental-value ($ courbe 'dernier-minimum) 'rang))
+            droite-liste-1 droite-liste-2 extremum ecart-max-y precedent-plus-haut precedent-plus-bas actuel ww)
+           (setq droite-liste-1 (courbe-2d-extract-contour-haut courbe rang1a rang2a precision)) 
+           (mapc '(lambda (x) (courbe-2d-extract-contour-create-droite-technique-2 courbe (car x) (cadr x) epsilon pcentre rayon
+                                                                                 'convexite-haute))
+                 droite-liste-1)
+           (trace-file "fin de l extraction du contour haut"
+                       "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+           (setq droite-liste-2 (courbe-2d-extract-contour-bas courbe rang1b rang2b precision))
+           (mapc '(lambda (x) (courbe-2d-extract-contour-create-droite-technique-2 courbe (car x) (cadr x) epsilon pcentre rayon
+                                                                                 'convexite-basse))
+                 droite-liste-2)
+            (trace-file "fin de l extraction du contour bas"
+                         "/usr/jupiter/olivier/expert/chart/consultation-log" t)
+          
+           (return)))
+                         
+                         
+         
+
+ 
+
+ (de courbe-2d-extract-contour-haut (courbe rang1 rang2 precision)
+    (prog ((rang-debut rang2)
+           rang-fin
+           rang-try 
+           (h (get-slot-value courbe 'body))
+           liste-droites)
+
+          loop
+          (cond ((eq rang-debut rang1) (go fin))
+                )
+
+          ;trouvons la droite qui va le plus loin sans couper a partir de rang-debut
+          (setq rang-try (1- rang-debut))
+          (setq rang-verif (1- rang-debut))
+          loop1
+          (when  (< rang-verif rang1) 
+                 (setq rang-fin rang-try)
+                 (go fin1))
+          (when  (courbe-2d-coupe-courbe-par-en-dessus-floue rang-verif rang-try rang-debut h precision)
+                 (setq rang-try (courbe-2d-eleve-droite-jusqu-au-sommet (1+ rang-verif) rang-debut h rang1 precision)))
+             
+          (when (>= rang-verif rang-try) (setq rang-verif rang-try))
+          
+          (setq rang-verif (1- rang-verif))
+          (go loop1)
+         
+          fin1
+          (setq liste-droites (cons (list rang-fin rang-debut) liste-droites))
+          (setq rang-debut rang-fin)
+          (go loop)
+          fin
+          (return liste-droites)))
+
+      
+      
+
+ (de courbe-2d-extract-contour-bas (courbe rang1 rang2 precision)
+    (prog ((rang-debut rang2)
+           rang-fin
+           rang-try 
+           (h (get-slot-value courbe 'body))
+           liste-droites)
+
+          loop
+          (cond ((eq rang-debut rang1) (go fin))
+                )
+
+          ;trouvons la droite qui va le plus loin sans couper a partir de rang-debut
+          (setq rang-try (1- rang-debut))
+          (setq rang-verif (1- rang-debut))
+          loop1
+          (when  (< rang-verif rang1) 
+                 (setq rang-fin rang-try)
+                 (go fin1))
+          (when  (courbe-2d-coupe-courbe-par-en-dessous-floue rang-verif rang-try rang-debut h precision)
+                 (setq rang-try (courbe-2d-abaisse-droite-jusqu-au-sommet (1+ rang-verif) rang-debut h rang1 precision)))
+             
+         (when (>= rang-verif rang-try) (setq rang-verif rang-try))
+          
+          (setq rang-verif (1- rang-verif))
+          (go loop1)
+         
+          fin1
+          (setq liste-droites (cons (list rang-fin rang-debut) liste-droites))
+          (setq rang-debut rang-fin)
+          (go loop)
+          fin
+          (return liste-droites)))
+
+
+
+
+
+(de courbe-2d-coupe-courbe-par-en-dessus-floue (rang-verif rang-try rang-debut h precision)
+    (let ((xv (car (vref h rang-verif)))
+          (yv (cadr (vref h rang-verif)))
+          (xt (car (vref h rang-try)))
+          (yt (cadr (vref h rang-try)))
+          (xd (car (vref h rang-debut)))
+          (yd (cadr (vref h rang-debut)))
+          )
+      (>= (+ (- yv yt) (* (- yd yt) (/ (- xt xv) (- xd xt)))) precision)))
+          
+
+(de  courbe-2d-coupe-courbe-par-en-dessous-floue (rang-verif rang-try rang-debut h precision)
+    (let ((xv (car (vref h rang-verif)))
+          (yv (cadr (vref h rang-verif)))
+          (xt (car (vref h rang-try)))
+          (yt (cadr (vref h rang-try)))
+          (xd (car (vref h rang-debut)))
+          (yd (cadr (vref h rang-debut)))
+          )
+      (<= (+ (- yv yt) (* (- yd yt) (/ (- xt xv) (- xd xt)))) (- precision))))
+          
+    
+
+
+(de  courbe-2d-eleve-droite-jusqu-au-sommet (rang-try-i rang-debut h rang1 precision)
+    (prog ((rang-try (1- rang-try-i)))
+          loop
+          (cond ((<= rang-try rang1) (return rang1))
+                (( courbe-2d-coupe-courbe-par-en-dessus-floue (1- rang-try) rang-try rang-debut h precision)
+                 (setq rang-try (1- rang-try))
+
+                 (go loop))
+                (t (return rang-try)))))
+                
+
+
+
+
+(de  courbe-2d-abaisse-droite-jusqu-au-sommet (rang-try-i rang-debut h rang1 precision)
+    (prog ((rang-try (1- rang-try-i)))
+          loop
+          (cond ((<= rang-try rang1)(return rang1))
+                (( courbe-2d-coupe-courbe-par-en-dessous-floue (1- rang-try) rang-try rang-debut h precision)
+                 (setq rang-try (1- rang-try))
+                 (go loop))
+                (t (return rang-try)))))
+                
+
+
+
+
+ (de courbe-2d-extract-contour-create-droite-technique-2 (courbe rang1 rang2 epsilon pcentre rayon circonstance)
+     (prog  ((extremum-groupe-total  (mapcan '(lambda (x) (cond ((eq (get-slot-value x 'courbe) courbe) (list x))
+                                                                (t nil)))
+                                             (get-all-instances 'extremum-local)))
+             extremum-liste-1 
+             (h (get-slot-value courbe 'body))
+             (liste-des-droites-techniques (get-slot-value courbe 'liste-des-droites-techniques)) 
+             p1 p2 a b c a1 a2 a3 point1 point2 dr p d liste-d-extremums)
+            (when (>= (abs (- rang1 rang2)) 1) (return))
+            (setq extremum-liste-1 (copy extremum-groupe-total))
+            (setq p1 (vref h rang1))
+            (setq p2 (vref h rang2))
+            (setq point1 (find-extremum-meme-pseudo rang1 courbe extremum-groupe-total ))
+            (setq point2 (find-extremum-meme-pseudo rang2 courbe extremum-groupe-total ))
+            (when (any '(lambda (x) (let ((a1 (car x)) (a2 (cadr x)) (a3 (caddr x)))
+                                      (and (< (abs (- (* (cadr p1) a1) (+ a2 (* (car p1) a3)))) (* 0.02 epsilon))
+                                           (<= (abs (- (* (cadr p2) a1) (+ a2 (* (car p2) a3)))) (* 0.02 epsilon)))))
+                       liste-des-droites-techniques )
+                  (when *surveillance-flag1* (trace-file (catenate "droite deja mentionne : ( " rang1 " " rang2")")
+                                                          "/usr/jupiter/olivier/expert/chart/consultation-log" t))
+                  (return nil)) ;si la droite a deja ete mentionnee
+            (setq a (/ (- (cadr p1) 
+                          (cadr p2))
+                       (- (car p1)
+                          (car p2))))
+            (setq b (- (cadr p1)
+                       (* a (car p1))))
+            (setq c (* (/ (sqrt (1+ (* a a))) (+ (* *csurj* *csurj*) (* a a))) *csurj*))
+            (setq a1 c)
+            (setq a2 (* b c))
+            (setq a3 (* a c))
+            (when *surveillance-flag1* (trace-file
+                                        (catenate "point1 = "  (cat-list point1) " point2 ="  (cat-list point2) "distance centre = "
+                                                  (abs (- (* (cadr pcentre) a1) (+ a2 (*  (car pcentre) a3)))))
+                                         "/usr/jupiter/olivier/expert/chart/consultation-log" t))
+                  
+            (when  (> (abs (- (* (cadr pcentre) a1) (+ a2 (*  (car pcentre) a3)))) rayon)
+                   (when *surveillance-flag1*
+                         (trace-file 
+                          (catenate "droite trop loin : ( " rang1 " " rang2")")
+                          "/usr/jupiter/olivier/expert/chart/consultation-log" t))
+                   (return nil))        ;si la droite est trop loin de notre zone d interet
+            (setq liste-d-extremums nil)
+            loop
+            (when (null extremum-liste-1) (go fin))
+            (setq point (car extremum-liste-1))
+
+            (setq p (get-fondamental-value point 'hauteur))
+            (setq d (abs (- (* (cadr p) a1)
+                            (+ a2 (* (car p) a3)))))
+            (when *surveillance-flag2*
+                  (trace-file (catenate "point3 ="  (cat-list p) " distance = " d)
+                               "/usr/jupiter/olivier/expert/chart/consultation-log" t))
+            (when (and (<= d epsilon)
+                       (not (memq point liste-d-extremums)))
+                  (setq liste-d-extremums (cons point liste-d-extremums)))
+            (setq extremum-liste-1 (cdr extremum-liste-1))
+            (go loop)
+            fin
+            (setq liste-d-extremums-1 (cons point1 (append liste-d-extremums (list point2))))
+            (setq dr ($ 'droite-technique 'instanciate nil nil))
+            (setf liste-des-droites-techniques (cons (list a1 a2 a3 dr) liste-des-droites-techniques ))
+            (setf (get-slot-value courbe 'liste-des-droites-techniques) liste-des-droites-techniques )
+            (setf (get-slot-value dr 'courbe-origine) courbe)
+            (setf (get-slot-value dr 'pente) a)
+            (setf (get-slot-value dr 'ordonnee-zero) b)
+            (setf (get-slot-value dr 'force) (length liste-d-extremums-1))
+            (setf (get-slot-value dr 'liste-d-extremums ) liste-d-extremums-1)
+            (setf (get-slot-value dr 'sous-type) circonstance)
+            (montre-droite-graphique dr rang1)
+            (rajoute-droite-graphique dr rang1)
+            (return nil)
+            ))
+
+
+
+
+(de ll () (load "/usr/jupiter/olivier/expert/kb/test.lisp"))
+
+(de lln () (setq bb  (courbe-2d-search-filtrage ww aa 5000. 'normal))
+    (mapc '(lambda (x) (print (mapcan '(lambda (y) (list (car (vref ww y))))
+                                      (cadr x))))
+          bb))
+
+(de llr () (setq bb  (courbe-2d-search-filtrage ww aa 5000. 'reverse))
+    (mapc '(lambda (x) (print (mapcan '(lambda (y) (list (car (vref ww y))))
+                                      (cadr x))))
+          bb))
+(setq *generateur-de-droite-flag-de-sens* nil)
+(de ll1 () (setq *generateur-de-droite-flag-de-sens* t)
+    (courbe-2d-canavex-haut 'courbe-2d-7 0.001 50 ($ 'courbe-2d-7 'dernier-point) (cadr ($ 'courbe-2d-7 'dernier-point))))
+(de ll2 () (setq *generateur-de-droite-flag-de-sens* nil)
+    (courbe-2d-canavex-bas 'courbe-2d-3 0.001 50 ($ 'courbe-2d-3 'dernier-point) (cadr ($ 'courbe-2d-3 'dernier-point))))
+
+(de ll3 ()   (courbe-2d-canavex 'courbe-2d-3 0.001 50 ($ 'courbe-2d-3 'dernier-point) (cadr ($ 'courbe-2d-3 'dernier-point)))) 

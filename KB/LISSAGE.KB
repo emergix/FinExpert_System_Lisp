@@ -1,0 +1,275 @@
+;fichier contenant les objects et fonctions ayant a voir avec le lissage exponentiel
+;   
+(add-knowledge-base 'lissage-kb
+                    'object-de-base
+                    '(determination-du-lissage lissage-r01 lissage-r02 lissage-r03 lissage-r04 lissage-r05
+                                               lissage-r06 lissage-r07 lissage-r08)
+                    nil)
+
+(add-attribute-user 'courbe-2d 's1-lissage-de-brown 's1-lissage-de-brown-determination 'instance)
+(add-attribute-user 'courbe-2d 's2-lissage-de-brown 's2-lissage-de-brown-determination 'instance)
+
+(add-slot-user 'courbe-2d 'nombre-de-jours-pour-le-lissage 'instance)
+(add-slot-user 'courbe-2d 'amortissement-pour-le-lissage 'instance)
+(add-slot-user 'courbe-2d 'nombre-de-jours-pour-la-prevision 'instance)
+
+
+
+
+(add-expand-method 'courbe-2d 'lissage-de-brown 'courbe-2d-expand-lissage-de-brown )
+(add-expand-method 'courbe-2d 'lissage-sinusoidal 'courbe-2d-expand-lissage-sinusoidal)
+
+(add-backward-chainer 'determination-du-lissage '())
+
+(set-determination-slot 'courbe-2d '(nombre-de-jours-pour-le-lissage
+				     amortissement-pour-le-lissage
+				     nombre-de-jours-pour-la-prevision))
+
+(initialize-slot 'courbe-2d 'nombre-de-jours-pour-le-lissage '((determination-means determination-du-lissage)))
+(initialize-slot 'courbe-2d 'amortissement-pour-le-lissage '((determination-means determination-du-lissage)))
+(initialize-slot 'courbe-2d 'nombre-de-jours-pour-la-prevision '((determination-means determination-du-lissage)))
+
+(add-backward-rule
+ 'lissage-r01
+ 'determination-du-lissage
+ 't
+ '0.45
+ '(amortissement-pour-le-lissage{c} courbe-2d)
+ nil)
+
+
+(add-backward-rule
+'lissage-r02
+ 'determination-du-lissage
+ '(and (> pointeur-max{c} 90)
+       (or (not (consp transformation{c}))
+           (null transformation{c})
+           (null (car transformation{c}))
+           (null (cdr transformation{c}))
+           (not (eq  (car transformation{c}) 'moyenne-mobile))))
+ '90
+ '(nombre-de-jours-pour-le-lissage{c} courbe-2d)
+ nil)
+
+
+(add-backward-rule
+'lissage-r03
+ 'determination-du-lissage
+ '(and (or  (not (consp transformation{c}))
+            (null transformation{c})
+            (null (car transformation{c}))
+            (null (cdr transformation{c}))
+            (not (eq  (car transformation{c}) 'moyenne-mobile)))
+       (<= pointeur-max{c} 90))
+ '(- pointeur-max{c} 1)
+ '(nombre-de-jours-pour-le-lissage{c} courbe-2d)
+ nil)
+
+
+(add-backward-rule
+ 'lissage-r04
+ 'determination-du-lissage
+ '(and  transformation{c}
+        (consp transformation{c})
+        (car transformation{c})
+        (cdr transformation{c})
+        (eq  (car transformation{c}) 'moyenne-mobile)
+        (> pointeur-max{c} (* 6  (cadr transformation{c} ))))
+ '(* 6 (cadr transformation{c} ))
+ '(nombre-de-jours-pour-le-lissage{c} courbe-2d)
+ nil)
+
+(add-backward-rule
+ 'lissage-r05
+ 'determination-du-lissage
+ '(and  transformation{c}
+        (consp transformation{c})
+        (car transformation{c})
+        (cdr transformation{c})
+        (eq  (car transformation{c}) 'moyenne-mobile)
+        (<= pointeur-max{c} (* 6  (cadr transformation{c} ))))
+ '(1- pointeur-max{c})
+ '(nombre-de-jours-pour-le-lissage{c} courbe-2d)
+ nil)
+
+
+(add-backward-rule
+ 'lissage-r06
+ 'determination-du-lissage
+ '(and  transformation{c}
+        (consp transformation{c})
+        (eq  (car transformation{c}) 'moyenne-mobile))
+ '(* 1.2 (cadr transformation{c} ))
+ '(nombre-de-jours-pour-la-prevision{c} courbe-2d)
+ nil)
+
+(add-backward-rule
+ 'lissage-r07
+ 'determination-du-lissage
+ '(or  (null transformation{c})
+       (not (consp transformation{c}))
+       (null (car transformation{c}))
+        (not (eq  (car transformation{c}) 'moyenne-mobile)))
+ '10
+ '(nombre-de-jours-pour-la-prevision{c} courbe-2d)
+ nil)
+
+
+(de s1-lissage-de-brown-determination (c slot)
+    (prog (nt a h l v som)
+	  (setq nt ($ determination-du-lissage 'determine c 'nombre-de-jours-pour-le-lissage))
+	  (setq a ($ determination-du-lissage 'determine c 'amortissement-pour-le-lissage))
+	  (setq h (get-slot-value c 'body))
+	  (setq l (get-slot-value c 'pointeur-max))
+	  (setq v 0)
+	  (setq som 0)
+	  loop
+	  (when (> v nt) (return som))
+	  (setq som (+ som (* a  (power (- 1 a) v) (cadr (vref h (- l v))))))
+	  (setq v (1+ v))
+	  (go loop)))
+
+(de s2-lissage-de-brown-determination (c slot)
+    (prog (nt a h l v som)
+	  (setq nt ($ determination-du-lissage 'determine c 'nombre-de-jours-pour-le-lissage))
+	  (setq a ($ determination-du-lissage 'determine c 'amortissement-pour-le-lissage))
+	  (setq h (get-slot-value c 'body))
+	  (setq l (get-slot-value c 'pointeur-max))
+	  (setq v 0)
+	  (setq som 0)
+	  loop
+	  (when (> v nt) (return som))
+	  (setq som (+ som (* a a ( + 1 v) (power (- 1 a) v) (cadr (vref h (- l v))))))
+	  (setq v (1+ v))
+	  (go loop)))
+
+
+
+
+(de courbe-2d-expand-lissage-de-brown (c)
+    (prog (nt np a h hh l v som l1 c1 h1)
+	  (setq nt ($ determination-du-lissage 'determine c 'nombre-de-jours-pour-le-lissage))
+	  (setq a ($ determination-du-lissage 'determine c 'amortissement-pour-le-lissage))
+	  (setq np ($ determination-du-lissage 'determine c 'nombre-de-jours-pour-la-prevision))
+	  (setq h (get-slot-value c 'body))
+	  (setq l (get-slot-value c 'pointeur-max))
+	  (setq l1 (+ l np))
+	  (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+	  (setq h1 (makevector (quotient (1+ l1) 1) ()))
+	  (setq hh 1)
+	  loop
+	  (when (> hh np) (go fin))
+	  (setf (vref h1 (+ hh l)) (list (+ hh (car (vref h l)))
+					 (+ (user-get-value c 's1-lissage-de-brown)
+					    (* (- (user-get-value c 's1-lissage-de-brown)
+						  (user-get-value c 's2-lissage-de-brown))
+					       (+ 1 (* a (/ hh (- 1 a))))))))
+	  (setq hh (1+ hh))
+	  (go loop)
+	  fin
+	  (setq hh 0)
+	  loop1
+	  (when (> hh l) (go fin1))
+	  (setf (vref h1 hh) (vref h hh))
+	  (setq hh (1+ hh))
+	  (go loop1)
+	  fin1
+	  (setf (get-slot-value c1 'body ) h1)
+	  (setf (get-slot-value c1 'pointeur ) 0)
+	  (setf (get-slot-value c1 'pointeur-max) l1)
+	  (setf (get-slot-value c1 'xtype) 'real)
+	  (setf (get-slot-value c1 'ytype) 'real)
+	  (setf (get-slot-value c1 'courbe-origine) (list c))
+	  (setf (get-slot-value c1 'transformation) 'lissage-de-brown)
+	  (return c1)))
+	  
+	  
+
+
+
+                  ;LISSAGE SINUSOIDAL
+
+(add-slot-user 'courbe-2d 'nombre-de-jours-pour-determiner-la-pente-moyenne 'instance)
+
+(set-determination-slot 'courbe-2d '(nombre-de-jours-pour-determiner-la-pente-moyenne))
+(initialize-slot 'courbe-2d 'nombre-de-jours-pour-determiner-la-pente-moyenne '((determination-means determination-du-lissage)))
+
+(add-attribute-user 'courbe-2d 'pente-moyenne 'courbe-2d-pente-moyenne 'instance)
+
+
+
+
+(add-backward-rule
+ 'lissage-r08
+ 'determination-du-lissage
+ '(numberp nombre-de-jours-pour-le-lissage{c})
+ '(+ nombre-de-jours-pour-le-lissage{c} 1)
+ '(nombre-de-jours-pour-determiner-la-pente-moyenne{c} courbe-2d)
+ nil)
+
+
+(de courbe-2d-pente-moyenne (courbe slot)
+    (prog ((h (get-slot-value courbe 'body))
+                   som-x som-y som-x2 som-xy)
+          (setq som-x (let ((s 0)) (mapvector '(lambda (x) (setq s (+ s (car x) ))) h) s))
+          (setq som-x2 (let ((s 0)) (mapvector '(lambda (x) (setq s (+ s (* (car x) (car x))))) h) s))
+          (setq som-y (let ((s 0)) (mapvector '(lambda (x) (setq s (+ s (cadr x)))) h) s))
+          (setq som-xy (let ((s 0)) (mapvector '(lambda (x) (setq s (+ s (* (car x) (cadr x))))) h) s))
+          
+          
+          (return (/ (- (* som-xy (vlength h)) (* som-x som-y)) (- som-x2 (* som-x som-x))))
+          
+          ))
+
+
+(de courbe-2d-expand-lissage-sinusoidal (courbe phase pulsation )
+    (prog ((cosfi (/ (car phase) (sqrt (+ (square (car phase)) (square (cadr phase))))))
+           (sinfi (/ (cadr phase) (sqrt (+ (square (car phase)) (square (cadr phase))))))
+           (dernier-point ($ courbe 'dernier-point))
+           (longueur-de-prediction ($ c 'determine 'nombre-de-jours-pour-determiner-la-pente-moyenne ))
+          (h (get-slot-value courbe 'body))
+          (l (get-slot-value courbe 'pointeur-max))
+           som-coswx som-cowx2 som-ycoswx a aa x0 xn yn hh h1 c1 l1)
+          (setq som-coswx2 (let ((s 0)) (mapvector '(lambda (x) (setq s (+ s (* (cos (* pulsation (car x)))
+                                                                                (cos (* pulsation (car x))) ) ))) h) s))
+          (setq som-ycoswx (let ((s 0)) (mapvector '(lambda (x) (setq s (+ s (* (cos (* pulsation (car x)))
+                                                                                (cadr x) ) ))) h) s))
+          (setq a ($ courbe 'determine 'pente-moyenne))
+                
+          (setq aa (/ som-ycoswx som-coswx2))
+          (setq xn (car dernier-point))
+          (setq yn (cadr dernier-point))
+          (setq x0 (- (- (+ (* a xn) (* (cos (* pulsation xn)) cosfi))  (* (sin (* pulsation xn)) sinfi)) yn))
+          ;l interpolation future de la courbe est donc x -> a*x + cos(wx)*cosfi -sin(wx)*sinfi -x0  (setq l1 (+ l np))
+          (setq l1 (+ l longueur-de-prediction)) 
+	  (setq h1 (makevector (quotient (1+ l1) 1) ()))
+	  (setq hh 1)
+	  loop
+	  (when (> hh longueur-de-prediction) (go fin))
+	  (setf (vref h1 (+ hh l)) (let ((x  (+ hh (car (vref h l)))))
+                                     (list x 
+					 (- (+ (* a x) (* (cos (* pulsation x)) cosfi))
+                                            (+  x0 (* (sin (* pulsation x)) sinfi))))))
+	  (setq hh (1+ hh))
+	  (go loop)
+	  fin
+	  (setq hh 0)
+	  loop1
+	  (when (> hh l) (go fin1))
+	  (setf (vref h1 hh) (vref h hh))
+	  (setq hh (1+ hh))
+	  (go loop1)
+	  fin1
+          (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+	  (setf (get-slot-value c1 'body ) h1)
+	  (setf (get-slot-value c1 'pointeur ) 0)
+	  (setf (get-slot-value c1 'pointeur-max) l1)
+	  (setf (get-slot-value c1 'xtype) 'real)
+	  (setf (get-slot-value c1 'ytype) 'real)
+	  (setf (get-slot-value c1 'courbe-origine) (list c))
+	  (setf (get-slot-value c1 'transformation) 'lissage-sinusoidal)
+	  (return c1)))
+	  
+                
+         
+

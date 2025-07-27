@@ -1,0 +1,993 @@
+;fichier contenant les regles de savoir-faire concernant l'utilisation des moyennes mobiles et fourier pour 
+
+
+;obtenir des rapports 
+
+(add-knowledge-base 'moving-average-kb
+                    'object-de-base
+                    '(expert-moving-average moving-average-event moving-average-analysis moving-average-parameters 
+                                            moving-average-r01 moving-average-r02 moving-average-r03 moving-average-r04
+                                            moving-average-r05 moving-average-r06 moving-average-r07 moving-average-r08
+                                            moving-average-r09 moving-average-r10 moving-average-r11 moving-average-r12
+                                            moving-average-r13 moving-average-r06bis)
+                    nil)
+
+(user-instanciate 'expert 'expert-moving-average ())
+
+
+(setf (get-slot-value 'expert-moving-average 'body) '(moving-average-parameters moving-average-analysis))
+
+(add-method 'expert-moving-average 'expert-moving-average-what-do-you-think-about 'what-do-you-think-about 'superseed)
+(add-method 'expert-moving-average 'expert-moving-average-ajoute-des-echeances 'ajoute-des-echeances 'superseed)
+
+
+(de expert-moving-average-what-do-you-think-about (expert courbe )
+    (prog  (r c spectre abcisse-list periode-longue periode-courte
+              moving-average-longue  moving-average-courte conclusion momentum-long momentum-court
+              courbe-de-distribution-long courbe-de-distribution-court dernier-jour  diviseur-de-distribution
+              objectif echeances lissage-de-brown-court lissage-de-brown-long phase-longue phase-courte
+              lissage-sinusoidal-long lissage-sinusoidal-court)
+           (mapc '(lambda (x) (undetermine moving-average-parameters  x))
+                 '(pulsation-longue pulsation-courte 
+                   periode-courte periode-longue 
+                   extremum-du-spectre-court extremum-du-spectre-long
+                   last-derivee-average-longue last-derivee-average-courte
+                   last-average-longue last-average-courte
+                   last-courbe-value ))
+           (setq c ($ courbe 'expand 'convert-time))
+           (setq objectif (get-slot-value meta-analysis 'objectif)) 
+           (when (null objectif)
+                (setq objectif (user-instanciate 'objectif nil nil))
+                (setf (get-slot-value meta-analysis 'objectif ) objectif))
+
+           (setq echeances (get-slot-value objectif 'echeances-interessantes))
+           (when (null echeances)
+                (setq echeances ($ objectif 'determine 'echeances-interessantes)))
+
+           (setf (get-slot-value 'moving-average-parameters  'spectre-reel) ($ c 'somme-de-fourier))
+           (setq spectre ($ ($ (get-slot-value 'moving-average-parameters  'spectre-reel) 'premiere-moitie-star) 'module))
+           (setq abcisse-list (abcisse-list spectre))
+           (setf (get-slot-value 'moving-average-parameters 'courbe) c)
+           (setf (get-slot-value 'moving-average-parameters 'spectre) spectre)
+           (setf (get-slot-value 'moving-average-parameters 'abcisse-list) abcisse-list)
+           ($  spectre 'expand 'extremum-local 'objects nil)
+           (setf (get-slot-value select-parameters 'courbe) c)
+
+           (setq diviseur-de-distribution ($ select-parameters 'determine select-parameters 'diviseur-de-distribution))
+           (setq periode-longue ($ moving-average-parameters 'determine 'moving-average-parameters 'periode-longue))
+           (setq periode-courte ($ moving-average-parameters 'determine 'moving-average-parameters 'periode-courte))  
+           (setq moving-average-longue ($ c 'moving-average periode-longue))
+           (setq momentum-long ($ ($ c '- moving-average-longue) 'cut 'debut periode-longue))
+           (setq moving-average-courte ($ c 'moving-average periode-courte))
+           (setq momentum-court ($ ($ c '- moving-average-courte) 'cut 'debut periode-courte))
+           (setq dernier-jour (car ($ c 'dernier-point)))
+           (setq courbe-de-distribution-long
+                 ($ momentum-long  'forme-distribution  diviseur-de-distribution))
+                    
+           (setq courbe-de-distribution-court
+                 ($ momentum-court  'forme-distribution  diviseur-de-distribution))
+
+           (setf (get-slot-value 'moving-average-parameters 'moving-average-longue) moving-average-longue)
+           (setf (get-slot-value 'moving-average-parameters 'moving-average-courte) moving-average-courte)
+           (setf (get-slot-value 'moving-average-parameters 'courbe-de-distribution-long) courbe-de-distribution-long)
+           (setf (get-slot-value 'moving-average-parameters 'courbe-de-distribution-court) courbe-de-distribution-court)
+           ($ c 'moving-average-scan-for-events  moving-average-longue moving-average-courte periode-longue periode-courte)
+           (setf  (get-slot-value 'moving-average-analysis 'conclusion) nil)
+           (setq lissage-de-brown-court ($ moving-average-courte 'expand 'lissage-de-brown))
+           (setq lissage-de-brown-long ($ moving-average-longue 'expand 'lissage-de-brown))
+           (setf (get-slot-value 'moving-average-analysis 'lissage-de-brown-court) lissage-de-brown-court)
+           (setf (get-slot-value 'moving-average-analysis 'lissage-de-brown-long) lissage-de-brown-long)
+           (setq phase-longue ($  (get-slot-value 'moving-average-parameters  'spectre-reel) 'interpolation 
+                                   (get-slot-value 'moving-average-parameters  'pulsation-longue)))
+           (setq phase-courte ($  (get-slot-value 'moving-average-parameters  'spectre-reel) 'interpolation 
+                                   (get-slot-value 'moving-average-parameters  'pulsation-courte)))
+           (setq lissage-sinusoidal-court ($ moving-average-courte 'expand 'lissage-sinusoidal phase-courte 
+                                             (get-slot-value 'moving-average-parameters  'pulsation-courte)))
+           (setq lissage-sinusoidal-long ($ moving-average-longue 'expand 'lissage-sinusoidal phase-longue 
+                                            (get-slot-value 'moving-average-parameters  'pulsation-longue)))
+           (setf (get-slot-value 'moving-average-analysis 'lissage-sinusoidal-long) lissage-sinusoidal-long)
+           (setf (get-slot-value 'moving-average-analysis 'lissage-sinusoidal-court) lissage-sinusoidal-court)
+           (setf (get-slot-value 'moving-average-analysis 'liste-des-conclusions-elementaires) nil)
+           (setf (get-slot-value 'moving-average-analysis 'conclusion) nil)
+
+           ($ 'moving-average-analysis 'sature)
+
+           (setq r  (create-instance-rapport 
+                     '(spectre periode-longue periode-courte  
+                               moving-average-longue  moving-average-courte)))
+           (setf (get-slot-value r 'courbe) courbe)
+           (setf (get-slot-value r 'spectre) spectre)
+           (setf (get-slot-value r 'periode-longue) periode-longue)
+           (setf (get-slot-value r 'periode-courte) periode-courte)
+           (setf (get-slot-value r 'moving-average-longue) moving-average-longue)
+           (setf (get-slot-value r 'moving-average-courte) moving-average-courte)
+           (setf (get-slot-value r 'technique) 'moving-average)
+           (setf (get-slot-value 'expert-moving-average 'rapport-genere) r)
+           (setf (get-slot-value r 'liste-des-conclusions-elementaires)
+                 (get-slot-value 'moving-average-analysis 'liste-des-conclusions-elementaires))
+           (mapc '(lambda (x) (setf (get-slot-value x 'rapport) r)) 
+                 (get-slot-value 'moving-average-analysis 'liste-des-conclusions-elementaires))
+           (setf (get-slot-value r 'description-technique)
+                 "analyse de moyenne mobile")
+           (setq conclusion (get-slot-value 'moving-average-analysis 'conclusion))
+           (setf (get-slot-value r 'conclusion) conclusion)
+
+           (setf (get-slot-value 'expert-moving-average 'echeances-deja-traitees)
+                (append-new (mapcan '(lambda (y) (cond((eq (get-slot-value y 'objectif) objectif)
+                                                       (list y))))
+                                    (get-all-instances 'echeance))
+                            (get-slot-value 'expert-moving-average 'echeances-deja-traitees)))
+
+           (return r)))
+
+
+(de expert-moving-average-ajoute-des-echeances (expert)
+    (prog (r objectif)
+          (setq objectif (get-slot-value meta-analysis 'objectif)) 
+          (setq r (get-slot-value 'expert-moving-average 'rapport-genere))
+          (setf (get-slot-value 'moving-average-analysis 'conclusion)
+                (get-slot-value r 'conclusion))
+          (setf (get-slot-value 'moving-average-analysis 'liste-des-conclusions-elementaires)
+                (get-slot-value r 'liste-des-conclusions-elementaires))
+          ;($ 'moving-average-analysis 'sature) 
+          (setf (get-slot-value r 'conclusion)
+                (get-slot-value 'moving-average-analysis 'conclusion)) 
+          (setf (get-slot-value r 'liste-des-conclusions-elementaires)
+                (get-slot-value 'moving-average-analysis 'liste-des-conclusions-elementaires))
+          (mapc '(lambda (x) (setf (get-slot-value x 'rapport) r))
+                (get-slot-value 'moving-average-analysis 'liste-des-conclusions-elementaires))
+          (setf (get-slot-value 'expert-moving-average 'echeances-deja-traitees)
+                (append-new (mapcan '(lambda (y) (cond((eq (get-slot-value y 'objectif) objectif)
+                                                       (list y))))
+                                    (get-all-instances 'echeance))
+                            (get-slot-value 'expert-moving-average 'echeances-deja-traitees)))
+          (return r)))
+ 
+
+
+                         ;description des evenements 
+
+
+(user-instanciate 'metaclass 'moving-average-event ())
+
+(add-slot-user 'moving-average-event 'courbe 'instance)
+(add-slot-user 'moving-average-event 'moyenne-longue 'instance)
+(add-slot-user 'moving-average-event 'moyenne-courte 'instance)
+(add-slot-user 'moving-average-event 'rang-de-l-evenement 'instance)
+(add-slot-user 'moving-average-event 'evenement-suivant 'instance)
+(add-slot-user 'moving-average-event 'evenement-precedent 'instance)
+(add-slot-user 'moving-average-event 'abcisse 'instance)
+(add-slot-user 'moving-average-event 'type 'instance)
+
+
+
+                       ;regles associe a la selection des moyennes mobiles
+
+(add-backward-chainer 'moving-average-parameters 
+                      '(pulsation-longue pulsation-courte  
+                        periode-courte periode-longue
+                        moving-average-longue  moving-average-courte spectre abcisse-list courbe
+                        extremum-du-spectre-court extremum-du-spectre-long
+                         spectre-reel
+                        courbe-de-distribution-long courbe-de-distribution-court
+                        ))
+
+(add-attribute-user 'moving-average-parameters 'last-courbe-value
+                    '(lambda (b slot) 
+                       (cadr ($ (get-slot-value 'moving-average-parameters 'courbe) 'dernier-point)))
+                    'instance)
+
+(add-attribute-user 'moving-average-parameters 'last-average-courte 
+                    '(lambda (b slot) 
+                       (cadr ($ (determine-slot-value 'moving-average-parameters 'moving-average-courte) 'dernier-point)))
+                    'instance)
+
+(add-attribute-user 'moving-average-parameters 'last-average-longue
+                    '(lambda (b slot) 
+                       (cadr ($ (determine-slot-value 'moving-average-parameters 'moving-average-longue) 'dernier-point)))
+                    'instance)
+                       
+
+(add-attribute-user 'moving-average-parameters 'last-derivee-average-courte 
+                    '(lambda (b slot) 
+                       ($ (determine-slot-value 'moving-average-parameters 'moving-average-courte) 'derivee-ponctuelle
+                          (car ($ (get-slot-value moving-average-parameters 'courbe) 'dernier-point))
+                          (1+ (quotient (determine-slot-value moving-average-parameters 'periode-courte) 6))))
+                    'instance)
+
+(add-attribute-user 'moving-average-parameters 'last-derivee-average-longue
+                    '(lambda (b slot) 
+                      ($ (determine-slot-value 'moving-average-parameters 'moving-average-longue) 'derivee-ponctuelle
+                         (car ($ (get-slot-value moving-average-parameters 'courbe) 'dernier-point))
+                         (quotient (determine-slot-value moving-average-parameters 'periode-courte) 10)))
+                    'instance)
+                       
+
+(set-determination-slot moving-average-parameters 
+                        '(pulsation-longue pulsation-courte 
+                          periode-courte periode-longue
+                          extremum-du-spectre-court extremum-du-spectre-long
+                          ))
+
+(mapc '(lambda (x) (setf (get-slot-facet-value moving-average-parameters x 'determination-means) 
+                         'moving-average-parameters))
+      '(pulsation-longue pulsation-courte 
+        periode-courte periode-longue 
+         extremum-du-spectre-court extremum-du-spectre-long
+         ))
+
+
+(add-backward-rule
+'moving-average-r01
+ 'moving-average-parameters
+ '(existing (c 'courbe-2d) (and (eq c courbe{b})
+                                (>  pulsation-longue{b} 0)))
+ '(* (/ (* 2 pi) pulsation-longue{b}) (/  (amplitude-maximum-en-jours c) (vlength body{c})))
+ '(periode-longue{b} backward-chainer) 
+ "calcul de la periode longue")
+
+
+
+
+
+(add-backward-rule
+'moving-average-r02
+ 'moving-average-parameters
+ '(existing (c 'courbe-2d) (and (eq c courbe{b})
+                                (>  pulsation-courte{b} 0)))
+ '(* (/ (* 2 pi) pulsation-courte{b}) (/  (amplitude-maximum-en-jours c) (vlength body{c})))
+ '(periode-courte{b} backward-chainer) 
+ "calcul de la periode courte")
+
+
+
+
+
+
+(add-backward-rule 
+'moving-average-r03
+ 'moving-average-parameters
+ 't
+ '(plus-haut-extremum (mapcan '(lambda (x) (cond ((and (eq (get-fondamental-value x 'courbe) 
+                                                           (get-fondamental-value moving-average-parameters 'spectre))
+                                                       (> (/ (get-fondamental-value x 'rang)
+                                                             (vlength (get-fondamental-value (get-fondamental-value x 'courbe) 'body)))
+                                                          0.1)
+                                                       (< (/ (get-fondamental-value x 'rang)
+                                                             (vlength (get-fondamental-value (get-fondamental-value x 'courbe) 'body)))
+                                                          0.4)
+                                                       )
+                                                  (list x))
+                                                 (t nil)))
+                              ($ spectre{b} 'maximums-locaux)))
+ '(extremum-du-spectre-court{b} backward-chainer)
+ "calcul du maximum lie aux periodes courtes du spectre 5-20 j = ")
+
+
+(add-backward-rule 
+'moving-average-r04
+ 'moving-average-parameters
+ '(existing (m1 'extremum-local) (eq m1  extremum-du-spectre-court{b}))
+ '(plus-haut-extremum (mapcan '(lambda (x) (cond ((and (eq (get-fondamental-value x 'courbe) 
+                                                           (get-fondamental-value moving-average-parameters 'spectre))
+                                                       ( < (get-fondamental-value x 'rang)
+                                                           (get-fondamental-value m1 'rang))
+                                                       (< (/ (get-fondamental-value x 'rang)
+                                                             (vlength (get-fondamental-value (get-fondamental-value x 'courbe) 'body)))
+                                                          0.1)
+                                                       (> (/ (get-fondamental-value x 'rang)
+                                                             (vlength (get-fondamental-value (get-fondamental-value x 'courbe) 'body)))
+                                                          0.03)
+                                                       )
+                                                  (list x))
+                                                 (t nil)))
+                              ($ spectre{b} 'maximums-locaux)))
+ '(extremum-du-spectre-long{b} backward-chainer)
+ "calcul du maximum lie au periode longue du spectre")
+
+
+
+(add-backward-rule
+'moving-average-r05
+ 'moving-average-parameters
+ '(existing (c 'courbe-2d) (and (eq c courbe{b})
+                                (existing (a 'extremum-local)
+                                         (eq a  extremum-du-spectre-court{b}))))
+ '(car (get-slot-value  a 'hauteur))
+  '(pulsation-courte{b} backward-chainer)
+ " la pulsation de la moyenne courte ")
+
+
+
+
+(add-backward-rule
+'moving-average-r06
+ 'moving-average-parameters
+ '(existing (c 'courbe-2d) (and (eq c courbe{b})
+                                (existing (a 'extremum-local)
+                                         (eq a  extremum-du-spectre-long{b}))))
+ '(car (get-slot-value  a 'hauteur))
+ '(pulsation-longue{b} backward-chainer)
+ " la pulsation de la moyenne longue")
+
+
+(add-backward-rule
+'moving-average-r06bis
+ 'moving-average-parameters
+ '(existing (c 'courbe-2d) (and (eq c courbe{b})
+                                (not (existing (a 'extremum-local)
+                                               (eq a  extremum-du-spectre-long{b})))
+                                pulsation-courte{b}           ))
+ '(/ 2 (+ 1 pulsation-courte{b}))
+ '(pulsation-longue{b} backward-chainer)
+ " la pulsation de la moyenne longue 2")
+
+
+
+
+
+
+
+
+(add-method 'courbe-2d 'courbe-2d-moving-average-scan-for-events 'moving-average-scan-for-events 'superseed)
+(add-method 'courbe-2d 'courbe-2d-moving-average 'moving-average 'superseed)
+
+
+
+(de courbe-2d-moving-average (courbe periode)
+    (prog (nb-cours
+           (h (get-slot-value courbe 'body))
+           (vmax (get-slot-value courbe 'pointeur-max))
+           (v 0)
+           temps-max)
+          (setq temps-max (+ (car (vref h v)) periode))
+          loop
+          (when (> (car (vref h v)) temps-max) (go fin))
+          (setq v (1+ v))
+          (when (> v vmax) (go fin))
+          (go loop)
+          fin
+          (setq nb-cours (1- v))
+          (return (courbe-2d-moving-average-1 courbe nb-cours))))
+
+(de courbe-2d-moving-average-1 (courbe nb-cours)
+    (prog ((nb-eff (quotient nb-cours 1)) 
+           (h (get-slot-value courbe 'body))
+           vmax (v 0) c1 h1)
+          (setq vmax (- (vlength h) nb-eff))
+          (setq h1 (makevector (1+ vmax) ()))
+          loop
+          (setf (vref h1 v) (list (car (vref h (1- (+ v nb-eff))))
+                                  (prog ((add 0)
+                                         (v1 0))
+                                        loop
+                                        (setq add (+ add (cadr (vref h (- (1- (+ v nb-eff)) v1))))) 
+                                        (setq v1 (1+ v1))
+                                        (when (>= v1 nb-eff) (return (/ add nb-eff)))
+                                        (go loop))))
+          (setq v (1+ v))
+          (when (> v vmax) (go fin))
+          (go loop)
+          fin
+          (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+          (setf (get-slot-value c1 'body) h1)
+          (setf (get-slot-value c1 'xtype) (get-slot-value c 'xtype))
+          (setf (get-slot-value c1 'pointeur) 0)
+          (setf (get-slot-value c1 'pointeur-max) (1- vmax))
+          (setf (get-slot-value c1 'courbe-origine) (list c))
+          (setf (get-slot-value c1 'transformation) (list 'moyenne-mobile nb-eff))
+          (setf (get-slot-value c1 'ytype) (get-slot-value c 'ytype))
+          (return c1)))
+          
+
+(de courbe-2d-moving-average-scan-for-events (c ma-longue  ma-courte p-periode-longue p-periode-courte)
+    (prog ((h (get-slot-value c 'body))
+           (d (get-slot-value c 'pointeur-max))
+           (v 0)
+           (hl (get-slot-value ma-longue 'body))
+           (hc (get-slot-value ma-courte 'body))
+           preceding-event 
+           next-event preceding-c preceding-mc preceding-ml
+           p-preceding-c p-preceding-mc p-preceding-ml
+           (periode-longue (quotient p-periode-longue 1))
+           (periode-courte (quotient p-periode-courte 1))
+           )
+          (setq v (premier-rang-apres-vecteur h (car (vref hl 0))))
+          (setq p-preceding-c (cadr (vref h v)))
+        ;  (setq p-preceding-mc (cadr (vref hc (- v periode-courte))))
+          (setq p-preceding-mc (courbe-2d-interpolation ma-courte (car (vref h v))))
+         ; (setq p-preceding-ml (cadr (vref hl (- v periode-longue))))
+           (setq p-preceding-ml (courbe-2d-interpolation ma-longue (car (vref h v))))
+          (setq v (1+ v))
+          (setq preceding-c (cadr (vref h v)))
+       ;   (setq preceding-mc (cadr (vref hc (- v periode-courte))))
+          (setq preceding-mc (courbe-2d-interpolation ma-courte (car (vref h v))))
+       ;   (setq preceding-ml (cadr (vref hl (- v periode-longue))))
+           (setq preceding-ml (courbe-2d-interpolation ma-longue (car (vref h v))))
+          loop
+          (setq v (1+ v))
+          (when (>= v d) (go fin))
+          (setq current-c (cadr (vref h v)))
+         ; (setq current-mc (cadr (vref hc (- v periode-courte))))
+          (setq current-mc (courbe-2d-interpolation ma-courte (car (vref h v))))
+        ;  (setq current-ml (cadr (vref hl (- v periode-longue))))
+          (setq current-ml (courbe-2d-interpolation ma-longue (car (vref h v)))) 
+          ; le classement des evenement est fait de la maniere suivante : soit cc1 + cc2  soit cc.up soit cc.down
+          ;  cc1 + cc2 signifie cc1 etait en dessous de cc2 et cc1 vient de rejoindre cc2.
+
+          ; d ou les evenements suivants : c+ml , c+mc , ml+c , mc+c , mc+ml , ml+mc , ml.up , ml.down , mc.up , mc.down
+
+     ; c+ml
+
+          (when (and (> preceding-ml preceding-c) 
+                     (> current-c current-ml))
+                (setq preceding-event
+                      (moving-average-genere-event c ma-longue ma-courte  v preceding-event (car (vref h v)) 'c+ml)))
+
+     ; ml+c
+
+          (when (and (> preceding-c preceding-ml) 
+                     (> current-ml current-c))
+                (setq preceding-event
+                      (moving-average-genere-event c ma-longue ma-courte  v preceding-event (car (vref h v)) 'ml+c)))
+          
+
+
+    ; c+mc
+
+          (when (and (> preceding-mc preceding-c) 
+                     (> current-c current-mc))
+                (setq preceding-event
+                      (moving-average-genere-event c ma-longue ma-courte  v preceding-event (car (vref h v)) 'c+mc)))
+
+     ; mc+c
+
+          (when (and (> preceding-c preceding-mc) 
+                     (> current-mc current-c))
+                (setq preceding-event
+                      (moving-average-genere-event c ma-longue ma-courte  v preceding-event (car (vref h v)) 'mc+c)))
+          
+    ; mc+ml
+
+          (when (and (> preceding-ml preceding-mc) 
+                     (> current-mc current-ml))
+                (setq preceding-event
+                      (moving-average-genere-event c ma-longue ma-courte  v preceding-event (car (vref h v)) 'mc+ml)))
+
+     ; ml+mc
+
+          (when (and (> preceding-mc preceding-ml) 
+                     (> current-ml current-mc))
+                (setq preceding-event
+                      (moving-average-genere-event c ma-longue ma-courte  v preceding-event (car (vref h v)) 'ml+mc)))
+          
+     ; mc.up
+          (when (and (> preceding-mc p-preceding-mc)
+                     (> preceding-mc current-mc))
+                (setq preceding-event
+                      (moving-average-genere-event c ma-longue ma-courte  v preceding-event (car (vref h (1- v))) 'mc.up)))
+
+     ; mc.down
+          (when (and (< preceding-mc p-preceding-mc)
+                     (< preceding-mc current-mc))
+                (setq preceding-event
+                      (moving-average-genere-event c ma-longue ma-courte  v preceding-event (car (vref h (1- v))) 'mc.down)))
+
+          
+
+     ; mc.up
+          (when (and (> preceding-ml p-preceding-ml)
+                     (> preceding-ml current-ml))
+                (setq preceding-event
+                      (moving-average-genere-event c ma-longue ma-courte  v preceding-event (car (vref h (1- v))) 'ml.up)))
+
+     ; mc.down
+          (when (and (< preceding-ml p-preceding-ml)
+                     (< preceding-ml current-ml))
+                (setq preceding-event
+                      (moving-average-genere-event c ma-longue ma-courte  v preceding-event (car (vref h (1- v))) 'ml.down)))
+
+          ;
+          ;
+          ;
+          (setq p-preceding-c preceding-c)
+          (setq p-preceding-ml preceding-ml)
+          (setq p-preceding-mc preceding-mc)
+          (setq preceding-c current-c )
+          (setq preceding-mc current-mc )
+          (setq preceding-ml current-ml )
+          (go loop)
+          fin
+          (return)
+          ))
+
+
+ 
+(de moving-average-genere-event (courbe  ma-longue ma-courte  v preceding-event abcisse type)
+    (prog (ev)
+          (setq ev (user-instanciate 'moving-average-event nil nil))
+          (when preceding-event (setf (get-slot-value preceding-event 'evenement-suivant) ev))
+          (setf (get-slot-value ev 'evenement-precedent) preceding-event)
+          (setf (get-slot-value ev 'courbe) courbe)
+          (setf (get-slot-value ev 'moyenne-longue) ma-longue)
+          (setf (get-slot-value ev 'moyenne-courte) ma-courte)
+          (setf (get-slot-value ev 'rang-de-l-evenement) v)
+          (setf (get-slot-value ev 'abcisse) abcisse)
+          (setf (get-slot-value ev 'type) type)
+          (return ev)))
+
+
+
+(de premier-rang-apres-vecteur (vect n) 
+    (prog ((d (vlength vect))
+           (v 0))
+          loop
+          (when (> (car (vref vect v)) n) (return v))
+          (setq v (1+ v))
+          (when (>= v d) (return d))
+          (go loop)))
+           
+
+
+
+ (add-method 'courbe-2d 'courbe-2d-derivee-ponctuelle 'derivee-ponctuelle 'superseed)
+
+ (de courbe-2d-derivee-ponctuelle (courbe x deltax)
+     (/ (- (courbe-r-interpolation courbe x) 
+           (courbe-r-interpolation courbe (- x deltax)))
+        deltax))
+
+
+
+
+(add-forward-chainer 'moving-average-analysis '(conclusion liste-des-conclusions-elementaires fonction-d-importance
+                                                           lissage-sinusoidal-long lissage-sinusoidal-court
+                                                           lissage-de-brown-long lissage-de-brown-court))
+
+(setf (get-slot-value moving-average-analysis 'fonction-d-importance)
+      '(lambda (x) 1.))
+
+
+
+
+
+(add-forward-rule 
+'moving-average-r07
+ 'moving-average-analysis
+ '(existing (c courbe-2d)
+            (and (eq c courbe{moving-average-parameters})
+                 (> last-average-courte{moving-average-parameters} last-courbe-value{moving-average-parameters})
+                 ))
+ '(let (conc
+        (distribution courbe-de-distribution-court{moving-average-parameters}) 
+        (moyenne-courte  moving-average-courte{moving-average-parameters}) 
+        probabilite-de-hausse probabilite-de-baisse probabilite-d-objectif b* i* c*)
+      
+    (setq b* ($ distribution 'integrale->x (-  (cadr ($ c 'dernier-point))  (cadr ($ moyenne-courte 'dernier-point)))))
+    (setq c* ($ distribution 'integrale->x 0))
+    (setq i* ($ distribution 'integrale )) 
+    (setq probabilite-de-hausse (/ b* i*))
+    (setq probabilite-de-baisse (- 1 probabilite-de-hausse))
+    (setq probabilite-d-objectif (/ c* i*))
+    (conclusion{moving-average-analysis} @a 
+                                         (copy `((technique-utilisee moving-average) 
+                                                 (probabilite-de-hausse ,probabilite-de-hausse)
+                                                 (probabilite-de-baisse ,probabilite-de-baisse)
+                                                 (objectif-de-prix ,(get-slot-value moving-average-parameters 'last-average-courte))
+                                                 (echeance ,(+ (car ($ c 'dernier-point))
+                                                               (get-slot-value moving-average-parameters 'periode-courte)))
+                                                 (probabilite-d-objectif ,probabilite-d-objectif)
+                                                 )))
+    (setq conc (user-instanciate 'conclusion-elementaire nil nil))
+    (liste-des-conclusions-elementaires{moving-average-analysis} @a conc)
+    (technique-utilisee{conc} @= 'moving-average)
+    (objectif-de-prix{conc} @= (get-slot-value moving-average-parameters 'last-average-courte))
+    (echeance{conc} @= (+ (car ($ c 'dernier-point))
+                          (get-slot-value moving-average-parameters 'periode-courte)))
+    (type{conc} @= 'survente-courte)
+    (importance{conc} @= probabilite-d-objectif)
+
+               )
+ " sur-vente classique par rapport a la moyenne courte")
+
+
+(add-forward-rule 
+ 'moving-average-r08
+ 'moving-average-analysis
+ '(existing (c courbe-2d)
+            (and (eq c courbe{moving-average-parameters})
+                 (< last-average-courte{moving-average-parameters} last-courbe-value{moving-average-parameters})))
+ '(let (conc
+        (distribution courbe-de-distribution-court{moving-average-parameters}) 
+        (moyenne-courte  moving-average-courte{moving-average-parameters}) 
+        probabilite-de-hausse probabilite-de-baisse probabilite-d-objectif b* i* c*)
+
+    (setq b* ($ distribution 'integrale->x (-  (cadr ($ c 'dernier-point))  (cadr ($ moyenne-courte 'dernier-point)))))
+    (setq c* ($ distribution 'integrale->x 0))
+    (setq i* ($ distribution 'integrale )) 
+    (setq probabilite-de-hausse (/ b* i*))
+    (setq probabilite-de-baisse (- 1 probabilite-de-hausse))
+    (setq probabilite-d-objectif (- 1 (/ c* i*)))
+    (conclusion{moving-average-analysis} @a 
+             (copy   `((technique-utilisee moving-average)
+                       (probabilite-de-hausse ,probabilite-de-hausse)
+                       (probabilite-de-baisse ,probabilite-de-baisse)
+                       (objectif-de-prix ,(get-slot-value moving-average-parameters 'last-average-courte))
+                       (echeance ,(+ (car ($ c 'dernier-point))
+                                     (get-slot-value moving-average-parameters 'periode-courte)))
+                       (probabilite-d-objectif ,probabilite-d-objectif)
+                       )))
+    
+    (setq conc (user-instanciate 'conclusion-elementaire nil nil))
+    (liste-des-conclusions-elementaires{moving-average-analysis} @a conc)
+    (technique-utilisee{conc} @= 'moving-average)
+    (objectif-de-prix{conc} @= (get-slot-value moving-average-parameters 'last-average-courte))
+    (echeance{conc} @= (+ (car ($ c 'dernier-point))
+                          (get-slot-value moving-average-parameters 'periode-courte)))
+    (type{conc} @= 'surachat-court)
+    (importance{conc} @= probabilite-d-objectif)
+
+    )
+    
+ " sur-achat classique par rapport a la moyenne courte")
+
+(add-forward-rule 
+ 'moving-average-r09
+ 'moving-average-analysis
+ '(existing (c courbe-2d)
+            (and (eq c courbe{moving-average-parameters})
+                 (> last-average-longue{moving-average-parameters} last-courbe-value{moving-average-parameters})))
+ '(let (conc
+        (distribution courbe-de-distribution-court{moving-average-parameters}) 
+        (moyenne-longue  moving-average-longue{moving-average-parameters}) 
+        probabilite-de-hausse probabilite-de-baisse probabilite-d-objectif b* i* c*)
+
+    (setq b* ($ distribution 'integrale->x (-  (cadr ($ c 'dernier-point))  (cadr ($ moyenne-longue 'dernier-point)))))
+    (setq c* ($ distribution 'integrale->x 0))
+    (setq i* ($ distribution 'integrale )) 
+    (setq probabilite-de-hausse (/ b* i*))
+    (setq probabilite-de-baisse (- 1 probabilite-de-hausse))
+    (setq probabilite-d-objectif (/ c* i*))
+    (conclusion{moving-average-analysis} @a 
+                                         (copy  `((technique-utilisee moving-average)
+                                                  (probabilite-de-hausse ,probabilite-de-hausse) 
+                                                  (probabilite-de-baisse ,probabilite-de-baisse)
+                                                  (objectif-de-prix ,(get-slot-value moving-average-parameters 'last-average-longue))
+                                                  (echeance ,(+ (car ($ c 'dernier-point))
+                                                                (get-slot-value moving-average-parameters 'periode-longue)))
+                                                  (probabilite-d-objectif ,probabilite-d-objectif)
+                                                  )))
+    (setq conc (user-instanciate 'conclusion-elementaire nil nil))
+    (liste-des-conclusions-elementaires{moving-average-analysis} @a conc)
+    (technique-utilisee{conc} @= 'moving-average)
+    (objectif-de-prix{conc} @= (get-slot-value moving-average-parameters 'last-average-longue))
+    (echeance{conc} @= (+ (car ($ c 'dernier-point))
+                          (get-slot-value moving-average-parameters 'periode-longue)))
+    (type{conc} @= 'survente-longue)
+    (importance{conc} @= (funcall fonction-d-importance{moving-average-analysis} c))
+
+    )
+ " sur-vente classique par rapport a la moyenne longue")
+
+(add-forward-rule 
+ 'moving-average-r10
+ 'moving-average-analysis
+ '(existing (c courbe-2d)
+            (and  (eq c courbe{moving-average-parameters})
+                  (< last-average-longue{moving-average-parameters} last-courbe-value{moving-average-parameters})
+                 ))
+ '(let (conc
+        (distribution courbe-de-distribution-court{moving-average-parameters}) 
+        (moyenne-longue  moving-average-longue{moving-average-parameters}) 
+        probabilite-de-hausse probabilite-de-baisse probabilite-d-objectif b* i* c*)
+
+    (setq b* ($ distribution 'integrale->x (-  (cadr ($ c 'dernier-point))  (cadr ($ moyenne-longue 'dernier-point)))))
+    (setq c* ($ distribution 'integrale->x 0))
+    (setq i* ($ distribution 'integrale )) 
+    (setq probabilite-de-hausse (/ b* i*))
+    (setq probabilite-de-baisse (- 1 probabilite-de-hausse))
+    (setq probabilite-d-objectif (- 1 (/ c* i*)))
+    (conclusion{moving-average-analysis} @a 
+           (copy `((technique-utilisee moving-average) 
+                   (probabilite-de-hausse ,probabilite-de-hausse)
+                   (probabilite-de-baisse ,probabilite-de-baisse)
+                   (objectif-de-prix ,(get-slot-value moving-average-parameters 'last-average-longue))
+                   (echeance ,(+ (car ($ c 'dernier-point))
+                                 (get-slot-value moving-average-parameters 'periode-longue)))
+                   (probabilite-d-objectif ,probabilite-d-objectif)
+                   )))
+    (setq conc (user-instanciate 'conclusion-elementaire nil nil))
+    (liste-des-conclusions-elementaires{moving-average-analysis} @a conc)
+    (technique-utilisee{conc} @= 'moving-average)
+    (objectif-de-prix{conc} @= (get-slot-value moving-average-parameters 'last-average-longue))
+    (echeance{conc} @= (+ (car ($ c 'dernier-point))
+                          (get-slot-value moving-average-parameters 'periode-longue)))
+    (type{conc} @= 'surachat-longue)
+    (importance{conc} @= (funcall fonction-d-importance{moving-average-analysis} c))
+
+    )
+ " sur-achat classique par rapport a la moyenne longue")
+
+(add-forward-rule
+'moving-average-r11
+ 'moving-average-analysis
+ '(existing (c courbe-2d)
+            (and (eq c courbe{moving-average-parameters})
+                 (existing (ev1 moving-average-event)
+                           (and (eq type{ev1} 'mc.down)
+                                (eq courbe{ev1} c)
+                                (< (- pointeur-max{c} rang-de-l-evenement{ev1}) 
+                                   periode-courte{moving-average-parameters})
+                                (> last-average-longue{moving-average-parameters}
+                                   last-average-courte{moving-average-parameters})
+                                (> (+ last-courbe-value{moving-average-parameters}
+                                      (-  last-average-longue{moving-average-parameters}
+                                          last-average-courte{moving-average-parameters}))
+                                   (cadr ($ c 'point-maximum  rang-de-l-evenement{ev1} pointeur-max{c})))))))
+
+'(let ((prevision-prix (+ last-courbe-value{moving-average-parameters}
+                          (-  last-average-longue{moving-average-parameters}
+                              last-average-courte{moving-average-parameters}))) conc)
+   (conclusion{moving-average-analysis} @a
+            (copy `((technique-utilisee moving-average) (probabilite-de-hausse 1.) (probabilite-de-baisse 0.)
+                     (objectif-de-prix ,prevision-prix)
+                     (echeance ,(+ (car ($ c 'dernier-point))
+                                   (get-slot-value moving-average-parameters 'periode-courte))))))
+   (setq conc (user-instanciate 'conclusion-elementaire nil nil))
+   (liste-des-conclusions-elementaires{moving-average-analysis} @a conc)
+   (technique-utilisee{conc} @= 'moving-average)
+   (objectif-de-prix{conc} @= prevision-prix)
+   (echeance{conc} @= (+ (car ($ c 'dernier-point))
+                         (get-slot-value moving-average-parameters 'periode-courte)))
+   (type{conc} @= 'plus-bas-court)
+   (importance{conc} @= (funcall fonction-d-importance{moving-average-analysis} c))
+   )
+" cas du mc.down ")
+
+
+
+
+(add-forward-rule
+'moving-average-r12
+ 'moving-average-analysis
+ '(existing (c courbe-2d)
+            (and (eq c courbe{moving-average-parameters})
+                 (existing (ev1 moving-average-event)
+                           (and (eq type{ev1} 'mc.up)
+                                (eq courbe{ev1} c)
+                                (< (- pointeur-max{c} rang-de-l-evenement{ev1}) 
+                                   periode-courte{moving-average-parameters})
+                                (< last-average-longue{moving-average-parameters}
+                                   last-average-courte{moving-average-parameters})
+                                (<  (+ last-courbe-value{moving-average-parameters}
+                                       (-  last-average-longue{moving-average-parameters}
+                                           last-average-courte{moving-average-parameters}))
+                                    (cadr ($ c 'point-minimum rang-de-l-evenement{ev1} pointeur-max{c})))))))
+
+'(let ((prevision-prix (+ last-courbe-value{moving-average-parameters}
+                          (-  last-average-longue{moving-average-parameters}
+                              last-average-courte{moving-average-parameters}))))
+   (conclusion{moving-average-analysis} @a
+             (copy  `((technique-utilisee moving-average) (probabilite-de-hausse 0.) (probabilite-de-baisse 1.)
+                     (objectif-de-prix ,prevision-prix)
+                     (echeance ,(+ (car ($ c 'dernier-point))
+                                   (get-slot-value moving-average-parameters 'periode-courte))))))
+   (setq conc (user-instanciate 'conclusion-elementaire nil nil))
+   (liste-des-conclusions-elementaires{moving-average-analysis} @a conc)
+   (technique-utilisee{conc} @= 'moving-average)
+   (objectif-de-prix{conc} @= prevision-prix)
+   (echeance{conc} @= (+ (car ($ c 'dernier-point))
+                         (get-slot-value moving-average-parameters 'periode-courte)))
+   (type{conc} @= 'plus-haut-court)
+   (importance{conc} @= (funcall fonction-d-importance{moving-average-analysis} c))
+   )
+" cas du mc.up ")
+
+
+(add-forward-rule 
+'moving-average-r13
+ 'moving-average-analysis
+ '(existing (c 'courbe-2d)
+            (and (eq c courbe{moving-average-parameters})
+                 (existing (echeance 'echeance)
+                           (and (not (memq echeance echeances-deja-traitees{expert-canal}))
+                                (eq objectif{echeance} objectif{meta-analysis})
+                                (existing (conc-elem 'conclusion-elementaire)
+                                          (and (eq technique-utilisee{conc-celem} 'moving-average)
+                                               (not (eq formation{conc-elem} 'secondaire))
+                                               ))))))
+ '(let (celem
+        (objectif-echeance (get-slot-value conc-elem 'echeance))
+        (objectif-prix (get-slot-value conc-elem 'objectif-de-prix))
+        (echeance-nbj (get-slot-value echeance 'date-entiere))
+        (courbe ($ (get-slot-value
+                    (get-slot-value 
+                     (get-slot-value conc-elem 'rapport) 'courbe) 'dernier-cours) 'convert-time))
+        volatilite s1 s2 delta-t)
+    (setq volatilite (user-get-value courbe 'volatilite))
+    (setq deltat-t (- echeance objectif-echeance))
+    (setq celem (user-instanciate 'conclusion-elementaire nil nil))
+    (setf (get-slot-value celem 'technique-utilisee) 'moving-average)
+    (setf (get-slot-value celem 'formation) 'secondaire)
+    (setf (get-slot-value celem 'importance) (get-slot-value conc-celem 'importance))
+    (setf (get-slot-value celem 'echeance) echeance-nbj)
+    (setq s1 (* objectif-prix (exp (- (* volatilite (sqrt (abs delta-t)))))))
+    (setq s2 (* objectif-prix (exp (* volatilite (sqrt (abs delta-t))))))
+    (setf (get-slot-value celem 'intervalle-de-prix) (list s1 s2))
+    (setf (get-slot-value celem 'rapport) (get-slot-value conc-elem 'rapport))
+    )
+ "fabrication d une conclusion derivee d une autre conclusion (transformation objectif-de-prix en intervalle-de-prix)"
+ )
+
+
+
+(de after-event (ev1 ev2)
+    (> (get-slot-value ev1 'rang-de-l-evenement) (get-slot-value ev2 'rang-de-l-evenement)))
+
+
+(add-method 'courbe-2d 'courbe-2d-point-maximum 'point-maximum 'superseed)
+(add-method 'courbe-2d 'courbe-2d-point-minimum 'point-minimum 'superseed)
+
+(de courbe-2d-point-maximum (c rang-debut rang-fin)
+    (prog (( h (get-slot-value c 'body))
+           (v rang-debut)
+           maximum-precedent)
+          (setq maximum-precedent (vref h v))
+          (setq v (1+ v))
+          loop
+          (when (> v rang-fin) (return maximum-precedent))
+          (when (> (cadr (vref h v)) (cadr maximum-precedent)) (setq maximum-precedent (vref h v)))
+          (setq v (1+ v))
+          (go loop)))
+
+(de courbe-2d-point-minimum (c rang-debut rang-fin)
+    (prog (( h (get-slot-value c 'body))
+           (v rang-debut)
+           minimum-precedent)
+          (setq minimum-precedent (vref h v))
+          (setq v (1+ v))
+          loop
+          (when (> v rang-fin) (return minimum-precedent))
+          (when (< (cadr (vref h v)) (cadr minimum-precedent)) (setq minimum-precedent (vref h v)))
+          (setq v (1+ v))
+          (go loop)))
+
+
+(de courbe-2d-nettoyage-des-evenements (courbe eps1 eps2 eps3 eps4 eps5 eps6)
+    (prog ((e (courbe-2d-first-moving-average-event courbe))
+           wait-c+ml wait-ml+c wait-c+mc wait-mc+c wait-mc+ml wait-ml+mc
+           f e-x x-c+mc x-c+ml x-mc+c x-ml+c x-ml+mc x-mc+ml e-type)
+        
+          loop
+          (when (null e) (go fin))
+          (setq to-delete nil)
+          (setq e-type (get-fondamental-value e 'type))
+          (setq e-x (get-fondamental-value e 'abcisse))
+          (cond ((and (eq e-type 'c+ml)
+                      wait-c+ml
+                      (< (- e-x x-ml+c) eps1))
+                 
+                 (setq f wait-c+ml)
+                 (moving-average-link-event (get-fondamental-value e 'evenement-precedent) 
+                             (get-fondamental-value e 'evenement-suivant))
+                 (moving-average-link-event (get-fondamental-value f 'evenement-precedent)
+                             (get-fondamental-value f 'evenement-suivant))
+                 
+                 (setq to-delete t)
+                 )
+                ((and (eq 'e-type 'ml+c)
+                      wait-ml+c
+                      (< (- e-x x-c+ml) eps2))
+                 
+                 (setq f wait-ml+c)
+                 (moving-average-link-event (get-fondamental-value e 'evenement-precedent) 
+                             (get-fondamental-value e 'evenement-suivant))
+                 (moving-average-link-event (get-fondamental-value f 'evenement-precedent)
+                             (get-fondamental-value f 'evenement-suivant))
+                 
+                 (setq to-delete t)
+                 )
+                 
+                ((and (eq e-type 'c+mc)
+                      wait-c+mc
+                      (< (- e-x x-mc+c) eps3))
+                 
+                 (setq f wait-c+mc)
+                 (moving-average-link-event (get-fondamental-value e 'evenement-precedent) 
+                             (get-fondamental-value e 'evenement-suivant))
+                 (moving-average-link-event (get-fondamental-value f 'evenement-precedent)
+                             (get-fondamental-value f 'evenement-suivant))
+                 
+                 (setq to-delete t)
+                 )
+                 
+                ((and (eq e-type 'mc+c)
+                      wait-mc+c
+                       (< (- e-x x-c+mc) eps4))
+                 
+                 (setq f wait-mc+c)
+                 (moving-average-link-event (get-fondamental-value e 'evenement-precedent) 
+                             (get-fondamental-value e 'evenement-suivant))
+                 (moving-average-link-event (get-fondamental-value f 'evenement-precedent)
+                             (get-fondamental-value f 'evenement-suivant))
+                 
+                 (setq to-delete t)
+                 )
+                 
+                ((and (eq e-type 'ml+mc)
+                      wait-ml+mc (< (- e-x x-mc+ml) eps5))
+                 
+                 (setq f wait-ml+mc)
+                 (moving-average-link-event (get-fondamental-value e 'evenement-precedent) 
+                             (get-fondamental-value e 'evenement-suivant))
+                 (moving-average-link-event (get-fondamental-value f 'evenement-precedent)
+                             (get-fondamental-value f 'evenement-suivant))
+                 
+                 (setq to-delete t)
+                 )
+                 
+                ((and (eq e-type 'mc+ml)
+                      wait-mc+ml
+                       (< (- e-x x-ml+mc) eps6))
+                 
+                 (setq f wait-mc+ml)
+                 (moving-average-link-event (get-fondamental-value e 'evenement-precedent) 
+                             (get-fondamental-value e 'evenement-suivant))
+                 (moving-average-link-event (get-fondamental-value f 'evenement-precedent)
+                             (get-fondamental-value f 'evenement-suivant))
+                 
+                 (setq to-delete t)
+                 
+                 ))
+
+          (cond ((eq e-type 'c+ml)
+                 (setq wait-ml+c e)
+                 (setq wait-c+ml nil)
+                 (setq x-c+ml e-x)
+                 )
+                ((eq 'e-type 'ml+c)
+                 (setq wait-c+ml e)
+                 (setq wait-ml+c nil)
+                 (setq x-ml+c e-x)
+                 )
+                ((eq e-type 'c+mc)
+                 (setq wait-mc+c e)
+                 (setq wait-c+mc nil)
+                 (setq x-c+mc e-x)
+                 )
+                ((eq e-type 'mc+c)
+                 (setq wait-c+mc e)
+                 (setq wait-mc+c nil)
+                 (setq x-mc+c e-x)
+                 )
+                ((eq e-type 'ml+mc)
+                 (setq wait-mc+lm e)
+                 (setq wait-ml+mc nil)
+                 (setq x-ml+mc e-x)
+                 )
+                ((eq e-type 'mc+ml)
+                 (setq wait-ml+mc e)
+                 (setq wait-mc+ml nil)
+                 (setq x-mc+ml e-x)
+                 ))
+          (setq e (get-fondamental-value e 'evenement-suivant))
+          (when to-delete
+                (delete-object e)
+                (delete-object f))
+          (go loop)
+          fin
+          (return)))
+
+(de courbe-2d-first-moving-average-event (courbe)
+    (prog (event rang)
+          (mapc '(lambda (x) (cond ((and (eq (get-fondamental-value x 'courbe) courbe)
+                                         (< (get-fondamental-value x 'rang-de-l-evenement) rang))
+                                    (setq event x)
+                                    (setq rang (get-fondamental-value x 'rang-de-l-evenement))
+                                    )
+                                   (t nil)))
+                 (get-all-instances 'moving-average-event))
+          (return event)))
+
+
+                                    

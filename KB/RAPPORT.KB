@@ -1,0 +1,53 @@
+ ;fichier contenant les objects et methode associee a la redaction du rapport sur la technique
+ ;d analyse de cours a base de transformee de fourier
+(add-knowledge-base 'rapport-kb
+                    'object-de-base
+                    '(rapport expert)
+                    nil)
+                                       ;description de l object rapport
+
+ (user-instanciate 'metaclass  'rapport  nil )
+ (add-slot-user 'rapport 'technique 'instance)
+ (add-slot-user 'rapport 'description-technique 'instance)
+ (add-slot-user 'rapport 'courbe 'instance)
+ (add-slot-user 'rapport 'conclusion 'instance)
+ (add-slot-user 'rapport 'special-slot-list 'instance)
+ (add-slot-user 'rapport 'liste-des-conclusions-elementaires 'instance)
+
+
+                                       ;description de l object expert
+        ($ 'metaclass 'instanciate 'expert nil)
+        (add-slot-user 'expert 'body 'instance)
+        (add-slot-user 'expert 'description 'instance)
+        (add-slot-user 'expert 'rapport-genere 'instance)
+        (add-slot-user 'expert 'echeances-deja-traitees 'instance)
+        (add-slot-user 'expert 'representation-graphique 'instance) ;si t => generation d un graphique 
+        (add-slot-user 'expert 'graphique-incremental 'instance) ;si t le graphique sera RAZ entre chaque step
+        (add-slot-user 'expert 'graphique 'instance) ;contient l application AIDA du graphique
+        (add-slot-user 'expert 'graphique-liste-des-objects-affiches 'instance) ;contient la liste des objects du graphique
+        (add-slot-user 'expert 'graphique-min-max 'instance) ;contient le min le max de la courbe en traitement
+        (add-slot-user 'expert 'representation-graphique-transitoire 'instance)
+        (add-slot-user 'expert 'corrector-kx 'instance)
+        (add-slot-user 'expert 'corrector-ky 'instance)
+        (setf (get-slot-value 'expert 'corrector-kx) 1.)
+        (setf (get-slot-value 'expert 'corrector-ky) 1.)
+
+
+;le slot special-slot-list contient une liste de nom de slot qui seront
+;ajoute par la fonction create-instance-rapport
+
+ (de create-instance-rapport (attribute-liste )
+     (prog (r)
+	   (setq r ($ 'rapport 'instanciate nil nil))
+	   ($ r 'put-value 'special-slot-list
+	      (mapcar '(lambda (x) (add-slot-user r x 'class))
+		    attribute-liste))
+	   (return r)))
+
+
+
+	
+ 
+
+                             ;TESTS ET FONCTIONS DIVERSES
+

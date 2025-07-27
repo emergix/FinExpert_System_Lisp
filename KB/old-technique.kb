@@ -1,0 +1,193 @@
+
+
+
+
+(de courbe-2d-expand-droite-technique (courbe-origine epsilon nombre-critique pcentre rayon)
+;est la methode choisie pour 'expand 'droite-technique
+ (prog (expansion-slot)
+       (setq expansion-slot (get-slot-value courbe-origine 'expansion-slot))
+       (when (not (or  (member '(courbe-2d extremum) expansion-slot)
+		       (and (member '(courbe-2d maximum) expansion-slot)
+			    (member '(courbe-2d minimum) expansion-slot))))
+	     ($ courbe-origine 'expand 'local-extremum 'objects nil))
+       (return (courbe-extremum-find-droite  courbe-origine epsilon nombre-critique pcentre rayon))
+       ))
+
+	xtremum (car extremum-liste-1))
+	  (setq droites-techniques
+		(courbe-find-droite-1 courbe extremum epsilon nombre-critique extremum-liste pcentre rayon))
+	  (when droites-techniques 
+		(setq liste-des-droites-techniques (append droites-techniques liste-des-droites-techniques)))
+	  (setq extremum-liste-1 (cdr extremum-liste-1))
+	  (go loop)
+	  fin
+	  (return liste-des-droites-techniques)
+	  ))
+
+(de courbe-extremum-find-droite ( courbe-origine epsilon nombre-critique pcentre rayon)
+;trouve les droites techniques de la courbe origine au sens de droite qui passe 
+;par des extremums de la courbe necessite donc une expension 'objects des extremums
+    ;essaye de trouver les droites dessinee dans le graphe de la courbe
+    ;si le xtype et le ytype sont reel
+    ;courbe-origine est la courbe dont les points de courbe sont des extremums
+    ;pcentre est le centre du disque ou va se derouler l analyse graphique
+    ;rayon est le rayon du disque
+    ;retourne la liste des droites techniques concernees
+
+    (prog (extremum-liste extremum-liste-1  extremum droites-techniques liste-des-droites-techniques)
+	  (setq extremum-liste (mapcan '(lambda (x) (cond ((eq (get-slot-value x 'courbe) courbe-origine) (list x))
+							  (t nil)))
+				       (get-all-instances 'extremum-local)))
+	  (setq liste-des-droites-techniques nil)
+	  (setq extremum-liste-1 (copy extremum-liste))
+	  loop
+	  (when (null extremum-liste-1) (go fin))
+	  (setq extremum (car extremum-liste-1))
+	  (setq droites-techniques
+		(courbe-extremum-find-droite-1 courbe-origine extremum epsilon nombre-critique extremum-liste pcentre rayon))
+	  (when droites-techniques 
+		(setq liste-des-droites-techniques (append droites-techniques liste-des-droites-techniques)))
+	  (setq extremum-liste-1 (cdr extremum-liste-1))
+	  (go loop)
+	  fin
+	  (return liste-des-droites-techniques)
+	  ))
+
+
+
+
+(de courbe-extremum-find-droite-1 (courbe-origine point1 epsilon nombre-critique extremum-liste-1 pcentre rayon)
+    ;essaye de trouver les droites partant du point1
+    ;retourne une liste de droites
+    (prog (point2 extremum-liste-2 liste-d-extremums extremum-liste-3 droites-techniques)
+	  (setq extremum-liste-3 (remq point1 (copy extremum-liste-1)))
+          (setq extremum-liste-2 extremum-liste-3)
+	  loop
+	  (when (null extremum-liste-2) (go fin))
+	  (setq point2 (car extremum-liste-2))
+	  (setq extremum-liste-2 (cdr extremum-liste-2))
+	  (setq liste-d-extremums
+		(courbe-extremum-find-droite-2 courbe-origine point1 point2 epsilon nombre-critique extremum-liste-3 pcentre rayon ))
+	  (when liste-d-extremums
+		(setq droites-techniques (cons (cadr liste-d-extremums) droites-techniques))
+
+		(setq liste-d-extremums (car liste-d-extremums))
+		;(setq extremum-liste-2 (mapcan '(lambda (x) (cond ((memq x liste-d-extremums) nil)
+                ;			 			  (t (list x))))
+		;			       extremum-liste-2))
+                )
+	  (go loop)
+	  fin
+	  (return droites-techniques)
+	  ))
+
+
+
+(de courbe-find-droite (courbe epsilon nombre-critique pcentre rayon)
+;cette fonction trouve des droite techniques dans la courbe donnee c est a dire
+;des points qui sont aligne
+    ;essaye de trouver les droites dessinee dans le graphe de la courbe
+    ;si le xtype et le ytype sont reel
+    ;courbe-origine est la courbe dont les points de courbe sont des extremums
+    ;pcentre est le centre du disque ou va se derouler l analyse graphique
+    ;rayon est le rayon du disque
+    ;retourne la liste des droites techniques concernees
+
+    (prog (extremum-liste extremum-liste-1  extremum droites-techniques liste-des-droites-techniques)
+	  (setq extremum-liste (vector-to-list (get-slot-value courbe 'body)))
+	  (setq liste-des-droites-techniques nil)
+	  (setq extremum-liste-1 (copy extremum-liste))
+	  loop
+	  (when (null extremum-liste-1) (go fin))
+	  (setq extremum (car extremum-liste-1))
+	  (setq droites-techniques
+		(courbe-find-droite-1 courbe extremum epsilon nombre-critique extremum-liste pcentre rayon))
+	  (when droites-techniques 
+		(setq liste-des-droites-techniques (append droites-techniques liste-des-droites-techniques)))
+	  (setq extremum-liste-1 (cdr extremum-liste-1))
+	  (go loop)
+	  fin
+	  (return liste-des-droites-techniques)
+	  ))
+
+
+(de courbe-find-droite-1 (courbe point1 epsilon nombre-critique extremum-liste-1 pcentre rayon)
+    ;essaye de trouver les droites partant du point1
+    ;retourne une liste de droites
+    (prog (point2 extremum-liste-2 liste-d-extremums extremum-liste-3 droites-techniques)
+	  (setq extremum-liste-2 (remove point1 (copy extremum-liste-1)))
+	  loop
+	  (when (null extremum-liste-2) (go fin))
+	  (setq point2 (car extremum-liste-2))
+	  (setq extremum-liste-2 (cdr extremum-liste-2))
+	  (setq liste-d-extremums
+		(courbe-find-droite-2 courbe point1 point2 epsilon nombre-critique extremum-liste-2 pcentre rayon ))
+	  (when liste-d-extremums
+		(setq droites-techniques (cons (cadr liste-d-extremums) droites-techniques))
+
+		(setq liste-d-extremums (car liste-d-extremums))
+		(setq extremum-liste-2 (mapcan '(lambda (x) (cond ((member x liste-d-extremums) nil)
+					 			  (t (list x))))
+					       extremum-liste-2)))
+	  (go loop)
+	  fin
+	  (return droites-techniques)
+	  ))
+
+(de courbe-find-droite-2 (courbe p1 p2  epsilon nombre-critique extremum-liste pcentre rayon)
+    ;essaye de montrer que la droite passant par les points point1 et point2
+    ;est une droite technique
+    ;retourne alors les points concernes par la droite et la droite sinon ne retourne rien
+    (prog(a b 
+	    (liste-des-droites-techniques (get-slot-value courbe 'liste-des-droites-techniques)) 
+	     liste-d-extremums (extremum-liste-1 (copy extremum-liste)) c a1 a2 a3 d p dr)
+	 ;a b sont les coefficient de la droite , d est la distance du point p a la droite
+	 
+
+	 (when (any '(lambda (x) (let ((a1 (car x)) (a2 (cadr x)) (a3 (caddr x)))
+				   (and (<= (abs (- (* (cadr p1) a1) (+ a2 (* (* *csurj* (car p1)) a3)))) epsilon)
+					(<= (abs (- (* (cadr p2) a1) (+ a2 (* (* *csurj* (car p2)) a3)))) epsilon))))
+		      liste-des-droites-techniques ) (return nil))   ;si la droite a deja ete mentionnee
+
+	 (setq a (/ (- (cadr p1) 
+		       (cadr p2))
+		    (- (* (car p1) *csurj*)
+		       (* (car p2) *csurj* ))))
+	 (setq b (- (cadr p1)
+		    (* a (* (car p1) *csurj* ))))
+	 (setq c (sqrt (1+ (* a a))))
+	 (setq a1 (/ 1 c))
+	 (setq a2 (/ b c))
+	 (setq a3 (/ a c))
+	 (when  (> (abs (- (* (cadr pcentre) a1) (+ a2 (* (* *csurj* (car pcentre)) a3)))) rayon)
+		(return nil))         ;si la droite est trop loin de notre zone d interet
+
+	 (setq liste-d-extremums nil)
+	 loop
+	 (when (null extremum-liste-1) (go fin))
+	 (setq p (car extremum-liste-1))
+	 (setq d (abs (- (* (cadr p) a1)
+			 (+ a2 (* (car p) a3)))))
+	 (when (<= d epsilon)
+	       (setq liste-d-extremums (cons p liste-d-extremums)))
+	 (setq extremum-liste-1 (cdr extremum-liste-1))
+	 (go loop)
+	 fin
+	 (setq liste-d-extremums-1 (cons p1 (append liste-d-extremums (list p2))))
+	 (cond ((>= (length liste-d-extremums-1) nombre-critique)
+		(setq dr ($ 'droite-technique 'instanciate nil nil))
+		(setf liste-des-droites-techniques (cons (list a1 a2 a3 dr) liste-des-droites-techniques ))
+		(setf (get-slot-value courbe 'liste-des-droites-techniques) liste-des-droites-techniques )
+		(setf (get-slot-value dr 'courbe) courbe)
+		(setf (get-slot-value dr 'pente) a)
+		(setf (get-slot-value dr 'ordonnee-zero) b)
+		(setf (get-slot-value dr 'force) (length liste-d-extremums-1))
+		(setf (get-slot-value dr 'liste-d-extremums ) liste-d-extremums-1)
+		(mapc '(lambda (x) (setf (get-slot-value x 'liste-de-droites-techniques) 
+					 (cons dr  (get-slot-value x 'liste-de-droites-techniques) )))
+		      liste-d-extremums-1))
+									    
+	       (t (setq liste-d-extremums-1 nil)))
+	(cond (liste-d-extremums 
+	       (return (list liste-d-extremums-1 dr)))
+	      (t (return nil)))))

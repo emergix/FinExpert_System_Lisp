@@ -1,0 +1,30 @@
+;fichier introduisant les objects de types 'cours'
+;ces object comporteront une courbe de cours et une coube de volume
+
+
+(add-knowledge-base 'cours-et-valeur
+                    'object-de-base
+                    '(cours valeur)
+                    nil)
+
+(user-instanciate 'metaclass 'cours nil)
+(add-slot-user 'cours 'cours 'instance)
+(add-slot-user 'cours 'volume 'instance)
+(set-transparent-object 'cours '(cours volume))
+
+
+
+(user-instanciate 'metaclass 'valeur nil)
+(add-slot-user 'valeur 'plus-haut 'instance)
+(add-slot-user 'valeur 'plus-bas 'instance)
+(add-slot-user 'valeur 'premier-cours 'instance)
+(add-slot-user 'valeur 'dernier-cours 'instance)
+(add-slot-user 'valeur 'volume 'instance)
+(set-transparent-object 'valeur '(dernier-cours))
+
+
+
+
+
+                                    ;TESTS ET FONCTIONS DIVERSES
+

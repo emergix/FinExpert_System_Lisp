@@ -1,0 +1,838 @@
+
+;fichier contenant les objects et fonctions ayant a voir avec les figures techniques suivantes :
+
+;    canal  trapeze triangles
+
+(add-knowledge-base 'canal-kb
+                    'object-de-base
+                    '(expert-canal figure triangle canal canal-virtuel d-technique e-technique d-prevision select-parameters
+                                   canal-r01 canal-r02 canal-r03 canal-r04 canal-r05
+                                   canal-r06 canal-r07 canal-r08 canal-r09 canal-r10
+                                   canal-r11 canal-r12 canal-r13 canal-r14 canal-r15
+                                   canal-r16 canal-r17 canal-r18 canal-r19 canal-r20 canal-r21)
+                    nil)
+
+(user-instanciate 'expert 'expert-canal nil
+)
+
+(setf (get-slot-value 'expert-canal 'body) '(d-technique e-technique d-prevision nmm-suppression select-parameters))
+
+
+(add-method 'expert-canal 'expert-canal-what-do-you-think-about 'what-do-you-think-about 'superseed)
+(add-method 'expert-canal 'expert-canal-show-generation 'show-generation 'superseed)
+(add-method 'expert-canal 'expert-canal-ajoute-des-echeances 'ajoute-des-echeances 'superseed)
+
+
+
+;fixation du flag de sens initial du generateur de droite
+(setq *generateur-de-droite-flag-de-sens* nil)
+
+(de expert-canal-what-do-you-think-about (expert courbe )
+    (prog (l c precision nombre-d-extremums-critique point-de-decision rayon-d-interet
+             liste-de-groupe-de-droites-d-accummulation precision-d-accummlation max-de-ref courbe2 objectif echeances) 
+	  (setq c ($ courbe 'expand 'convert-time))
+          (when *generateur-de-droite-flag-de-sens*
+                (setq max-de-ref (* 1.2 (cadr (courbe-2d-point-maximum c 0 (get-slot-value c 'pointeur-max)))))
+                (setq courbe2 ($ c '* -1.))
+                (setq c  ($ courbe2 '+ max-de-ref)))
+	  ($ c 'expand 'extremum-local 'objects nil)
+          (setf (get-slot-value select-parameters 'courbe) c)
+          (setq objectif  (get-slot-value meta-analysis 'objectif))
+          (when (null objectif)
+                (setq objectif (user-instanciate 'objectif nil nil))
+                (setf (get-slot-value meta-analysis 'objectif ) objectif))
+          (setq echeances (get-slot-value objectif 'echeances-interessantes))
+          (when (null echeances)
+                (setq echeances ($ objectif 'determine 'echeances-interessantes)))
+         
+          (mapc '(lambda (x) (undetermine select-parameters x))
+                '(precision nombre-d-extremums-critique point-de-decision rayon-d-interet))
+          (setq *csurj* ($ select-parameters 'determine 'select-parameters 'csurj))
+          (setq precision ($ select-parameters 'determine select-parameters 'precision))
+          (setf (get-slot-value nmm-suppression-de-droites-ininterressantes 'precision-de-croisement) precision)
+          (setq nombre-d-extremums-critique ($ select-parameters 'determine select-parameters 'nombre-d-extremums-critique))
+          (setq point-de-decision ($ select-parameters 'determine select-parameters 'point-de-decision))
+          (setq rayon-d-interet ($ select-parameters 'determine select-parameters 'rayon-d-interet))
+          
+          (setq diviseur-de-distribution ($ select-parameters 'determine select-parameters 'diviseur-de-distribution))
+
+;        ************ generation des droites ***************************************************************
+          (courbe-2d-canavex c  0.001 50. point-de-decision rayon-d-interet )
+;        ***************************************************************************************************
+
+;        ************ completion des droite generee par le contour exterieur de la courbe ******************
+          ($ c 'extract-contour precision precision  point-de-decision rayon-d-interet 0.6)
+;        ***************************************************************************************************
+
+          (setq precision-d-accummulation ($ select-parameters 'determine select-parameters 'precision-d-accummulation))
+
+          (setq liste-de-groupe-de-droites-d-accummulation ($ c 'droites-d-accummulation precision-d-accummulation))
+          (mapc '(lambda (x) (purge-groupe-de-droites  c x))
+                liste-de-groupe-de-droites-d-accummulation)
+          (setq liste-de-groupe-de-droites-d-accummulation ($ c 'droites-d-accummulation (* precision-d-accummulation 0.66) ))
+          (mapc '(lambda (x) (purge-groupe-de-droites  c x))
+                liste-de-groupe-de-droites-d-accummulation)
+          (setq liste-de-groupe-de-droites-d-accummulation ($ c 'droites-d-accummulation (* precision-d-accummulation 0.33)))
+          (mapc '(lambda (x) (purge-groupe-de-droites  c x))
+                liste-de-groupe-de-droites-d-accummulation)
+
+	  ($ d-technique 'put-value 'distance-en-cours-max '10)
+	  ($ d-technique 'sature)
+          ($ e-technique 'sature)
+          (setf (get-slot-value  'd-prevision 'conclusion) nil)
+          (setf (get-slot-value  'd-prevision 'liste-des-conclusions-elementaires) nil)
+	  ($ d-prevision 'sature)
+	  (setq r (create-instance-rapport '()))
+	  (setf (get-slot-value r 'technique) 'canal)
+	  (setf (get-slot-value r 'description-technique)
+		"analyse des canaux et triangles presents dans la courbe")
+	  (setf (get-slot-value r 'courbe) courbe)
+          (setf (get-slot-value 'expert-canal 'rapport-genere) r)
+	  (setf (get-slot-value r 'conclusion)
+                (get-slot-value 'd-prevision 'conclusion)) 
+          (setf (get-slot-value r 'liste-des-conclusions-elementaires)
+                (get-slot-value 'd-prevision 'liste-des-conclusions-elementaires))
+          (mapc '(lambda (x) (setf (get-slot-value x 'rapport) r))
+                (get-slot-value 'd-prevision 'liste-des-conclusions-elementaires))
+          (setf (get-slot-value 'expert-canal 'echeances-deja-traitees)
+                (append-new (mapcan '(lambda (y) (cond((eq (get-slot-value y 'objectif) objectif)
+                                                       (list y))))
+                                    (get-all-instances 'echeance))
+                            (get-slot-value 'expert-canal 'echeances-deja-traitees)))
+	  (return r)))
+
+(de expert-canal-ajoute-des-echeances (expert)
+    (prog (r objectif)
+          (setq objectif  (get-slot-value meta-analysis 'objectif))
+          (setq r (get-slot-value 'expert-canal 'rapport-genere))
+          (setf (get-slot-value 'd-prevision 'conclusion)
+                (get-slot-value r 'conclusion))
+          (setf (get-slot-value 'd-prevision 'liste-des-conclusions-elementaires)
+                (get-slot-value r 'liste-des-conclusions-elementaires))
+          ($ 'd-prevision 'sature) 
+          (setf (get-slot-value r 'conclusion)
+                (get-slot-value 'd-prevision 'conclusion)) 
+          (setf (get-slot-value r 'liste-des-conclusions-elementaires)
+                (get-slot-value 'd-prevision 'liste-des-conclusions-elementaires))
+          (mapc '(lambda (x) (setf (get-slot-value x 'rapport) r))
+                (get-slot-value 'd-prevision 'liste-des-conclusions-elementaires))
+          (setf (get-slot-value expert-canal 'echeances-deja-traitees)
+                (append-new (mapcan '(lambda (y) (cond((eq (get-slot-value y 'objectif) objectif)
+                                                       (list y))))
+                                    (get-all-instances 'echeance))
+                            (get-slot-value expert-canal 'echeances-deja-traitees)))
+          
+          (return r)))
+ 
+
+(de expert-canal-show-generation-superieur (expert courbe)
+    (expert-canal-show-generation expert courbe 'superieur))
+
+(de expert-canal-show-generation-inferieur (expert courbe)
+    (expert-canal-show-generation expert courbe 'inferieur))
+
+(de expert-canal-show-generation-superieur-aller-non-filtre (expert courbe)
+    (expert-canal-show-generation expert courbe 'superieur-aller-non-filtre))
+
+(de expert-canal-show-generation-inferieur-aller-non-filtre (expert courbe)
+    (expert-canal-show-generation expert courbe 'inferieur-aller-non-filtre))
+
+(de expert-canal-show-generation-superieur-retour-non-filtre (expert courbe)
+    (expert-canal-show-generation expert courbe 'superieur-retour-non-filtre))
+
+(de expert-canal-show-generation-inferieur-retour-non-filtre (expert courbe)
+    (expert-canal-show-generation expert courbe 'inferieur-retour-non-filtre))
+
+(de expert-canal-show-generation-superieur-aller-filtre (expert courbe)
+    (expert-canal-show-generation expert courbe 'superieur-aller-filtre))
+
+(de expert-canal-show-generation-inferieur-aller-filtre (expert courbe)
+    (expert-canal-show-generation expert courbe 'inferieur-aller-filtre))
+
+(de expert-canal-show-generation-superieur-retour-filtre (expert courbe)
+    (expert-canal-show-generation expert courbe 'superieur-retour-filtre))
+
+(de expert-canal-show-generation-inferieur-retour-filtre (expert courbe)
+    (expert-canal-show-generation expert courbe 'inferieur-retour-filtre))
+
+(de expert-canal-show-generation (expert courbe details)
+    (prog (l c precision nombre-d-extremums-critique point-de-decision rayon-d-interet echeances-interessantes 
+             liste-de-groupe-de-droites-d-accummulation precision-d-accummlation max-de-ref courbe2) 
+	  (setq c ($ courbe 'expand 'convert-time))
+          (when *generateur-de-droite-flag-de-sens*
+                (setq max-de-ref (* 1.2 (cadr (courbe-2d-point-maximum c 0 (get-slot-value c 'pointeur-max)))))
+                (setq courbe2 ($ c '* -1.))
+                (setq c  ($ courbe2 '+ max-de-ref)))
+	  ($ c 'expand 'extremum-local 'objects nil)
+          (setf (get-slot-value select-parameters 'courbe) c)
+          (mapc '(lambda (x) (undetermine select-parameters x))
+                '(precision nombre-d-extremums-critique point-de-decision rayon-d-interet
+                         ))
+          (setq *csurj* ($ select-parameters 'determine 'select-parameters 'csurj))
+          (setq precision ($ select-parameters 'determine select-parameters 'precision))
+          (setf (get-slot-value nmm-suppression-de-droites-ininterressantes 'precision-de-croisement) precision)
+          (setq nombre-d-extremums-critique ($ select-parameters 'determine select-parameters 'nombre-d-extremums-critique))
+          (setq point-de-decision ($ select-parameters 'determine select-parameters 'point-de-decision))
+          (setq rayon-d-interet ($ select-parameters 'determine select-parameters 'rayon-d-interet))
+          (setq echeances-interessantes ($ select-parameters 'determine select-parameters 'echeances-interessantes))
+          (setq diviseur-de-distribution ($ select-parameters 'determine select-parameters 'diviseur-de-distribution))
+         
+;        ************ generation des droites ***************************************************************
+          (courbe-2d-canavex-test c  0.001 50. point-de-decision rayon-d-interet details)
+;        ***************************************************************************************************
+
+	  (return nil)))
+
+
+
+(user-instanciate 'metaclass 'figure nil
+)
+
+(add-slot-user 'figure 'courbe 'instance)
+
+(add-slot-user 'figure 'droite-de-support 'instance)
+
+(add-slot-user 'figure 'droite-de-resistance 'instance)
+
+(add-slot-user 'figure 'force 'instance)
+
+(add-slot-user 'figure 'derniere-position 'instance)
+
+;(add-slot-user 'figure 'rang-d-entree-dans-la-figure 'instance)
+
+;(add-slot-user 'figure 'rang-de-sortie-de-la-figure 'instance)
+
+(add-slot-user 'figure 'facteur-de-forme 'instance)
+
+(user-instanciate 'metaclass 'triangle '(figure))
+
+(user-instanciate 'metaclass 'canal '(figure))
+
+(user-instanciate 'metaclass 'canal-virtuel '(figure))
+
+(add-method 'canal 'canal-largeur 'largeur 'superseed)
+
+(add-method 'triangle 'triangle-hauteur 'hauteur 'superseed)
+
+(add-method 'triangle 'triangle-x-debut 'x-debut 'superseed)
+
+(de canal-largeur (canal)
+    (let (mum-1)
+      (setq mum-1 (dernier-extremum (get-fondamental-value (get-fondamental-value canal 'droite-de-resistance) 
+                                                                   'liste-d-extremums)))
+      (- (cadr (get-slot-value mum-1 'hauteur))
+         (droite-interpolation (get-fondamental-value canal 'droite-de-support) (car (get-fondamental-value mum-1 'hauteur))))))
+
+(de triangle-hauteur (triangle)
+    (let ((h (get-fondamental-value (get-fondamental-value triangle 'courbe) 'body))
+          (rg-list-1 (mapcar '(lambda (x) (get-fondamental-value x 'rang))
+                             (get-fondamental-value (get-fondamental-value triangle 'droite-de-resistance) 'liste-d-extremums)))
+          (rg-list-2 (mapcar '(lambda (x) (get-fondamental-value x 'rang))
+                             (get-fondamental-value (get-fondamental-value triangle 'droite-de-support) 'liste-d-extremums)))
+          rg0)
+      (setq rg0 (max (apply 'min rg-list-1) (apply 'min rg-list-2)))
+      (- (cadr (vref h rg0))
+         (droite-interpolation (get-fondamental-value triangle 'droite-de-support) (car (vref h rg0))))))
+
+(de triangle-x-debut (triangle)
+    (let (premier-mum)
+      (setq premier-mum  (premier-extremum (get-fondamental-value (get-fondamental-value triangle 'droite-de-resistance) 
+                                                                   'liste-d-extremums)))
+      (car (get-fondamental-value premier-mum 'hauteur))))
+
+;csurj est le facteur qu il faut appliquer a des jours pour les convertir en cours 
+
+;(utilise dans la distance euclidienne)
+
+(add-forward-chainer 'd-technique  '( distance-en-cours-max ))
+
+(add-forward-chainer 'e-technique nil)
+
+(add-forward-chainer 'd-prevision '(conclusion distance-en-cours-max liste-des-conclusions-elementaires fonction-d-importance))
+
+
+                      ;FONCTION D EVALUATION DE L IMPORTANCE 
+
+
+
+(setf (get-slot-value 'd-prevision 'fonction-d-importance)
+      '(lambda (figure) 
+         (prog ((liste-de-support (get-fondamental-value (get-fondamental-value figure 'droite-de-support) 'liste-d-extremums))
+                (liste-de-resistance (get-fondamental-value (get-fondamental-value figure 'droite-de-resistance) 'liste-d-extremums))
+                (dernier-point ($ (get-fondamental-value select-parameters 'courbe) 'dernier-point))
+                (premier-point ($ (get-fondamental-value select-parameters 'courbe) 'premier-point))
+                (largeur-d-etude-en-temps (amplitude-maximum-en-jours (get-fondamental-value select-parameters 'courbe)))
+                facteur-d-eloignement-dans-le-temps facteur-d-echelle liste-de-points-1 liste-de-points-2 liste-de-points-2-a)
+               (setq liste-de-points-1 (append (mapcar '(lambda (x) (get-fondamental-value x 'hauteur)) liste-de-support)
+                                               (mapcar '(lambda (x) (get-fondamental-value x 'hauteur)) liste-de-resistance)))
+               (setq liste-de-points-2 (list premier-point dernier-point ))
+               (setq facteur-d-echelle (/ (largeur-en-jour-de-l-ensemble liste-de-points-1)
+                                 (largeur-en-jour-de-l-ensemble liste-de-points-2)))
+               (setq liste-de-points-2-a (list (get-fondamental-value (dernier-extremum (append liste-de-support
+                                                                                             (copy liste-de-resistance)))
+                                                                   'hauteur)
+                                            dernier-point))
+               (setq  facteur-d-eloignement-dans-le-temps (- 1 (/ (largeur-en-jour-de-l-ensemble liste-de-points-2-a)
+                                                             (largeur-en-jour-de-l-ensemble liste-de-points-1))))
+
+               (return (* facteur-d-echelle facteur-d-eloignement-dans-le-temps)))))
+
+(de largeur-en-jour-de-l-ensemble (liste-de-points)
+    (cond ((null liste-de-points) 0)
+          (t (let ((car (mapcar 'car liste-de-points)))
+               (- (apply 'max car) (apply 'min car))))))
+
+(add-dynamic-link 'd-technique 'distance-en-cours-max 'instance 'd-prevision 'distance-en-cours-max 'instance)
+
+;SELECTION DE PARAMETRES
+
+(add-backward-chainer 'select-parameters '(courbe extremums-principaux-1 extremums-secondaires-1
+                                                  extremums-principaux-2 extremums-secondaires-2
+                                                  precision nombre-d-extremums-critique 
+                                                  point-de-decision rayon-d-interet csurj
+                                                  precision-d-accummulation echeances-interessantes
+                                                  diviseur-de-distribution))
+
+(set-determination-slot 'select-parameters 
+                        '(extremums-principaux-1 extremums-secondaires-1
+                                                 extremums-principaux-2 extremums-secondaires-2
+                                                 precision nombre-d-extremums-critique 
+                                                 point-de-decision rayon-d-interet csurj
+                                                 precision-d-accummulation echeances-interessantes
+                                                 diviseur-de-distribution))
+
+(add-backward-rule 'canal-r01 'select-parameters
+ '(existing (c 'courbe-2d ) (eq c courbe{select-parameters}))
+ '(* 0.005 (moyenne-des-extremums c))
+ '(precision{s} backward-chainer)
+ "precision en distance absolue pour l alignement des extremums")
+
+(add-backward-rule 'canal-r02 'select-parameters
+ '(existing (c 'courbe-2d ) (eq c courbe{select-parameters})) 
+ 3. 
+ '(nombre-d-extremums-critique{s}  backward-chainer)
+ "nombre minimum d extremums alignes pour affirmer l existence d une droite technique")
+
+(add-backward-rule 'canal-r03 'select-parameters
+ '(existing (c 'courbe-2d ) (eq c courbe{select-parameters})) 
+ '($ c 'dernier-point) 
+ '(point-de-decision{s}  backward-chainer)
+ "couple (date valeur) autour de laquelle on fera une prevision")
+
+(add-backward-rule 'canal-r04  'select-parameters
+ '(existing (c 'courbe-2d ) (eq c courbe{select-parameters})) 
+ '(* .8 (max (cadr ($ c 'dernier-point)) (- (car ($ c 'premier-point)) (car ($ c 'dernier-point))))) 
+ '(rayon-d-interet{s}  backward-chainer)
+ "distance absolue maximale entre les droites techniques generee et le point de decision")
+
+(add-backward-rule 'canal-r05  'select-parameters
+ '(existing (c 'courbe-2d ) (eq c courbe{select-parameters})) 
+ '(/ (amplitude-maximum-en-cours c) (amplitude-maximum-en-jours c)) 
+ '(csurj{s}  backward-chainer)
+ "calcul du facteur de conversion de jour en unite de cours")
+
+(add-backward-rule 'canal-r06 'select-parameters
+ '(existing (c 'courbe-2d ) (eq c courbe{select-parameters})) 
+ '(* 0.2 (amplitude-maximum-en-cours c)) 
+ '(precision-d-accummulation{s} backward-chainer)
+ "precision en distance absolue pour le reprerage des groupes de droites jouant le meme role")
+
+(add-backward-rule 'canal-r07 'select-parameters
+ '(existing (c 'courbe-2d ) (eq c courbe{select-parameters})) 
+ '(list (+ (car ($ c 'dernier-point)) 1)
+       ; (+ (car ($ c 'dernier-point)) 2)
+       ; (+ (car ($ c 'dernier-point)) 3)
+       ; (+ (car ($ c 'dernier-point)) 4)
+       ; (+ (car ($ c 'dernier-point)) 5)
+       ; (+ (car ($ c 'dernier-point)) 6)
+       ; (+ (car ($ c 'dernier-point)) 7)
+       ; (+ (car ($ c 'dernier-point)) 8)
+       ; (+ (car ($ c 'dernier-point)) 9)
+        (+ (car ($ c 'dernier-point)) 10)
+        (+ (car ($ c 'dernier-point)) 30)
+        (+ (car ($ c 'dernier-point)) 60)
+        (+ (car ($ c 'dernier-point)) 90)
+        (+ (car ($ c 'dernier-point)) 120)
+      
+       ; (+ (car ($ c 'dernier-point)) (/  (amplitude-maximum-en-jours c) 2))
+        )
+ '(echeances-interessantes{s} backward-chainer)
+ "liste d'echeances en jours qui sont interessantes pour l ' analyse")
+
+(add-backward-rule 'canal-r08 'select-parameters
+ '(existing (c 'courbe-2d ) (eq c courbe{select-parameters}))
+ '10
+ '(diviseur-de-distribution{s} backward-chainer)
+ "nombre de cases de rangement des cours lors du calcul de distribution")
+ 
+;----------------------------------------------------------------------------------------
+
+
+;------------------------------------------------------------------------------------------
+
+;FORMATION DE CANAUX
+
+(add-forward-rule 'canal-r09 'd-technique
+ '(let ((c courbe{select-parameters})  lc delta le-sup le-res (alpha 0.5) (beta 0.3) delta-debut delta-fin)
+    (setq lc  intervalle-d-etude{c})
+    (setq delta (- (cadr lc ) (car lc)))
+    (existing (d-sup 'droite-technique)
+              (and  (eq  courbe-origine{d-sup}  c)
+                    (eq convexite-reelle{d-sup} 'convexite-basse)
+                    (existing (d-res 'droite-technique)
+                              (and  (eq courbe-origine{d-res} c)
+                                    (eq convexite-reelle{d-res} 'convexite-haute)
+                                    (setq le-sup intervalle-de-support{d-sup})
+                                    (setq le-res intervalle-de-support{d-res})
+                                    (setq delta-debut (-  (+ (* pente{d-res} (car lc)) ordonnee-zero{d-res})
+                                                          (+ (* pente{d-sup} (car lc)) ordonnee-zero{d-sup})))
+                                    (setq delta-fin (-  (+ (* pente{d-res} (cadr lc)) ordonnee-zero{d-res})
+                                                        (+ (* pente{d-sup} (cadr lc)) ordonnee-zero{d-sup})))
+                                    (> delta-debut 0.)
+                                    (> delta-fin 0.)
+                                    (< (abs (/ (- delta-debut delta-fin) 
+                                               (sqrt (1+ (square (/  (+ (get-fondamental-value d-sup 'pente)
+                                                                        (get-fondamental-value d-res 'pente)) 2))))))
+                                       (/ (min delta-debut delta-fin) 2))
+                                    (> (taux-de-recouvrement-de-deux-droites-techniques c d-res d-sup) beta)
+                                    (eq brise-vers-le-bas-a-partir-du-dernier-extremum{d-sup} 'non)
+                                    (eq brise-vers-le-haut-a-partir-du-dernier-extremum{d-res} 'non)))))) 
+ '(let (ca (le-sup intervalle-de-support{d-sup}) (le-res intervalle-de-support{d-res}) (c courbe-origine{d-sup})) 
+    (setq ca ($ 'canal 'instanciate nil nil))
+    (force{ca} @= (/ (min (- (cadr le-sup) (car le-sup)) (- (cadr le-res) (car le-res)))
+                     (+ (min (- (cadr le-sup) (car le-sup)) (- (cadr le-res) (car le-res)))
+                        (- (car ($ c 'dernier-point)) (max (cadr le-res) (cadr le-sup))))))
+    (droite-de-support{ca} @= d-sup)
+    (droite-de-resistance{ca} @= d-res)
+    (courbe{ca} @= courbe{select-parameters})
+    (derniere-position{ca} @= 'strict)) 
+ "formation d un canal strict")
+
+(add-forward-rule 'canal-r10 'd-technique
+ '(let ((c courbe{select-parameters})  lc delta le-sup le-res (alpha 0.5) (beta 0.3) delta-debut delta-fin)
+    (setq lc  intervalle-d-etude{c})
+    (setq delta (- (cadr lc ) (car lc)))
+    (existing (d-sup 'droite-technique)
+              (and  (eq  courbe-origine{d-sup}  c)
+                    (eq convexite-reelle{d-sup} 'convexite-basse)
+                    (existing (d-res 'droite-technique)
+                              (and  (eq courbe-origine{d-res} c)
+                                    (eq convexite-reelle{d-res} 'convexite-haute)
+                                    (setq le-sup intervalle-de-support{d-sup})
+                                    (setq le-res intervalle-de-support{d-res})
+                                    (setq delta-debut (-  (+ (* pente{d-res} (car lc)) ordonnee-zero{d-res})
+                                                          (+ (* pente{d-sup} (car lc)) ordonnee-zero{d-sup})))
+                                    (setq delta-fin (-  (+ (* pente{d-res} (cadr lc)) ordonnee-zero{d-res})
+                                                        (+ (* pente{d-sup} (cadr lc)) ordonnee-zero{d-sup})))
+                                    (> delta-debut 0.)
+                                    (> delta-fin 0.)
+                                    (< (abs (/ (- delta-debut delta-fin)
+                                               (sqrt (1+ (square (/  (+ (get-fondamental-value d-sup 'pente)
+                                                                        (get-fondamental-value d-res 'pente)) 2))))))
+                                       (/ (min delta-debut delta-fin) 2))
+                                    (> (taux-de-recouvrement-de-deux-droites-techniques c d-res d-sup) beta)
+                                    (not (eq brise-vers-le-bas-a-partir-du-dernier-extremum{d-sup} 'non))
+                                    (eq brise-vers-le-haut-a-partir-du-dernier-extremum{d-sup} 'non)
+                                    (eq brise-vers-le-haut-a-partir-du-dernier-extremum{d-res} 'non)))))) 
+ '(let (ca (le-sup intervalle-de-support{d-sup}) (le-res intervalle-de-support{d-res}) (c courbe-origine{d-sup})) 
+    (setq ca ($ 'canal 'instanciate nil nil))
+    (force{ca} @= (/ (min (- (cadr le-sup) (car le-sup)) (- (cadr le-res) (car le-res)))
+                     (+ (min (- (cadr le-sup) (car le-sup)) (- (cadr le-res) (car le-res)))
+                        (- (car ($ c 'dernier-point)) (max (cadr le-res) (cadr le-sup))))))
+    (droite-de-support{ca} @= d-sup)
+    (droite-de-resistance{ca} @= d-res)
+    (courbe{ca} @= courbe{select-parameters})
+    (derniere-position{ca} @= 'brise-a-la-baisse)) 
+ "formation d un canal brise a la baisse")
+
+(add-forward-rule 'canal-r11 'd-technique
+ '(let ((c courbe{select-parameters})  lc delta le-sup le-res (alpha 0.5) (beta 0.3) delta-debut delta-fin)
+    (setq lc  intervalle-d-etude{c})
+    (setq delta (- (cadr lc ) (car lc)))
+    (existing (d-sup 'droite-technique)
+              (and  (eq  courbe-origine{d-sup}  c)
+                    (eq convexite-reelle{d-sup} 'convexite-basse)
+                    (existing (d-res 'droite-technique)
+                              (and  (eq courbe-origine{d-res} c)
+                                    (eq convexite-reelle{d-res} 'convexite-haute)
+                                    (setq le-sup intervalle-de-support{d-sup})
+                                    (setq le-res intervalle-de-support{d-res})
+                                    (setq delta-debut (-  (+ (* pente{d-res} (car lc)) ordonnee-zero{d-res})
+                                                          (+ (* pente{d-sup} (car lc)) ordonnee-zero{d-sup})))
+                                    (setq delta-fin (-  (+ (* pente{d-res} (cadr lc)) ordonnee-zero{d-res})
+                                                        (+ (* pente{d-sup} (cadr lc)) ordonnee-zero{d-sup})))
+                                    (> delta-debut 0.)
+                                    (> delta-fin 0.)
+                                    (< (abs (/ (- delta-debut delta-fin)
+                                               (sqrt (1+ (square (/  (+ (get-fondamental-value d-sup 'pente)
+                                                                        (get-fondamental-value d-res 'pente)) 2))))))
+                                       (/ (min delta-debut delta-fin) 2))
+                                    (> (taux-de-recouvrement-de-deux-droites-techniques c d-res d-sup) beta)
+                                    (not (eq brise-vers-le-haut-a-partir-du-dernier-extremum{d-res} 'non))
+                                    (eq brise-vers-le-bas-a-partir-du-dernier-extremum{d-res} 'non)
+                                    (eq brise-vers-le-bas-a-partir-du-dernier-extremum{d-sup} 'non)))))) 
+ '(let (ca (le-sup intervalle-de-support{d-sup}) (le-res intervalle-de-support{d-res}) (c courbe-origine{d-sup})) 
+    (setq ca ($ 'canal 'instanciate nil nil))
+    (force{ca} @= (/ (min (- (cadr le-sup) (car le-sup)) (- (cadr le-res) (car le-res)))
+                     (+ (min (- (cadr le-sup) (car le-sup)) (- (cadr le-res) (car le-res)))
+                        (- (car ($ c 'dernier-point)) (max (cadr le-res) (cadr le-sup))))))
+    (droite-de-support{ca} @= d-sup)
+    (droite-de-resistance{ca} @= d-res)
+    (courbe{ca} @= courbe{select-parameters})
+    (derniere-position{ca} @= 'brise-a-la-hausse)) 
+ "formation d un canal brise a la hausse")
+
+
+
+(add-forward-rule 'canal-r12 'd-technique
+ '(let ((c courbe{select-parameters})  lc delta le-sup le-res (alpha 0.5) (beta 0.3) delta-debut delta-fin)
+    (setq lc  intervalle-d-etude{c})
+    (setq delta (- (cadr lc ) (car lc)))
+    (existing (d-sup 'droite-technique)
+              (and  (eq  courbe-origine{d-sup}  c)
+                    (eq convexite-reelle{d-sup} 'convexite-basse)
+                    (existing (d-res 'droite-technique)
+                              (and  (eq courbe-origine{d-res} c)
+                                    (eq convexite-reelle{d-res} 'convexite-haute)
+                                    (setq le-sup intervalle-de-support{d-sup})
+                                    (setq le-res intervalle-de-support{d-res})
+                                    (setq delta-debut (-  (+ (* pente{d-res} (car lc)) ordonnee-zero{d-res})
+                                                          (+ (* pente{d-sup} (car lc)) ordonnee-zero{d-sup})))
+                                    (setq delta-fin (-  (+ (* pente{d-res} (cadr lc)) ordonnee-zero{d-res})
+                                                        (+ (* pente{d-sup} (cadr lc)) ordonnee-zero{d-sup})))
+                                    (or (and (> delta-debut 0.)
+                                             (> delta-fin 0.)
+                                             (< delta-fin delta-debut)
+                                             (>= (abs (/ (- delta-debut delta-fin)
+                                                         (sqrt (1+ (square (/  (+ (get-fondamental-value d-sup 'pente)
+                                                                                  (get-fondamental-value d-res 'pente)) 2))))))
+                                                 (/ (min delta-debut delta-fin) 2)))
+                                        (and (> delta-debut 0.)
+                                             (<= delta-fin 0.)))
+                                    (> (taux-de-recouvrement-de-deux-droites-techniques c d-res d-sup) beta)
+                                    (eq brise-vers-le-bas-a-partir-du-dernier-extremum{d-sup} 'non)
+                                    (eq brise-vers-le-haut-a-partir-du-dernier-extremum{d-res} 'non)
+                                    )))))
+ '(let (ca (le-sup intervalle-de-support{d-sup}) (le-res intervalle-de-support{d-res}) (c courbe-origine{d-sup})) 
+    (setq ca ($ 'triangle 'instanciate nil nil))
+    (force{ca} @= (/ (min (- (cadr le-sup) (car le-sup)) (- (cadr le-res) (car le-res)))
+                     (+ (min (- (cadr le-sup) (car le-sup)) (- (cadr le-res) (car le-res)))
+                        (- (car ($ c 'dernier-point)) (max (cadr le-res) (cadr le-sup))))))
+    (droite-de-support{ca} @= d-sup)
+    (droite-de-resistance{ca} @= d-res)
+    (courbe{ca} @= courbe{select-parameters})
+    (derniere-position{ca} @= 'strict)) 
+ "formation d un triangle strict")
+
+
+
+(add-forward-rule 'canal-r13 'd-technique
+ '(let ((c courbe{select-parameters})  lc delta le-sup le-res (alpha 0.5) (beta 0.3) delta-debut delta-fin)
+    (setq lc  intervalle-d-etude{c})
+    (setq delta (- (cadr lc ) (car lc)))
+    (existing (d-sup 'droite-technique)
+              (and  (eq  courbe-origine{d-sup}  c)
+                    (eq convexite-reelle{d-sup} 'convexite-basse)
+                    (existing (d-res 'droite-technique)
+                              (and  (eq courbe-origine{d-res} c)
+                                    (eq convexite-reelle{d-res} 'convexite-haute)
+                                    (setq le-sup intervalle-de-support{d-sup})
+                                    (setq le-res intervalle-de-support{d-res})
+                                    (setq delta-debut (-  (+ (* pente{d-res} (car lc)) ordonnee-zero{d-res})
+                                                          (+ (* pente{d-sup} (car lc)) ordonnee-zero{d-sup})))
+                                    (setq delta-fin (-  (+ (* pente{d-res} (cadr lc)) ordonnee-zero{d-res})
+                                                        (+ (* pente{d-sup} (cadr lc)) ordonnee-zero{d-sup})))
+                                    (or (and (> delta-debut 0.)
+                                             (> delta-fin 0.)
+                                             (< delta-fin delta-debut)
+                                             (>= (abs (/ (- delta-debut delta-fin)
+                                                         (sqrt (1+ (square (/  (+ (get-fondamental-value d-sup 'pente)
+                                                                                  (get-fondamental-value d-res 'pente)) 2)))))) 
+                                                 (/ (min delta-debut delta-fin) 2)))
+                                        (and (> delta-debut 0.)
+                                             (<= delta-fin 0.)))
+                                    (> (taux-de-recouvrement-de-deux-droites-techniques c d-res d-sup) beta)
+                                    (not (eq brise-vers-le-bas-a-partir-du-dernier-extremum{d-sup} 'non))
+                                    (eq brise-vers-le-haut-a-partir-du-dernier-extremum{d-sup} 'non)
+                                    (eq brise-vers-le-haut-a-partir-du-dernier-extremum{d-res} 'non)
+                                    (<  brise-vers-le-bas-a-partir-du-dernier-extremum{d-sup} 
+                                        (droite-techniques-distance-interne-minimale d-sup d-res)))))))
+ '(let (ca (le-sup intervalle-de-support{d-sup}) (le-res intervalle-de-support{d-res}) (c courbe-origine{d-sup})) 
+    (setq ca ($ 'triangle 'instanciate nil nil))
+    (force{ca} @= (/ (min (- (cadr le-sup) (car le-sup)) (- (cadr le-res) (car le-res)))
+                     (+ (min (- (cadr le-sup) (car le-sup)) (- (cadr le-res) (car le-res)))
+                        (- (car ($ c 'dernier-point)) (max (cadr le-res) (cadr le-sup))))))
+    (droite-de-support{ca} @= d-sup)
+    (droite-de-resistance{ca} @= d-res)
+    (courbe{ca} @= courbe{select-parameters})
+    (derniere-position{ca} @= 'brise-a-la-baisse)) 
+ "formation d un triangle brise a la baisse")
+
+(add-forward-rule 'canal-r14 'd-technique
+ '(let ((c courbe{select-parameters})  lc delta le-sup le-res (alpha 0.5) (beta 0.3) delta-debut delta-fin)
+    (setq lc  intervalle-d-etude{c})
+    (setq delta (- (cadr lc ) (car lc)))
+    (existing (d-sup 'droite-technique)
+              (and  (eq  courbe-origine{d-sup}  c)
+                    (eq convexite-reelle{d-sup} 'convexite-basse)
+                    (existing (d-res 'droite-technique)
+                              (and  (eq courbe-origine{d-res} c)
+                                    (eq convexite-reelle{d-res} 'convexite-haute)
+                                    (setq le-sup intervalle-de-support{d-sup})
+                                    (setq le-res intervalle-de-support{d-res})
+                                    (setq delta-debut (-  (+ (* pente{d-res} (car lc)) ordonnee-zero{d-res})
+                                                          (+ (* pente{d-sup} (car lc)) ordonnee-zero{d-sup})))
+                                    (setq delta-fin (-  (+ (* pente{d-res} (cadr lc)) ordonnee-zero{d-res})
+                                                        (+ (* pente{d-sup} (cadr lc)) ordonnee-zero{d-sup})))
+                                    (or (and (> delta-debut 0.)
+                                             (> delta-fin 0.)
+                                             (< delta-fin delta-debut)
+                                            (>= (abs (/ (- delta-debut delta-fin)
+                                                         (sqrt (1+ (square (/  (+ (get-fondamental-value d-sup 'pente)
+                                                                                  (get-fondamental-value d-res 'pente)) 2))))))
+                                                 (/ (min delta-debut delta-fin) 2)))
+                                        (and (> delta-debut 0.)
+                                             (<= delta-fin 0.)))
+                                    (> (taux-de-recouvrement-de-deux-droites-techniques c d-res d-sup) beta)
+                                    (not (eq brise-vers-le-haut-a-partir-du-dernier-extremum{d-res} 'non))
+                                    (eq brise-vers-le-bas-a-partir-du-dernier-extremum{d-res} 'non)
+                                    (eq brise-vers-le-bas-a-partir-du-dernier-extremum{d-sup} 'non)
+                                    (< brise-vers-le-haut-a-partir-du-dernier-extremum{d-res}
+                                       (droite-techniques-distance-interne-minimale d-sup d-res)))))))
+ '(let (ca (le-sup intervalle-de-support{d-sup}) (le-res intervalle-de-support{d-res}) (c courbe-origine{d-sup})) 
+    (setq ca ($ 'triangle 'instanciate nil nil))
+    (force{ca} @= (/ (min (- (cadr le-sup) (car le-sup)) (- (cadr le-res) (car le-res)))
+                     (+ (min (- (cadr le-sup) (car le-sup)) (- (cadr le-res) (car le-res)))
+                        (- (car ($ c 'dernier-point)) (max (cadr le-res) (cadr le-sup))))))
+    (droite-de-support{ca} @= d-sup)
+    (droite-de-resistance{ca} @= d-res)
+    (courbe{ca} @= courbe{select-parameters})
+    (derniere-position{ca} @= 'brise-a-la-hausse)) 
+ "formation d un triangle brise a la hausse")
+
+
+
+(de taux-de-recouvrement-de-deux-droites-techniques (c d-res d-sup)
+    (let* ((le-sup (get-fondamental-value d-sup 'intervalle-de-support))
+           (le-res (get-fondamental-value d-res 'intervalle-de-support))
+           (x-sup (min (cadr le-sup) (cadr le-res)))
+           (x-inf (max (car le-sup) (car le-res))))
+      (cond ((>= x-inf x-sup) 0)
+            (t (/ (- x-sup x-inf ) (min (- (cadr le-sup) (car le-sup)) (- (cadr le-res) (car le-res))))))))
+
+
+;INTERPRETATION INTERMEDIAIRE
+
+(add-forward-rule 'canal-r15 'e-technique
+ '(existing (c 'canal)  (let (d-sup)
+                          (and (eq courbe{c} courbe{select-parameters})
+                               (eq derniere-position{c} 'brise-a-la-baisse)
+                               (setq d-sup droite-de-support{c})
+                               (eq brise-vers-le-haut-a-partir-du-dernier-extremum{d-sup} 'non)
+                               (< brise-vers-le-bas-a-partir-du-dernier-extremum{d-sup} ($ c 'largeur))
+                               ))) 
+ '(let (cv (old-d-sup droite-de-support{c}) new-d-sup)
+    (setq new-d-sup (droite-technique-create-droite-virtuelle-parallele old-d-sup ($ c 'largeur) 'vers-le-bas))
+    (setq cv ($ 'canal-virtuel 'instanciate nil nil))
+    (droite-de-support{cv} @= new-d-sup)
+    (droite-de-resistance{cv} @= old-d-sup)
+    (courbe{cv} @= courbe{select-parameters})
+    (derniere-position{cv} @= 'strict)) 
+ "creation d un canal virtuel en cas de brisure acceptable vers la bas d un canal")
+
+(add-forward-rule 'canal-r16 'e-technique
+ '(existing (c 'canal)  (let (d-res)
+                          (and (eq courbe{c} courbe{select-parameters})
+                               (eq derniere-position{c} 'brise-a-la-hausse)
+                               (setq d-res droite-de-resistance{c})
+                               (eq brise-vers-le-bas-a-partir-du-dernier-extremum{d-res} 'non)
+                               (< brise-vers-le-haut-a-partir-du-dernier-extremum{d-res} ($ c 'largeur))
+                               ))) 
+ '(let (cv (old-d-res droite-de-resistance{c}) new-d-res)
+    (setq new-d-res (droite-technique-create-droite-virtuelle-parallele old-d-res ($ c 'largeur) 'vers-le-haut))
+    (setq cv ($ 'canal-virtuel 'instanciate nil nil))
+    (droite-de-support{cv} @= old-d-res)
+    (droite-de-resistance{cv} @= new-d-res)
+    (courbe{cv} @= courbe{select-parameters})
+    (derniere-position{cv} @= 'strict)) 
+ "creation d un canal virtuel en cas de brisure acceptable vers la haut d un canal")
+
+(de droite-technique-create-droite-virtuelle-parallele (old-d-sup largeur sens)
+    (prog (dv  new-ordonne-zero
+           (pente (get-fondamental-value old-d-sup 'pente))
+           (ordonnee-zero (get-fondamental-value old-d-sup 'ordonnee-zero)))
+          (setq dv ($ 'droite-virtuelle 'instanciate nil nil))
+          (setf (get-slot-value dv 'courbe-origine) (get-slot-value old-d-sup 'courbe-origine))
+          (setf (get-slot-value dv 'pente) pente)
+          (setf (get-slot-value dv 'ordonnee-zero) (cond ((eq sens 'vers-le-bas)
+                                                          (- ordonnee-zero largeur))
+                                                         ((eq sens 'vers-le-haut)
+                                                          (+ ordonnee-zero largeur))
+                                                         (t ordonnee-zero)))
+          (return dv)))
+
+
+
+
+(de droite-techniques-distance-interne-minimale (d-sup d-res)
+    (let ((h (get-fondamental-value (get-fondamental-value d-sup 'courbe-origine) 'body))
+          (liste-1 (mapcar '(lambda (x) (get-fondamental-value x 'rang))
+                           (get-fondamental-value d-sup 'liste-d-extremums)))
+          (liste-2 (mapcar '(lambda (x) (get-fondamental-value x 'rang))
+                           (get-fondamental-value d-res 'liste-d-extremums)))
+          x0)
+      (setq x0 (car (vref h (max (apply 'min liste-1) (apply 'min liste-2)))))
+      (- (+ (* x0 (get-fondamental-value d-res 'pente) ) (get-fondamental-value d-res 'ordonnee-zero))
+         (+ (* x0 (get-fondamental-value d-sup 'pente) ) (get-fondamental-value d-sup 'ordonnee-zero)))))
+
+
+;INTERPRETATION FINALE
+
+
+(add-forward-rule 
+ 'canal-r17
+ 'd-prevision
+ '(existing (f 'canal) (and  (eq courbe{f} courbe{select-parameters})
+                             (eq derniere-position{f} 'strict)
+                             (existing (echeance 'echeance)
+                                       (and (not (memq echeance echeances-deja-traitees{expert-canal}))
+                                            (eq objectif{echeance} objectif{meta-analysis})))))   
+ '(let (limit-sup limit-inf conc)
+    (setq limit-inf (droite-interpolation droite-de-support{f} date-entiere{echeance}))
+    (setq limit-sup (droite-interpolation droite-de-resistance{f} date-entiere{echeance}))
+    (conclusion{d-prevision} @a 
+                             (copy `((technique-utilisee expert-canal)
+                                     (intervalle-de-prix ,(list limit-inf limit-sup))
+                                     (echeance ,(numberp date-entiere{echeance}))
+                                     (figure  ,f))))
+    (setq conc (user-instanciate 'conclusion-elementaire nil nil))
+    (liste-des-conclusions-elementaires{d-prevision} @a conc)
+    (technique-utilisee{conc} @= 'expert-canal)
+    (intervalle-de-prix{conc} @= (list limit-inf limit-sup))
+    (echeance{conc} @= date-entiere{echeance})
+    (figure{conc} @= f)
+    (importance{conc} @= (funcall fonction-d-importance{d-prevision} f))
+    )    
+ "interpretation en terme de prix du canal")
+
+
+(add-forward-rule
+ 'canal-r18
+ 'd-prevision
+ '(existing (f 'canal-virtuel) (and  (eq courbe{f} courbe{select-parameters})
+                                     (eq derniere-position{f} 'strict)
+                                     (existing (echeance 'echeance)
+                                               (and (not (memq echeance echeances-deja-traitees{expert-canal}))
+                                                    (eq objectif{echeance} objectif{meta-analysis})))))
+ '(let (limit-sup limit-inf conc)
+    (setq limit-inf (droite-interpolation droite-de-support{f} date-entiere{echeance}))
+    (setq limit-sup (droite-interpolation droite-de-resistance{f} date-entiere{echeance}))
+    (conclusion{d-prevision} @a 
+                             (copy `((technique-utilisee expert-canal)
+                                     (intervalle-de-prix ,(list limit-inf limit-sup))
+                                     (echeance ,(numberp date-entiere{echeance}))
+                                     (figure  ,f))))
+    (setq conc (user-instanciate 'conclusion-elementaire nil nil))
+    (liste-des-conclusions-elementaires{d-prevision} @a conc)
+    (technique-utilisee{conc} @= 'expert-canal)
+    (intervalle-de-prix{conc} @= (list limit-inf limit-sup))
+    (echeance{conc} @= date-entiere{echeance})
+    (figure{conc} @= f)
+    (importance{conc} @= (funcall fonction-d-importance{d-prevision} f))
+    )
+ "interpretation en terme de prix du canal virtuel")
+
+
+
+(add-forward-rule 
+ 'canal-r19
+ 'd-prevision
+ '(existing (f 'triangle) (and  (eq courbe{f} courbe{select-parameters})
+                                (eq derniere-position{f} 'strict)
+                                (existing (echeance 'echeance)
+                                          (and (not (memq echeance echeances-deja-traitees{expert-canal}))
+                                               (eq objectif{echeance} objectif{meta-analysis})))))    
+ '(let (limit-sup limit-inf conc)
+    (setq limit-inf (droite-interpolation droite-de-support{f} date-entiere{echeance}))
+    (setq limit-sup (droite-interpolation droite-de-resistance{f} date-entiere{echeance}))
+    (cond ((> limit-sup limit-inf)
+           (conclusion{d-prevision} @a 
+                                    (copy `((technique-utilisee expert-canal)
+                                            (intervalle-de-prix ,(list limit-inf limit-sup))
+                                            (echeance ,(numberp date-entiere{echeance}))
+                                            (figure  ,f))))
+           (setq conc (user-instanciate 'conclusion-elementaire nil nil))
+           (liste-des-conclusions-elementaires{d-prevision} @a conc)
+           (technique-utilisee{conc} @= 'expert-canal)
+           (intervalle-de-prix{conc} @= (list limit-inf limit-sup))
+           (echeance{conc} @= date-entiere{echeance})
+           (figure{conc} @= f)
+           (importance{conc} @= (funcall fonction-d-importance{d-prevision} f))
+           )
+          (t nil)))
+ "interpretation en terme de prix du triangle strict")
+
+
+
+(add-forward-rule 
+ 'canal-r20
+ 'd-prevision
+ '(existing (f 'triangle) (and  (eq courbe{f} courbe{select-parameters})
+                                (eq derniere-position{f} 'brise-a-la-hausse)
+                                (existing (echeance 'echeance)
+                                          (and (not (memq echeance echeances-deja-traitees{expert-canal}))
+                                               (eq objectif{echeance} objectif{meta-analysis})))))
+ '(let (limit-sup limit-inf)
+    (setq limit-sup (+  (droite-interpolation droite-de-resistance{f} date-entiere{echeance})
+                        ($ f 'hauteur)))
+    (setq limit-inf (max (droite-interpolation droite-de-support{f} date-entiere{echeance})
+                         (droite-interpolation droite-de-resistance{f} date-entiere{echeance})))
+    (cond ((> limit-sup limit-inf)
+           (conclusion{d-prevision} @a 
+                                    (copy `((technique-utilisee expert-canal)
+                                            (intervalle-de-prix ,(list limit-inf limit-sup))
+                                            (echeance ,(numberp date-entiere{echeance}))
+                                            (figure  ,f))))
+           (setq conc (user-instanciate 'conclusion-elementaire nil nil))
+           (liste-des-conclusions-elementaires{d-prevision} @a conc)
+           (technique-utilisee{conc} @= 'expert-canal)
+           (intervalle-de-prix{conc} @= (list limit-inf limit-sup))
+           (echeance{conc} @= date-entiere{echeance})
+           (figure{conc} @= f)
+           (importance{conc} @= (funcall fonction-d-importance{d-prevision} f))
+           )
+          (t nil)))
+ "interpretation en terme de prix du triangle brise a la hausse")
+
+
+(add-forward-rule 
+ 'canal-r21
+ 'd-prevision
+ '(existing (f 'triangle) (and  (eq courbe{f} courbe{select-parameters})
+                                (eq derniere-position{f} 'brise-a-la-baisse)
+                                (existing (echeance 'echeance)
+                                          (and (not (memq echeance echeances-deja-traitees{expert-canal}))
+                                               (eq objectif{echeance} objectif{meta-analysis})))))
+ '(let (limit-sup limit-inf)
+    (setq limit-sup (min (droite-interpolation droite-de-resistance{f} date-entiere{echeance})
+                         (droite-interpolation droite-de-support{f} date-entiere{echeance})))
+    (setq limit-inf (-  (droite-interpolation droite-de-support{f} date-entiere{echeance})
+                        ($ f 'hauteur)))
+    (cond ((> limit-sup limit-inf)
+           (conclusion{d-prevision} @a 
+                                    (copy `((technique-utilisee expert-canal)
+                                            (intervalle-de-prix ,(list limit-inf limit-sup))
+                                            (echeance ,(numberp date-entiere{echeance}))
+                                            (figure  ,f))))
+           (setq conc (user-instanciate 'conclusion-elementaire nil nil))
+           (liste-des-conclusions-elementaires{d-prevision} @a conc)
+           (technique-utilisee{conc} @= 'expert-canal)
+           (intervalle-de-prix{conc} @= (list limit-inf limit-sup))
+           (echeance{conc} @= date-entiere{echeance})
+           (figure{conc} @= f)
+           (importance{conc} @= (funcall fonction-d-importance{d-prevision} f))
+           )
+          (t nil)))
+ "interpretation en terme de prix du triangle brise a la baisse")
+
+

@@ -1,0 +1,166 @@
+
+
+
+(de put-slot-facet-value (object slot facet v)
+    (when (null (assoc facet
+                       (cdr (assoc slot 
+                                   (get object 'object-property)))))
+          (setf (cdr (assoc slot 
+                            (get object 'object-property)))
+                (cons (cons facet '((fondamental)))
+                      (cdr (assoc slot 
+                                  (get object 'object-property))))))
+    (print "++++" (get-slot-facet-value 'objectif 'to-be-saved 'keyword))                              
+    (cond((eq *current-hypothetical-world* 'fondamental) 
+          (rplacd (assoc 'fondamental 
+                         (cdr (assoc facet
+                                     (cdr (assoc slot 
+                                                 (get object 'object-property)))))) v))
+         ((assoc *current-hypothetical-world*  (get-slot-facet object slot facet))
+          (rplacd (assoc  *current-hypothetical-world*
+                          (cdr (assoc facet
+                                      (cdr (assoc slot 
+                                                  (get object 'object-property)))))) v))
+         (t (setf (get-slot-facet object slot facet)
+                  (cons (cons *current-hypothetical-world* v)
+                        (get-slot-facet object slot facet))))))
+
+(de user-get-value (object slot)
+  (prog (demon value )
+        (check-object-slot 8 object slot)
+        
+
+         (setq demon (get-slot-facet-value object slot 'read-demon))
+(print demon)
+         (cond ((neq demon nil)
+                (ftrace 11 (catenate " demon de lecture active sur :" slot "{" object "}") nil nil)
+                (mapcar  (lambda (fn)
+                             (cond ((variablep fn)
+                                    (funcall fn  object slot))
+                                   ((consp fn )
+                                    (funcall fn  object slot))))
+                         demon)))
+         
+         
+         (return (get-slot-value object slot))
+                ))
+(de atroce-q () (eq (get-slot-facet 'moving-average-parameters 'moving-average-longue 'determined)
+                     (get-slot-facet 'objectif 'to-be-saved 'keyword))))
+
+(de determine-slot-value (object slot )
+    (prog (predicat  conclusion verification determean mean oldback value forme bi-conclusion)
+          (setq value (user-get-value object slot))
+          (when (eq (get-slot-facet-value object slot 'determined) t) (return value))
+          (setq determean (get-slot-facet-value object slot 'determination-means))
+          (setq oldback *backward-chaining-state*)
+          (setq *backward-chaining-state* 'external-backward-chaining)
+          (check-object-slot 13 object slot)
+          (setq determean (get-slot-facet-value object slot 'determination-means))
+          (setq predicat (get-slot-facet-value object slot 'determination-predicat))
+          (ftrace 3 (list "debut de determination generale de " slot "{" object "}")
+                  (list "moyens de determination :" determean)
+                  (list "predicat de verification de resultat :" predicat))
+          loop
+
+          (cond((null determean)
+                (cond ((null *files-of-data*)
+                       (setq conclusion
+                             (prog (reponse ask)
+                                   (setq ask (get-slot-facet-value object slot 'question-to-ask))
+                                   (when (null ask) (return (get-slot-value object slot)))
+                                   loop1
+                                   (setq reponse
+                                         (ask-for-value  object slot ask))
+                                   (setq verification (funcall predicat object slot reponse))
+                                   (when (null verification) (message "cette reponse n est pas valable")
+                                         (go loop1))
+                                   (setq *backward-chaining-state* oldback)
+                                   (return reponse))))
+                      ((null *files-of-data-charged-?*)
+                       (when (atom *files-of-data*)
+                             (setq *files-of-data* (list *files-of-data*)))
+                       (mapc '(lambda (ffile)
+                                (setq chan (openi  (string ffile)))
+                                (setq savechan (inchan))
+                                (inchan chan)
+                                (untilexit eof 
+                                           (setq forme (read))
+                                           (cond ((memq (cadr forme) '(=))
+                                                  (setq *contens-of-files-of-data*
+                                                        (cons (list (car forme) (caddr forme))  *contens-of-files-of-data*)))
+                                                 )
+                                           )
+                                (inchan savechan )
+                                )
+                             *files-of-data*)
+                       (setq *files-of-data-charged-?* t)
+                       (setq bi-conclusion (prog (local-forme key)
+                                                 (setq key (get-slot-facet-value object slot 'keyword))
+                                                 (cond (key (setq local-forme (assq key  *contens-of-files-of-data*))
+                                                            (when local-forme (return (list t (eval (cadr local-forme))))))
+                                                       (t (return)))
+                                                 (return)))
+                       (cond (bi-conclusion (setq conclusion (cadr bi-conclusion)))
+                             (t (setq conclusion  (prog (reponse ask)
+                                                        (setq ask (get-slot-facet-value object slot 'question-to-ask))
+                                                        (when (null ask) (return (get-slot-value object slot)))
+                                                        loop1
+                                                        (setq reponse
+                                                              (ask-for-value  object slot ask))
+                                                        (setq verification (funcall predicat object slot reponse))
+                                                        (when (null verification) (message "cette reponse n est pas valable")
+                                                              (go loop1))
+                                                        (setq *backward-chaining-state* oldback)
+                                                        (return reponse))))))
+                      
+                      (*files-of-data-charged-?*
+                       (setq bi-conclusion (prog (local-forme key)
+                                                 (setq key (get-slot-facet-value object slot 'keyword))
+                                                 (cond (key (setq local-forme (assq key  *contens-of-files-of-data*))
+                                                            (when local-forme (return (list t (eval (cadr local-forme))))))
+                                                       (t (return)))
+                                                 (return)))
+                       (cond (bi-conclusion (setq conclusion (cadr bi-conclusion)))
+                             (t (setq conclusion  (prog (reponse ask)
+                                                        (setq ask (get-slot-facet-value object slot 'question-to-ask))
+                                                        (when (null ask) (return (get-slot-value object slot)))
+                                                        loop1
+                                                        (setq reponse
+                                                              (ask-for-value  object slot ask))
+                                                        (setq verification (funcall predicat object slot reponse))
+                                                        (when (null verification) (message "cette reponse n est pas valable")
+                                                              (go loop1))
+                                                        (setq *backward-chaining-state* oldback)
+                                                        (return reponse))))))
+                      )
+                
+                (setq *backward-chaining-state* oldback)
+                (ftrace 4 (catenate "il a ete conclu que " slot "{" object "} = " ) conclusion nil)
+                (user-put-value object slot conclusion)
+                (setf (get-slot-facet-value object slot 'determined) t)
+                (let (k)
+                  (if (and *what-to-answer*
+                           (setq k (get-slot-facet-value object slot 'keyword))
+                           (memq k *what-to-answer*)
+                           *where-to-answer*)
+                      (new-trace-file (list k '= conclusion) *where-to-answer* nil)))
+                (return conclusion))
+               ((variablep determean)
+                (setq determean (list determean))))                 
+          (setq mean (car determean))
+          (setq conclusion ($ mean 'determine object slot))
+          (setq verification (funcall predicat object slot conclusion))
+          (cond((eq verification t)
+                ;(setf (get-slot-value object slot) conclusion)
+                (user-put-value object slot conclusion)
+                (setf (get-slot-facet-value object slot 'determined) t)
+                (setq *backward-chaining-state* oldback)
+                (let (k) (if (and *what-to-answer*
+                                  (setq k (get-slot-facet-value object slot 'keyword))
+                                  (memq k *what-to-answer*)
+                                  *where-to-answer*)
+                             (new-trace-file (list k '= conclusion) *where-to-answer* nil)))
+                (return conclusion)))
+          (setq mean (cdr determean))
+          (go loop)))
+

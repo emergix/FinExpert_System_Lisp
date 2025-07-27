@@ -1,0 +1,1040 @@
+;fichier contenant les objects et fonctions permettant d analyser une courbe en utilisant ses extremums
+(add-knowledge-base 'technique
+                    'object-de-base
+                    '(droite droite-virtuelle droite-technique )
+                    nil)
+
+(de lle ()
+(load "/usr/jupiter/olivier/technique.lisp"))
+
+
+;on dispose pour effectuer l analyse des donnees suivantes qui sont des attributs:
+
+; pour une courbe qui a ete expande <<extremum-local 'courbe-and-objects>>
+;                             et    <<droite-technique epsilon nombre-critique pcentre rayon>>
+
+;courbe:derniere-droite-technique    --> droite-technique
+;courbe:derniere-droite-de-resistance  --> droite-technique
+;courbe:derniere-droite-de-support  --> droite-technique
+;courbe:dernier-sens-de-variation  --> 'haussier ou 'baissier
+;courbe:intervalle-d-etude ---> une liste (plus-basse-abcisse plus-haute-abcisse)
+
+
+;droite-technique:derniere-position --> 'support ou 'resistance
+;droite-technique:force-de-la-derniere-position  --> nombre entier
+;droite-technique:nombre-de-brisures  --> nombre entier (a condition que cela soit deja un support ou une resistence)
+;droite-technique:nombre-de-croisements  --> nombre entier (croisements avec la courbe)
+;droite-technique:intervalle-de-support  --> une liste (plus-basse-abcisse-d-extremum plus-haute-abcisse-d-extremum)
+; c est l intervalle minimum qui contient tous les extremums de la droite
+;droite-technique:intervalle-de-support-strict  --> une liste (plus-basse-abcisse-d-extremum plus-haute-abcisse-d-extremum)
+; c est l intervalle minimum qui contient tous les dernier extremums de la derniere position
+
+;droite-technique:intervalle-de-support-super-strict  --> une liste (plus-basse-abcisse-d-extremum plus-haute-abcisse-d-extremum)
+; c est l intervalle minimum qui contient tous les dernier extremums de la derniere position et ou la courbe ne rencontre pas
+; la droite
+;droite-technique:dernierement-brise-a-la-baisse   --> vrai si la courbe a brise a la baisse la droite et n est jamais remonte
+;droite-technique:dernierement-brise-a-la-hausse   --> vrai si la courbe a brise a la hausse la droite et n est jamais remonte
+;      les fonctions suivantes peuvent etre utiles
+
+;point-droite-position(point droite) determine la position d un point par rapport a une droite
+;                        en repondant  'en-dessous ou 'au-dessus (de la droite)
+
+
+;derniere-droite-de-support (liste-de-droite-techniques) --> droite-technique 
+;derniere-droite-de-resistance (liste-de-droite-techniques) --> droite-technique 
+
+;premier-extremum(liste-d-extremum) --> extremum
+;dernier-extremum(liste-d-extremum) --> extremum
+;plus-haut-extremum(liste-d-extremum) --> extremum
+;plus-bas-extremum(liste-d-extremum) --> extremum
+
+(add-attribute-user 'courbe-2d 'dernier-sens-de-variation 'courbe-2d-dernier-sens-de-variation 'instance)
+(add-attribute-user 'courbe-2d 'derniere-droite-technique 'courbe-2d-derniere-droite-technique 'instance)
+(add-attribute-user 'courbe-2d 'derniere-droite-de-support 'courbe-2d-derniere-droite-de-support 'instance)
+(add-attribute-user 'courbe-2d 'derniere-droite-de-resistance 'courbe-2d-derniere-droite-de-resistance 'instance)
+(add-attribute-user 'courbe-2d 'intervalle-d-etude 'courbe-2d-intervalle-d-etude 'instance)
+(add-attribute-user 'courbe-2d 'dernier-maximum 'courbe-2d-dernier-maximum-1 'instance)
+(add-attribute-user 'courbe-2d 'dernier-minimum 'courbe-2d-dernier-minimum-1 'instance)
+
+(de courbe-2d-dernier-maximum-1 (courbe slot)
+    (dernier-extremum ($ courbe 'maximums-locaux)))
+
+
+(de courbe-2d-dernier-minimum-1 (courbe slot)
+    (dernier-extremum ($ courbe 'minimums-locaux)))
+
+
+
+(user-instanciate 'metaclass 'droite nil)
+(add-slot-user 'droite 'courbe-origine 'instance)
+(add-slot-user 'droite 'pente 'instance)
+(add-slot-user 'droite 'ordonnee-zero 'instance)
+
+(user-instanciate 'metaclass 'droite-virtuelle '(droite))
+
+(user-instanciate  'metaclass 'droite-technique '(droite))
+
+(add-slot-user 'droite-technique 'courbe 'instance)
+(add-slot-user 'droite-technique 'force 'instance)
+(add-slot-user 'droite-technique 'liste-d-extremums 'instance)
+(add-slot-user 'droite-technique 'liste-de-points 'instance)
+(add-slot-user 'droite-technique 'sous-type 'instance)
+
+
+
+;liste-de-point contient normalement une liste d extremum
+;sauf si la fonction courbe-find-droite a ete utilise
+;dans ce dernier cas il contient une liste de point de la forme (x y)
+
+(add-attribute-user 'droite-technique 'derniere-position 'droite-technique-derniere-position 'instance)
+(add-attribute-user 'droite-technique 'force-de-la-derniere-position 
+		    'droite-technique-force-de-la-derniere-position 'instance)
+
+(add-attribute-user 'droite-technique 'nombre-de-brisures 'droite-technique-nombre-de-brisures 'instance)
+(add-attribute-user 'droite-technique 'nombre-de-croisements 'droite-technique-nombre-de-croisements 'instance)
+(add-attribute-user 'droite-technique 'intervalle-de-support 'droite-technique-intervalle-de-support 'instance)
+(add-attribute-user 'droite-technique 'intervalle-de-support-strict 'droite-technique-intervalle-de-support-strict 'instance)
+(add-attribute-user 'droite-technique 'intervalle-de-support-super-strict 
+                    'droite-technique-intervalle-de-support-super-strict 'instance)
+(add-attribute-user 'droite-technique 'dernierement-brisee-a-la-hausse 
+		    'droite-technique-dernierement-brisee-a-la-hausse 'instance)
+(add-attribute-user 'droite-technique 'dernierement-brisee-a-la-baisse 
+		    'droite-technique-dernierement-brisee-a-la-baisse 'instance)
+(add-attribute-user 'droite-technique 'brise-vers-le-haut-a-partir-du-dernier-extremum
+                    'droite-technique-brise-vers-le-haut-a-partir-du-dernier-extremum 'instance) 
+(add-attribute-user 'droite-technique 'brise-vers-le-bas-a-partir-du-dernier-extremum
+                    'droite-technique-brise-vers-le-bas-a-partir-du-dernier-extremum 'instance) 
+
+(add-method 'courbe-2d 'courbe-2d-expand-droite-technique-par-groupe 'expand-droite-technique-par-groupe  'superseed)
+(add-method 'courbe-2d 'courbe-2d-expand-droite-technique-par-groupe-pour-extremums-consecutifs
+            'expand-droite-technique-par-groupe-pour-extremums-consecutifs  'superseed)
+
+(add-method 'courbe-2d 'courbe-2d-extract-contour 'extract-contour 'superseed)
+(add-method 'courbe-2d 'courbe-2d-extract-contour-recursivement 'extract-contour-recursivement 'superseed)
+
+;courbe:droites-d-accummulation ---> une liste (groupe-de-droite1 groupe-de-droite2 .. groupe-de-droiteN)
+(add-method 'courbe-2d 'courbe-2d-droites-d-accummulation 'droites-d-accummulation 'superseed)
+
+
+
+
+
+  (de find-extremum-meme-pseudo (rang1 courbe  extremum-groupe-total)
+      (prog (pseudo)
+            (when (setq pseudo (any '(lambda (x) (if (eq (get-fondamental-value x 'rang) rang1) x nil)) extremum-groupe-total))
+                  (return pseudo))
+            (when (setq pseudo (any '(lambda (x) (if (and (eq (get-fondamental-value x 'courbe) courbe)
+                                                          (eq (get-fondamental-value x 'rang) rang1))
+                                                     x nil))
+                                    (get-all-instances 'pseudo-extremum)))
+                  (return pseudo))
+            
+            (setq pseudo ($ 'pseudo-extremum 'instanciate nil nil))
+            (setf (get-slot-value pseudo 'courbe) courbe)
+            (setf (get-slot-value pseudo 'rang) rang1)
+            (setf (get-slot-value pseudo 'hauteur) (vref (get-fondamental-value courbe 'body) rang1))
+            (return pseudo)
+            ))
+           
+
+
+ (de nombre-de-croisements-courbe-droite (courbe pente ordonnee-zero  liste-d-extremums)
+ ;calcule le nombre de croisement de la droite avec sa courbe 
+     (prog* ((h (get-slot-value courbe 'body))
+             (l (vlength h))
+             (v 0)
+             (nb 0)
+             (epsilon (/ (get-fondamental-value select-parameters  'precision) 2.))
+             (precedente-position 'incertain)
+             (position 'incertain)
+             )
+            loop
+            (when (>= v l)
+                  (return nb))
+            (when (neq position 'incertain) (setq precedente-position position))
+            (setq position (droite-fantome-point-droite-position-floue (vref h v) epsilon pente ordonnee-zero liste-d-extremums))
+            (when (and (neq position precedente-position)
+  
+                     (neq position 'incertain)
+                       (neq precedente-position 'incertain))
+                  (setq nb (1+ nb)))
+            (setq v (1+ v))
+            (go loop)))
+
+
+
+(de droite-technique-nombre-de-brisures (droite-technique slot)
+;la specification du slot est necessaire car ce sont des  fonctions liees a a des attributs
+     (prog (derniere-position intermediate-liste v extremum object-cherche)
+	  (setq derniere-position (user-get-value droite 'derniere-position))
+	  (setq object-cherche (cond ((eq derniere-position 'support) 'minimum-local)
+				     ((eq derniere-position 'resistance) 'maximum-local)))
+	  (setq intermediate-liste (copy (get-slot-value droite 'liste-d-extremums)))
+	  (setq v 0)
+	  loop
+	  (when (null intermediate-liste) (return v))
+	  (setq extremum (dernier-extremum intermediate-liste))
+	  (cond ((is-a extremum object-cherche)
+		 (setq intermediate-liste (remq extremum intermediate-liste))
+		 (go loop))
+		(t (setq v (1+ v))
+		   (cond ((eq object-cherche 'minimum-local)
+			  (setq object-cherche 'maximum-local))
+			 ((eq object-cherche 'maximum-local)
+			  (setq object-cherche 'minimum-local)))
+		    (setq intermediate-liste (remq extremum intermediate-liste))
+		    (go loop)))))
+
+
+(de droite-technique-nombre-de-croisements (droite-technique slot)
+;la specification du slot est necessaire car ce sont des  fonctions liees a a des attributs
+    (prog (nb h l v  precedente-position position epsilon)
+          (setq epsilon  (get-slot-value nmm-suppression-de-droites-ininterressantes 'precision-de-croisement) )
+          (setq nb 0)
+          (setq h (get-slot-value (get-slot-value droite-technique 'courbe-origine) 'body))
+          (setq l (vlength h))
+          (setq v 0)
+          (setq position (point-droite-position-floue (vref h v) droite-technique epsilon))
+          loop
+          (when (>= v l) 
+                (return nb))
+          (cond ((neq position 'incertain) (setq precedente-position position)))
+          (setq position (point-droite-position-floue (vref h v) droite-technique epsilon))
+          (when (and (neq position precedente-position)
+                     (neq position 'incertain)
+                    )
+                (setq nb (1+ nb)))
+          (setq v (1+ v))
+          (go loop)))
+
+
+
+(de droite-technique-derniere-position (droite slot)
+;la specification du slot est necessaire car ce sont des  fonctions liees a a des attributs
+    (prog (courbe dernier-extremum point-next extremum-liste)
+	  (setq courbe (get-slot-value droite 'courbe-origine))
+          (setq extremum-liste (copy (get-slot-value droite 'liste-d-extremums)))
+          essai
+	  (setq dernier-extremum (dernier-extremum extremum-liste ))
+          (cond ((and (eq (get-fondamental-value droite 'sous-type) 'convexite-haute)
+                      (is-a dernier-extremum 'pseudo-extremum))
+                 (return 'resistance))
+                 ((and (eq (get-fondamental-value droite 'sous-type) 'convexite-basse)
+                      (is-a dernier-extremum 'pseudo-extremum))
+                 (return 'support)))
+                     
+	  (setq point-next (vref (get-slot-value courbe 'body) (1+ (get-slot-value dernier-extremum 'rang))))
+	  (cond ((eq (point-droite-position point-next droite) 'au-dessus) (setq result 'support))
+		((eq (point-droite-position point-next droite) 'en-dessous) (setq result  'resistance)))
+          (cond ((and (is-a dernier-extremum 'maximum-local) (eq result 'resistance)) (return result))
+                ((and (is-a dernier-extremum 'minimum-local) (eq result 'support)) (return result))
+                (t
+                   (setq extremum-liste (remq dernier-extremum extremum-liste))
+                   (when (null extremum-liste) (return nil))
+                   (go essai)))))
+
+
+(de droite-technique-force-de-la-derniere-position (droite slot)
+;la specification du slot est necessaire car ce sont des  fonctions liees a a des attributs
+    (prog (derniere-position intermediate-liste v extremum object-cherche)
+	  (setq derniere-position (user-get-value droite 'derniere-position))
+	  (setq object-cherche (cond ((eq derniere-position 'support) 'minimum-local)
+				     ((eq derniere-position 'resistance) 'maximum-local)))
+	  (setq intermediate-liste (copy (get-slot-value droite 'liste-d-extremums)))
+	  (setq v 0)
+	  loop
+	  (when (null intermediate-liste) (return v))
+	  (setq extremum (dernier-extremum intermediate-liste))
+	  (cond ((is-a extremum object-cherche)
+		 (setq v (1+ v))
+		 (setq intermediate-liste (remq extremum intermediate-liste))
+		 (go loop))
+		(t (return v)))))
+
+
+(de droite-technique-derniere-position-liste-d-extremum (droite)
+    (prog (derniere-position intermediate-liste finale-liste extremum object-cherche)
+	  (setq derniere-position (user-get-value droite 'derniere-position))
+	  (setq object-cherche (cond ((eq derniere-position 'support) 'minimum-local)
+				     ((eq derniere-position 'resistance) 'maximum-local)))
+	  (setq intermediate-liste (copy (get-slot-value droite 'liste-d-extremums)))
+	  (setq finale-liste nil)
+	  loop
+	  (when (null intermediate-liste) (return finale-liste))
+	  (setq extremum (dernier-extremum intermediate-liste))
+	  (cond ((is-a extremum object-cherche)
+		 (setq finale-liste (cons extremum finale-liste))
+		 (setq intermediate-liste (remq extremum intermediate-liste))
+		 (go loop))
+		(t (return finale-liste)))))
+
+
+(de droite-technique-intervalle-de-support-strict (droite slot)
+    (prog(debut fin support-strict)
+         (setq support-strict  (droite-technique-derniere-position-liste-d-extremum droite))
+         (setq debut (get-slot-value (premier-extremum support-strict) 'hauteur))
+         (setq fin (get-slot-value (dernier-extremum support-strict) 'hauteur))
+         (cond ((or (null fin) (null debut) )
+                (setq fin (get-slot-value (dernier-extremum (get-slot-value droite 'liste-d-extremums)) 'hauteur))
+                (return (list (car fin) (car fin))))
+               (t (return (list (car debut) (car fin)))))))
+
+
+(de droite-technique-intervalle-de-support-super-strict (droite slot)
+    (prog* ((c (get-slot-value droite 'courbe-origine))
+            (h (get-slot-value c 'body))
+            (l (vlength h))
+            (v (1- (vlength h)))
+            (epsilon (get-slot-value select-parameters  'precision))
+            (precedente-position 'incertain)
+            (position 'incertain)
+            (rang-liste (sortn (mapcar '(lambda (x) (get-fondamental-value x 'rang))
+                                          (get-slot-value droite 'liste-d-extremums))))
+            rang-debut rang-fin)
+           (setq rang-debut (car rang-liste))
+           (setq rang-fin (car (last rang-liste)))
+           loop
+           (when (<= v rang-debut) (return (list (car (vref h rang-debut)) (car (vref h rang-fin)))))
+           (when (neq position 'incertain) (setq precedente-position position))
+           (setq position (point-droite-position-floue (vref h v) droite epsilon))
+           (when (and (neq position precedente-position)
+                      (neq position 'incertain)
+                      (neq precedente-position 'incertain))
+                 
+                 (return (list (car (vref h (premier-rang-apres v rang-liste))) (car (vref h rang-fin)))))
+           (setq v (1- v))
+           (go loop)))
+
+
+(de droite-technique-dernierement-brisee-a-la-hausse (droite slot)
+    (prog  (dernier-extremum e-mum h h1 h2 )
+	   (setq dernier-extremum (dernier-extremum  (get-slot-value droite 'liste-d-extremums)))
+	   (setq e-mum (get-slot-value dernier-extremum 'extremum-droit))
+	   (when (or (null e-mum)
+		     (is-a dernier-extremum 'minimum-local))
+		 (return nil))
+	   loop
+	   (cond ((and (null (setq h1 (get-slot-value e-mum 'extremum-droit)))
+		       (> (cadr (setq h (get-slot-value e-mum 'hauteur-droit)) )
+			  (setq h2 (droite-interpolation droite (car h)))))
+		  (return t))
+		 ((and (null h1)
+		       (<= (cadr h) h2))
+		  (return nil))
+		
+		 ((>  (cadr (setq h (get-slot-value e-mum 'hauteur)))
+		      (droite-interpolation droite (car h)))
+		  (return t))
+		 (t (setq e-mum h1)
+		    (go loop)))))
+
+
+(de droite-technique-dernierement-brisee-a-la-baisse (droite slot)
+    (prog  (dernier-extremum e-mum h h1 h2 )
+	   (setq dernier-extremum (dernier-extremum  (get-slot-value droite 'liste-d-extremums)))
+	   (setq e-mum (get-slot-value dernier-extremum 'extremum-droit))
+	   (when (or (null e-mum)
+		     (is-a dernier-extremum 'maximum-local))
+		 (return nil))
+	   loop
+	   (cond ((and (null (setq h1 (get-slot-value e-mum 'extremum-droit)))
+		       (< (cadr (setq h (get-slot-value e-mum 'hauteur-droit)) )
+			  (setq h2 (droite-interpolation droite (car h)))))
+		  (return t))
+		 ((and (null h1)
+		       (>= (cadr h) h2))
+		  (return nil))
+		
+		 ((< (cadr (setq h (get-slot-value e-mum 'hauteur)))
+		     (droite-interpolation droite (car h)))
+		  (return t))
+		 (t (setq e-mum h1)
+		    (go loop)))))
+
+
+(de droite-technique-brise-vers-le-bas-a-partir-du-dernier-extremum (droite slot)
+    (prog ((h (get-fondamental-value (get-fondamental-value droite 'courbe-origine) 'body))
+           (rg (1+ (get-fondamental-value (dernier-extremum (get-fondamental-value droite 'liste-d-extremums)) 'rang)))
+           (precision (get-fondamental-value select-parameters 'precision))
+           (pente (get-fondamental-value droite 'pente))
+           (ordonnee-zero (get-fondamental-value droite 'ordonnee-zero))
+           (convexite-reelle (user-get-value droite 'convexite-reelle))
+           (dernier-ecart 0)
+           rg-limite dif)
+          (setq rg-limite (1- (vlength h)))
+          (when (eq convexite-reelle 'convexite-haute) (go convexite-haute))
+          loop
+          (when (> rg rg-limite) (go fin))
+        ;ecart = droite - courbe
+          (setq ecart (- (+ ordonnee-zero (* pente (car (vref h rg))))  (cadr (vref h rg))))
+          (when ( > ecart dernier-ecart) (setq dernier-ecart ecart))
+          (setq rg (1+ rg))
+          (go loop)
+          fin 
+          (when (< dernier-ecart precision) (return 'non))
+          (return dernier-ecart)
+          convexite-haute
+          loop1
+          (when (> rg rg-limite) (return 'non))
+        ;ecart = droite - courbe
+          (setq ecart (- (+ ordonnee-zero (* pente (car (vref h rg))))  (cadr (vref h rg))))
+          (when (< ecart (- 0. precision))
+                (setq rg (1+ rg))
+                (go loop))
+          (setq rg (1+ rg))
+          (go loop1)))
+          
+
+
+
+(de droite-technique-brise-vers-le-haut-a-partir-du-dernier-extremum (droite slot)
+    (prog ((h (get-fondamental-value (get-fondamental-value droite 'courbe-origine) 'body))
+           (rg (1+ (get-fondamental-value (dernier-extremum (get-fondamental-value droite 'liste-d-extremums)) 'rang)))
+           (precision (get-fondamental-value select-parameters 'precision))
+           (pente (get-fondamental-value droite 'pente))
+           (ordonnee-zero (get-fondamental-value droite 'ordonnee-zero))
+           (dernier-ecart 0)
+           (convexite-reelle (user-get-value droite 'convexite-reelle))
+           rg-limite dif)
+          (setq rg-limite (1- (vlength h)))
+          (when (eq convexite-reelle 'convexite-basse) (go convexite-basse))
+          loop
+          (when (> rg rg-limite) (go fin))
+        ;ecart = courbe - droite
+          (setq ecart (- (cadr (vref h rg)) (+ ordonnee-zero (* pente (car (vref h rg))))))
+          (when ( > ecart dernier-ecart) (setq dernier-ecart ecart))
+          (setq rg (1+ rg))
+          (go loop)
+          fin 
+          (when (< dernier-ecart precision) (return 'non))
+          (return dernier-ecart)
+          convexite-basse
+          loop1
+          (when (> rg rg-limite) (return 'non))
+        ;ecart = courbe - droite
+          (setq ecart (- (cadr (vref h rg)) (+ ordonnee-zero (* pente (car (vref h rg))))))
+          (when (< ecart (- 0. precision))
+                (setq rg (1+ rg))
+                (go loop))
+          (setq rg (1+ rg))
+          (go loop1)))
+
+(de nombre-de-brisure (courbe droite extremum-de-depart epsilon-prix) 
+    (prog (h extremum nb)
+	  (setq nb 0)
+	  (setq extremum extremum-de-depart)
+	  (cond ((< (cadr (setq h (get-slot-value extremum-de-depart 'hauteur)))
+		    (droite-interpolation droite (car h)))
+		 (go en-dessous))
+		(t (go au-dessus)))
+	  en-dessous
+	  (setq extremum (get-slot-value extremum 'extremum-droit))
+	  (when (null extremum) (return nb))
+	  (cond ((<= (cadr (setq h (get-slot-value extremum 'hauteur)))
+		    (+ (droite-interpolation droite (car h)) epsilon-prix))
+		 (go en-dessous))
+		(t (setq nb (1+ nb))
+		   (go au-dessus)))
+	  au-dessus
+	  (setq extremum (get-slot-value extremum 'extremum-droit))
+	  (when (null extremum) (return nb))
+	  (cond ((< (cadr (setq h (get-slot-value extremum 'hauteur)))
+		    (- (droite-interpolation droite (car h)) epsilon-prix))
+		 (setq nb (1+ nb))
+		 (go en-dessous))
+		(t (go au-dessus)))
+	  ))
+
+
+(de droite-interpolation (droite abcisse)
+    (+ (get-slot-value droite 'ordonnee-zero)
+       (* (get-slot-value droite 'pente) abcisse)))
+
+ (de droite-droite-intersection (d-sup d-res)
+     (prog (a0 b0 a1 b1)
+	   (setq a0 (get-slot-value d-sup 'pente))
+	   (setq b0 (get-slot-value d-sup 'ordonnee-zero))
+	   (setq a1 (get-slot-value d-res 'pente))
+	   (setq b1 (get-slot-value d-res 'ordonnee-zero))
+	   (when (equal a0 a1) (return nil))
+	   (return (list (/ (- b1 b0) (- a0 a1)) 
+			 (/ (- (* b0 a1) (* b1 a0)) (- a1 a0))))))
+
+
+ (de droite-courbe-derniere-intersection (droite courbe)
+     (prog(h pente ordonnee-zero vmax v sens-final sens-courbe point-courbe point-courbe-suivant alpha x y)
+	  (setq h (get-slot-value courbe 'body))
+	  (setq vmax (get-slot-value courbe 'pointeur-max))
+	  (setq pente (get-slot-value droite 'pente))
+	  (setq ordonnee-zero (get-slot-value droite 'ordonnee-zero))
+	  (setq v (1- vmax))
+	  (setq sens-final (cond ((> (cadr (vref h vmax)) (+ ordonnee-zero (* pente (car (vref h vmax)))))
+			    '+)
+			   (t '-)))
+	  (setq point-courbe (vref h vmax))
+	  loop
+	  (when (eq v 0) (return nil))
+	  (setq point-courbe-suivant point-courbe)
+	  (setq point-courbe (vref h v))
+	  (setq sens-courbe (cond((> (cadr point-courbe) (+ ordonnee-zero (* pente (car point-courbe))))
+				  '+)
+				 (t '-)))
+	  (when (eq sens-final sens-courbe) (setq v (1- v )) (go loop))
+	  (setq alpha (/ (- (cadr point-courbe-suivant) (cadr point-courbe))
+			 (- (car point-courbe-suivant) (car point-courbe))))
+	  (setq x (/ (+ (- (* alpha (car point-courbe)) (cadr point-courbe)) ordonnee-zero)
+		     (- alpha pente)))
+	  (setq y (+ (* pente x) ordonnee-zero))
+	  (return (list x y))))
+	  
+
+
+
+(de nombre-de-rebonds (droite1 droite2)
+    (prog (debut-mum droite-precedente droite-actuelle type-actuel next-mum n droite-list-1 droite-list-2)
+	  (setq debut-mum (premier-extremum (append (setq droite-list-1 (get-slot-value droite1 'liste-d-extremums))
+						    (setq droite-list-2(get-slot-value droite2 'liste-d-extremums)))))
+	  (setq droite-precedente (cond((memq debut-mum droite-list-1) droite1)
+				       ((memq debut-mum droite-list-2) droite2)))
+	  (setq next-mum (get-slot-value debut-mum 'extremum-droit))
+	  (setq n 1)
+	  loop
+	  (when (null  next-mum) (return n))
+	  (setq droite-actuelle (cond((memq next-mum droite-list-1) droite1)
+				     ((memq next-mum droite-list-2) droite2)))
+	  (when (null droite-actuelle) 
+		(setq next-mum (get-slot-value next-mum 'extremum-droit))
+		(go loop))
+	  (when  (eq droite-precedente droite-actuelle)
+		 (setq next-mum (get-slot-value next-mum 'extremum-droit))
+		 (go loop))
+	  (setq droite-precedente droite-actuelle)
+	  (setq next-mum (get-slot-value next-mum 'extremum-droit))
+	  (setq n (1+ n))
+	  (go loop)))
+	  
+
+(de premier-extremum-de-la-derniere-position (droite)
+(premier-extremum (get-fondamental-value droite 'liste-d-extremums)))
+
+
+
+
+(de bipoint-droite-associee  (point1 point2 courbe)
+    (prog (dr)
+          (setq dr (user-instanciate 'droite-technique nil nil))
+          (setf (get-slot-value dr 'liste-de-points) (list point1 point2))
+          (setf (get-slot-value dr 'courbe-origine ) courbe)
+          (setf (get-slot-value dr 'courbe) courbe)
+          (setf (get-slot-value dr 'ordonnee-zero)(/ (- (* (cdr point2) (car point1))
+                                                        (* (car point2) (cdr point1)))
+                                                     (- (car point1) (car point2))))
+          (setf (get-slot-value dr 'pente)(/ (- (cdr point2) (cdr point1))
+                                             (- (car point2) (car point1))))
+          (return dr)))
+
+(de square (x) (* x x))
+
+(de norme-d2 (point1 point2)
+    (+ (* (square (- (car point1) (car point2)) ) *csurj* *csurj*) 
+       (* (square (- (cdr point1) (cdr point2))))))
+
+(de moyenne-des-extremums (courbe)
+    (prog (extremum-liste (result 0.))
+          (setq extremum-liste (mapcan '(lambda (x) (cond ((eq (get-fondamental-value x 'courbe) courbe)
+                                                           (list x))
+                                                          (t nil)))
+                                       (get-all-instances 'extremum-local)))
+          (mapc '(lambda (x) (setq result (+ result (cadr (get-fondamental-value x 'hauteur)))))
+                extremum-liste)
+          (return (cond ((null extremum-liste) 1.)
+                        (t (/ result (length extremum-liste)))))))
+
+(de amplitude-maximum-en-cours (courbe)
+    (let((extremums (mapcan '(lambda (x) (cond ((eq (get-fondamental-value x 'courbe) courbe) (list x))
+                                               (t nil)))
+                            (get-all-instances 'extremum-local))))
+      (- (cadr (get-fondamental-value (plus-haut-extremum extremums) 'hauteur))
+         (cadr (get-fondamental-value  (plus-bas-extremum extremums) 'hauteur)))))
+
+
+(de amplitude-maximum-en-jours (courbe)
+    (let ((h (get-fondamental-value courbe 'body)))
+      (- (car (vref h (1- (vlength h))))
+         (car (vref h 0)))))
+
+(de plus-proche-extremum (point courbe)
+    (prog (meilleur-extremum meilleur-d2) 
+          (mapc '(lambda (x) (when (eq (get-fondamental-value x 'courbe) courbe)
+                                   (cond ((null meilleur-extremum)
+                                          (setq meilleur-extremum x)
+                                          (setq meilleur-d2 (norme-d2 point (get-slot-value x 'hauteur))))
+                                         ((< (norme-d2 point x) meilleur-d2)
+                                          (setq meilleur-extremum x)
+                                          (setq meilleur-d2 (norme-d2 point (get-slot-value x 'hauteur)))))))
+                                      (get-all-instances 'extremum-local))
+          (return meilleur-extremum)))
+
+
+
+
+(de premier-rang-apres (n n-liste)
+    (cond ((null n-liste) n)
+          ((< n (car n-liste)) (car n-liste))
+          (t (premier-rang-apres n (cdr n-liste)))))
+
+(de premier-rang-avant (n n-liste)
+    (cond ((null n-liste) n)
+          ((< n (car n-liste)) n)
+          ((null (cdr n-liste)) n)
+          ((< n (cadr n-liste)) (car n-liste))
+          (t (premier-rang-avant n (cdr n-liste)))))
+
+(de droite-technique-intervalle-de-support (droite slot)
+    (let ( (dernier-extremum (dernier-extremum (get-fondamental-value droite 'liste-d-extremums)))
+           (premier-extremum  (premier-extremum (get-fondamental-value droite 'liste-d-extremums))))
+      (cond ((< (get-fondamental-value dernier-extremum 'rang) 
+                (get-fondamental-value (get-fondamental-value droite 'courbe-origine) 'pointeur-max))  
+             (list (car (get-slot-value premier-extremum 'hauteur))
+                   (car (get-slot-value dernier-extremum 'hauteur))))
+            (t 
+             (setq dernier-extremum (dernier-extremum (remq dernier-extremum 
+                                                            (copy (get-fondamental-value droite 'liste-d-extremums)))))
+             (list (car (get-slot-value premier-extremum 'hauteur))
+                   (car (get-slot-value dernier-extremum 'hauteur)))))))
+               
+            
+     
+
+(de vector-to-list (vect)
+    (prog ((v 0) liste (vl (vlength vect)))
+	  loop
+	  (when (= v vl) (return liste))
+	  (setq liste (cons (vref vect v) liste))
+	  (setq v (1+ v))
+	  (go loop)))
+
+
+
+
+(de point-droite-position (point droite)
+ ;determine la position d un point (x y) par rapport a une droite technique (object)
+ ; retourne 'au-dessus ou 'en-dessous suivant que la point est au dessus
+ ;ou en dessous de la droite
+    (prog (pente ordonnee-zero liste-d-extremums d)
+	  (setq pente (get-slot-value droite 'pente))
+	  (setq ordonnee-zero (get-slot-value droite 'ordonnee-zero))
+	  (setq liste-d-extremums (get-slot-value droite 'liste-d-extremums))
+	  (setq d (- (cadr point) (+ (* pente (car point)) ordonnee-zero)))
+	  (cond ((>= d 0) (return 'au-dessus))
+		(t (return 'en-dessous)))))
+
+
+
+
+(de point-droite-position-floue (point droite epsilon)
+ ;determine la position d un point (x y) par rapport a une droite technique (object)
+ ; retourne 'au-dessus ou 'en-dessous suivant que la point est au dessus
+ ;ou en dessous de la droite
+    (prog (pente ordonnee-zero liste-d-extremums d)
+	  (setq pente (get-slot-value droite 'pente))
+	  (setq ordonnee-zero (get-slot-value droite 'ordonnee-zero))
+	  (setq liste-d-extremums (get-slot-value droite 'liste-d-extremums))
+	  (setq d (- (cadr point) (+ (* pente (car point)) ordonnee-zero)))
+	  (cond ((>= d epsilon) (return 'au-dessus))
+                ((<= d (- epsilon)) (return 'en-dessous))
+		(t (return 'incertain)))))
+
+
+(de droite-fantome-point-droite-position-floue (point  epsilon pente ordonnee-zero liste-d-extremums)
+ ;determine la position d un point (x y) par rapport a une droite technique (object)
+ ; retourne 'au-dessus ou 'en-dessous suivant que la point est au dessus
+ ;ou en dessous de la droite
+    (prog (d)
+	  (setq d (- (cadr point) (+ (* pente (car point)) ordonnee-zero)))
+	  (cond ((>= d epsilon) (return 'au-dessus))
+                ((<= d (- epsilon)) (return 'en-dessous))
+		(t (return 'incertain)))))
+
+
+(de courbe-2d-droites-d-accummulation (courbe precision)
+    (prog((droites (mapcan '(lambda (x) (cond((eq (get-fondamental-value x 'courbe-origine) courbe) (list x))
+                                             (t nil)))
+                           (get-all-instances 'droite-technique)))
+         
+          (h (get-fondamental-value courbe 'body))
+          xdebut xfin triplets doublets-1 doublets-2 liste-accummulation-1 liste-accummulation-2 liste-accummulation
+          groupe-1 groupe-2 liste-accummulation-2-p)
+       
+         (process-pending-events)
+         (setq xdebut (car (vref h 0)))
+         (setq xfin (car (vref h (1- (vlength h)))))
+         (setq doublets-1 (mapcar '(lambda (x) (list (+ (* (get-fondamental-value x 'pente) xdebut)
+                                                        (get-fondamental-value x 'ordonnee-zero))
+                                                     x))
+                                  droites))
+         (setq doublets-2 (mapcar '(lambda (x) (list (+ (* (get-fondamental-value x 'pente) xfin)
+                                                        (get-fondamental-value x 'ordonnee-zero))
+                                                     x))
+                                  droites))
+         (setq doublets-1 (classe-doublets doublets-1))
+         (setq doublets-2 (classe-doublets doublets-2))
+         (setq liste-accummulation-1 (forme-liste-accummulation doublets-1 precision))
+         (setq liste-accummulation-2 (forme-liste-accummulation doublets-2 precision))
+         loop1 
+         (when (null liste-accummulation-1) (return (filtrage-liste-d-accummulation h  liste-accummulation)))
+         (setq groupe-1 (car liste-accummulation-1))
+         (setq liste-accummulation-1 (cdr liste-accummulation-1))
+         (setq liste-accummulation-2-p liste-accummulation-2)
+         loop2
+         (when (null liste-accummulation-2-p) (go loop1))
+         (setq groupe-2 (car liste-accummulation-2-p))
+         (setq liste-accummulation-2-p (cdr liste-accummulation-2-p))
+         (setq groupe (liste-intersection groupe-1 groupe-2))
+         (cond((<= (length groupe) 1) (go loop2))
+              (t (setq liste-accummulation (cons groupe liste-accummulation)) (go loop2)))))
+
+(de liste-intersection (liste-1 liste-2)
+    (mapcan '(lambda (x) (cond ((memq x liste-2) (list x))
+                               (t nil)))
+            liste-1))
+(de forme-liste-accummulation (doublets precision)
+    (prog (liste-accummulation groupe (doublets-p (cdr doublets))
+                               x-droite (x-courrant (caar doublets)) (groupe-courrant (list (cadar doublets))))
+          loop
+          (when (null doublets-p) (return liste-accummulation))
+          (setq x-droite (car doublets-p))
+          (setq doublets-p (cdr doublets-p))
+          (cond ((<= (- (car x-droite) x-courrant) (* precision (sqrt (1+ (square (get-fondamental-value (cadr x-droite) 'pente))))))
+                 (setq groupe-courrant (cons (cadr x-droite) groupe-courrant))
+                 (go loop))
+                (t 
+                 (setq liste-accummulation (cons groupe-courrant liste-accummulation))
+                 (setq groupe-courrant (list (cadr x-droite)))
+                 (setq x-courrant (car x-droite))
+                 (go loop)))))
+  
+
+        
+(de classe-doublets (doublets)
+    (cond((null doublets) nil)
+         (t
+          (let ((z 
+                 (any '(lambda (y)
+                         (cond ((every '(lambda (x) (cond ((<= (car y) (car x)))
+                                                          (t nil)))
+                                       doublets) y)
+                               (t nil)))
+                      doublets)))
+            (cons z (classe-doublets (remq z doublets)))))))
+    
+(de filtrage-liste-d-accummulation (h liste-de-groupes-de-droites)
+  (mapcan '(lambda (x) (filtrage-liste-d-accummulation-1 h x))
+          liste-de-groupes-de-droites))
+
+(de filtrage-liste-d-accummulation-1 (h groupe-de-droites)
+    (prog (final-liste-de-groupes-de-droites)
+          (setq alpha 0.5)
+          (setq doublets (mapcar '(lambda (x) (list (facteur-de-forme-d-accummulation h x) x))
+                                 groupe-de-droites))
+          (setq droites-inf (mapcan '(lambda (x) (cond ((<= (car x) (- alpha)) (list (cadr x)))
+                                                      (t nil)))
+                                   doublets))
+       
+          (setq droites-sup (mapcan '(lambda (x) (cond ((>= (car x) alpha) (list (cadr x)))
+                                                      (t nil)))
+                                   doublets))
+          (when (<= (length droites-inf) 1) (go sup))
+          (setq final-liste-de-groupes-de-droites (list droites-inf))
+          sup
+          (when (<= (length droites-sup) 1) (go fin))
+          (setq final-liste-de-groupes-de-droites (cons droites-sup final-liste-de-groupes-de-droites))
+          fin
+          (return final-liste-de-groupes-de-droites)))
+
+(de facteur-de-forme-d-accummulation (h droite)
+    (prog ( rang (liste-d-extremums (get-fondamental-value droite 'liste-d-extremums)) (nb 0) (nb-positif 0) (nb-negatif 0)
+                 (a (get-fondamental-value droite 'pente)) (b (get-fondamental-value droite 'ordonnee-zero))
+                 rang1 rang2)
+          (setq rang1 (get-slot-value (premier-extremum liste-d-extremums) 'rang))
+          (setq rang2 (get-slot-value (dernier-extremum liste-d-extremums) 'rang))
+          (setq rang rang1)
+          loop
+          (when (> rang rang2) (return (/ (- nb-positif nb-negatif) nb)))
+          (setq nb (1+ nb))
+          (when (> (cadr (vref h rang)) (+ (* a (car (vref h rang))) b)) (setq nb-positif (1+ nb-positif)))
+          (when (< (cadr (vref h rang)) (+ (* a (car (vref h rang))) b)) (setq nb-negatif (1+ nb-negatif)))
+          (setq rang (1+ rang))
+          (go loop)))
+
+(add-attribute-user  'droite-technique 'convexite-reelle
+                     'droite-technique-convexite-reelle  'instance)
+
+(de droite-technique-convexite-reelle (droite slot)
+    (let ((h (get-fondamental-value (get-fondamental-value droite 'courbe-origine) 'body)) v)
+      (setq v (facteur-de-forme-d-accummulation h droite))
+      (cond ((>= v 0.) 'convexite-basse)
+            (t 'convexite-haute))))
+
+
+(de courbe-2d-dernier-sens-de-variation (courbe slot)
+    (prog (last-point ante-last-point rg h)
+	  (setq rg (get-slot-value courbe 'pointeur-max))
+	  (setq h (get-slot-value courbe 'body))
+	  (setq last-point (vref h rg))
+	  (setq ante-last-point (vref h (1- rg)))
+	  (cond ((>= (cadr ante-last-point) (cadr last-point))
+		 (return 'haussier))
+		(t (return 'baissier)))))
+
+(de courbe-2d-derniere-droite-technique (courbe slot)
+    (derniere-droite-technique (get-slot-value courbe 'liste-des-droites-techniques)))
+
+(de courbe-2d-derniere-droite-de-support (courbe slot)
+    (derniere-droite-de-support (get-slot-value courbe 'liste-des-droites-techniques)))
+
+(de courbe-2d-derniere-droite-de-resistance (courbe slot)
+    (derniere-droite-de-resistance (get-slot-value courbe 'liste-des-droites-techniques)))
+
+
+(de courbe-2d-intervalle-d-etude (courbe slot)
+    (list (car (premier-point courbe)) (car (dernier-point courbe))))
+
+
+
+(de derniere-droite-technique (liste-de-droite-techniques)
+    (prog ((dtl liste-de-droites-techniques) dt ddt rddt)
+	  (when (null dtl) (return nil))
+	  (setq rddt 0)
+	  loop
+	  (when (null dtl) (return ddt)) 
+	  (setq dt (car dtl))
+	  (setq dtl (cdr dtl))
+	  (cond ((null ddt) (setq ddt dt) (go loop))
+		((> (get-slot-value (dernier-extremum (get-slot-value dt 'liste-d-extremums)) 'rang)
+		    rddt)
+		 (setq ddt dt)
+		 (setq rddt  (get-slot-value (dernier-extremum (get-slot-value ddt 'liste-d-extremums))))
+		 (go loop))
+		(t (go loop)))))
+
+
+(de derniere-droite-de-resistance (liste-de-droites-techniques)
+    (prog (liste-1 droite)
+	  (setq liste-1 (copy liste-de-droites-techniques))
+	  loop
+	  (when (null liste-1) (return nil))
+	  (setq droite (derniere-droite-technique liste-1))
+	  (when (eq (user-get-value droite 'derniere-position) 'resistance)
+		(return droite))
+	  (setq liste-1 (remq droite liste-1))
+	  (go loop)))
+	  
+
+
+(de derniere-droite-de-support (liste-de-droite-techniques)
+       (prog (liste-1 droite)
+	  (setq liste-1 (copy liste-de-droites-techniques))
+	  loop
+	  (when (null liste-1) (return nil))
+	  (setq droite (derniere-droite-technique liste-1))
+	  (when (eq (user-get-value droite 'derniere-position) 'support)
+		(return droite))
+	  (setq liste-1 (remq droite liste-1))
+	  (go loop)))
+
+(de dernier-extremum (extremum-liste)
+    (prog((exl  extremum-liste) ex dex rd)
+	 (when (null extremum-liste) (return nil))
+	 (setq dex (car exl))
+	 (setq rd (get-slot-value dex 'rang))
+	 loop
+	 (when (null exl) (return dex))
+	 (setq ex (car exl))
+	 (setq exl (cdr exl))
+	 (when (> (get-slot-value ex 'rang) rd) (setq dex ex) (setq rd (get-slot-value dex 'rang)))
+	 (go loop)))
+
+(de premier-extremum (extremum-liste)
+    (prog((exl  extremum-liste) ex dex rd)
+	 (when (null extremum-liste) (return nil))
+	 (setq dex (car exl))
+	 (setq rd (get-slot-value dex 'rang))
+	 loop
+	 (when (null exl) (return dex))
+	 (setq ex (car exl))
+	 (setq exl (cdr exl))
+	 (when (< (get-slot-value ex 'rang) rd) (setq dex ex) (setq rd (get-slot-value dex 'rang)))
+	 (go loop)))
+
+(de plus-bas-extremum (extremum-liste)
+    (prog((exl  extremum-liste) ex dex hd)
+	 (when (null extremum-liste) (return nil))
+	 (setq dex (car exl))
+	 (setq hd (cadr(get-slot-value dex 'hauteur)))
+	 loop
+	 (when (null exl) (return dex))
+	 (setq ex (car exl))
+	 (setq exl (cdr exl))
+	 (when (< (cadr (get-slot-value ex 'hauteur)) hd) (setq dex ex) (setq hd (cadr (get-slot-value dex 'hauteur))))
+	 (go loop)))
+
+
+(de plus-haut-extremum (extremum-liste)
+    (prog((exl  extremum-liste) ex dex hd)
+	 (when (null extremum-liste) (return nil))
+	 (setq dex (car exl))
+	 (setq hd (cadr(get-slot-value dex 'hauteur)))
+	 loop
+	 (when (null exl) (return dex))
+	 (setq ex (car exl))
+	 (setq exl (cdr exl))
+	 (when (> (cadr (get-slot-value ex 'hauteur)) hd) (setq dex ex) (setq hd (cadr (get-slot-value dex 'hauteur))))
+	 (go loop)))
+
+
+
+
+                ;                   CALCULS DES EXTREMUMS DE NIVEAU SUPERIEUR A 1
+
+ (de  calcul-des-extremum-niveau-2 (courbe)
+        (prog (premier-extremum)
+              (setq premier-extremum ($ courbe 'premier-extremum-slot-value 'metaclass 'maximum-local))
+              (derivee-en-extremum premier-extremum 'extremum-droit 'extremum-gauche
+                                   'extremum-niveau-2 'extremum-droit-niveau-2 'extremum-gauche-niveau-2
+                                   'maximum-de-maximum 'minimum-de-maximum 'maximum)
+              (setq premier-extremum ($ courbe 'premier-extremum-slot-value 'metaclass 'minimum-local))
+              (derivee-en-extremum premier-extremum 'extremum-droit 'extremum-gauche
+                                   'extremum-niveau-2 'extremum-droit-niveau-2 'extremum-gauche-niveau-2
+                                   'maximum-de-minimum 'minimum-de-minimum 'minimum)
+              ))
+              
+
+
+ (de  calcul-des-extremum-niveau-3 (courbe)
+        (prog (premier-extremum)
+              (setq premier-extremum ($ courbe 'premier-extremum-slot-value 'extremum-niveau-2 'maximum-de-maximum))
+              (derivee-en-extremum premier-extremum 'extremum-droit-niveau-2 'extremum-gauche-niveau-2
+                                   'extremum-niveau-3 'extremum-droit-niveau-3 'extremum-gauche-niveau-3
+                                   'maximum-de-maximum-de-maximum 'minimum-de-maximum-de-maximum 'maximum)
+              (setq premier-extremum ($ courbe 'premier-extremum-slot-value 'extremum-niveau-2 'minimum-de-minimum))
+              (derivee-en-extremum premier-extremum 'extremum-droit-niveau-2 'extremum-gauche-niveau-2
+                                   'extremum-niveau-3 'extremum-droit-niveau-3 'extremum-gauche-niveau-3
+                                   'maximum-de-minimum-de-minimum 'minimum-de-minimum-de-minimum 'minimum)
+              ))
+
+
+ (de  calcul-des-extremum-niveau-4 (courbe)
+        (prog (premier-extremum)
+              (setq premier-extremum ($ courbe 'premier-extremum-slot-value 'extremum-niveau-4 'maximum-de-maximum-de-maximum))
+              (derivee-en-extremum premier-extremum 'extremum-droit-niveau-3 'extremum-gauche-niveau-3
+                                   'extremum-niveau-4 'extremum-droit-niveau-4 'extremum-gauche-niveau-4
+                                   'maximum-de-maximum-de-maximum-de-maximum 'minimum-de-maximum-de-maximum-de-maximum 'maximum)
+        
+              (setq premier-extremum ($ courbe 'premier-extremum-slot-value 'extremum-niveau-3 'minimum-de-minimum-de-minimum))
+              (derivee-en-extremum premier-extremum 'extremum-droit-niveau-3 'extremum-gauche-niveau-3
+                                   'extremum-niveau-4 'extremum-droit-niveau-4 'extremum-gauche-niveau-4
+                                   'maximum-de-minimum-de-minimum-de-minimum 'minimum-de-minimum-de-minimum-de-minimum 'minimum)
+              ))
+
+
+
+      
+
+
+
+(de derivee-en-extremum (premier-extremum sch-droit sch-gauche slot-derive sch-derive-droit sch-derive-gauche 
+                                          nom-d-un-maximum nom-d-un-minimum type-a-developper)
+    (prog  (extremum-precedent extremum super-extremum-precedent hauteur hauteur-precedente extremum-niveau)
+           (cond ((eq sch-droit 'extremum-droit)
+                  (setq extremum (get-slot-value (get-slot-value premier-extremum sch-droit) sch-droit)))        
+                 (t 
+                  (setq extremum (get-slot-value premier-extremum sch-droit))))
+           (when (null extremum) (return))
+           (setq hauteur (cadr (get-slot-value extremum 'hauteur)))
+           (setq extremum-precedent premier-extremum)
+           (cond (( >= hauteur (cadr (get-slot-value premier-extremum 'hauteur))) 
+                  (go go-up))
+                 (t 
+                  (go go-down)))
+          
+
+           go-up
+
+           (setq extremum-precedent extremum)
+           (setq hauteur-precedente hauteur)
+           (cond ((eq sch-droit 'extremum-droit)
+                  (setq extremum (get-slot-value (get-slot-value extremum sch-droit) sch-droit)))
+                 (t 
+                  (setq extremum (get-slot-value extremum sch-droit))))
+           (setq hauteur (cadr (get-slot-value extremum 'hauteur)))
+           (when (eq extremum nil) (go fin))
+           (when (>= hauteur hauteur-precedente) (go go-up))
+           (when (memq type-a-developper '(maximum both))
+                 (setf (get-slot-value extremum-precedent slot-derive) nom-d-un-maximum)
+                 (when (neq extremum-precedent super-extremum-precedent)
+                       (setf (get-slot-value extremum-precedent sch-derive-gauche) super-extremum-precedent)
+                       (when super-extremum-precedent 
+                             (setf (get-slot-value super-extremum-precedent sch-derive-droit) extremum-precedent)))
+                 (setq super-extremum-precedent extremum-precedent))
+           (go go-down)
+
+           go-down
+
+           (setq extremum-precedent extremum)
+           (setq hauteur-precedente hauteur)
+           (cond ((eq sch-droit 'extremum-droit)
+                  (setq extremum (get-slot-value (get-slot-value extremum sch-droit) sch-droit)))
+                 (t 
+                  (setq extremum (get-slot-value extremum sch-droit)))) 
+           (setq hauteur (cadr (get-slot-value extremum 'hauteur)))
+           (when (eq extremum nil) (go fin))
+           (when (<= hauteur hauteur-precedente) (go go-down))
+           (when (memq type-a-developper '(minimum both))
+                 (setf (get-slot-value extremum-precedent slot-derive) nom-d-un-minimum)
+                 (when (neq extremum-precedent super-extremum-precedent)
+                       (setf (get-slot-value extremum-precedent sch-derive-gauche) super-extremum-precedent)
+                       (when super-extremum-precedent 
+                             (setf (get-slot-value super-extremum-precedent sch-derive-droit) extremum-precedent)))
+                 (setq super-extremum-precedent extremum-precedent))
+           (go go-up)
+
+
+           fin
+           (return nil)))
+
+
+(de courbe-2d-extremums-locaux-niveau-2 (c slot)
+    (mapcan '(lambda (x) (cond ((and (eq (get-fondamental-value x 'courbe) c)
+                                     (get-fondamental-value  x 'extremum-niveau-2))
+                                (list x))
+                               (t nil)))
+            (get-all-instances 'extremum-local)))
+
+
+(de courbe-2d-extremums-locaux-niveau-3 (c slot)
+    (mapcan '(lambda (x) (cond ((and (eq (get-fondamental-value x 'courbe) c)
+                                     (get-fondamental-value  x 'extremum-niveau-3))
+                                (list x))
+                               (t nil)))
+            (get-all-instances 'extremum-local)))
+
+
+
+(de courbe-2d-extremums-locaux-niveau-4 (c slot)
+    (mapcan '(lambda (x) (cond ((and (eq (get-fondamental-value x 'courbe) c)
+                                     (get-fondamental-value  x 'extremum-niveau-4))
+                                (list x))
+                               (t nil)))
+            (get-all-instances 'extremum-local)))
+
+
+;le calcul de la precision exige se fait a partir de deux parametres : x0-courant et precision
+;l ecart tolere entre deux fonction en un point y est alors :
+; | f(y) - g(y) | < precision * |y - x0-courant|
+; ou precision depends de la courbe et est obtenue a partir de la courbe et de precision-brute par :
+; precision = precision-brute / max { | y-max - x0-courant| , | x0-courant - y-min |}
+; ceci permet d avoir une precision egale a precision-brute sur tout le graphe
+
+         
+  

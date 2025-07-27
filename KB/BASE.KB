@@ -1,0 +1,2413 @@
+  ;fichier des objects relatifs aux courbes 
+(add-knowledge-base 'base 
+                    'object-de-base
+                    '(courbe-2d courbe-de-probabilite formule extremum-local maximum-local minimum-local pseudo-extremum)
+                    nil)
+                                )
+
+(de llb () (load "base.lisp"))
+
+
+
+(setq pi 3.1415926535)
+(setq sq-2-pi 2.506626)
+
+(user-instanciate 'metaclass  'courbe-2d  nil)
+(add-slot-user 'courbe-2d 'xtype 'instance)
+(add-slot-user 'courbe-2d 'ytype 'instance)
+(add-slot-user 'courbe-2d 'body 'instance)
+(add-slot-user 'courbe-2d 'origin 'instance)
+; le body comporte une liste de doublets (date  valeurs) en general
+(add-slot-user 'courbe-2d 'pointeur 'instance)
+(add-slot-user 'courbe-2d 'pointeur-max 'instance)
+(add-slot-user 'courbe-2d 'courbe-des-max 'instance)
+(add-slot-user 'courbe-2d 'courbe-des-min 'instance)
+(add-slot-user 'courbe-2d 'courbe-des-extremums 'instance)
+(add-slot-user 'courbe-2d 'courbe-origine 'instance)
+(add-slot-user 'courbe-2d 'transformation 'instance)
+(add-slot-user 'courbe-2d 'liste-des-droites-techniques 'instance)
+
+(add-attribute-user 'courbe-2d 'premier-extremum 'courbe-2d-premier-extremum 'instance)
+(add-attribute-user 'courbe-2d 'dernier-extremum 'courbe-2d-dernier-extremum 'instance)
+(add-attribute-user 'courbe-2d 'plus-haut 'courbe-2d-plus-haut 'instance)
+(add-attribute-user 'courbe-2d 'plus-bas 'courbe-2d-plus-bas 'instance)
+(add-attribute-user 'courbe-2d 'volatilite 'courbe-2d-volatilite 'instance)
+
+
+
+
+
+
+(add-method 'courbe-2d 'courbe-2d-initialize 'initialize 'superseed)
+(add-method 'courbe-2d 'courbe-2d-get 'get 'superseed)
+(add-method 'courbe-2d 'courbe-2d-get-new 'get-new 'superseed)
+(add-method 'courbe-2d 'courbe-2d-new 'new 'superseed)
+(add-method 'courbe-2d 'courbe-get-a-value 'get-value 'superseed)
+(add-method 'courbe-2d 'courbe-2d-derniere-date 'derniere-date 'superseed)
+(add-method 'courbe-2d 'courbe-2d-dernier-point 'dernier-point 'superseed)
+(add-method 'courbe-2d 'courbe-2d-premier-point 'premier-point 'superseed)
+(add-method 'courbe-2d 'courbe-2d-add-point 'add-point 'superseed)
+(add-method 'courbe-2d 'courbe-2d-expand-maximum-local 'expand-maximum 'superseed)
+(add-method 'courbe-2d 'courbe-2d-expand-minimum-local 'expand-minimum 'superseed)
+(add-method 'courbe-2d 'courbe-2d-expand-extremum-local 'expand-extremum 'superseed)
+(add-method 'courbe-2d 'courbe-2d-maximums-locaux 'maximums-locaux 'superseed)
+(add-method 'courbe-2d 'courbe-2d-minimums-locaux 'minimums-locaux 'superseed)
+(add-method 'courbe-2d 'courbe-2d-extremums-locaux 'extremums-locaux 'superseed)
+(add-method 'courbe-2d 'courbe-2d-premier-maximum 'premier-maximum 'superseed)
+(add-method 'courbe-2d 'courbe-2d-dernier-maximum 'dernier-maximum 'superseed)
+(add-method 'courbe-2d 'courbe-2d-premier-minimum 'premier-minimum 'superseed)
+(add-method 'courbe-2d 'courbe-2d-dernier-minimum 'dernier-minimum 'superseed)
+(add-method 'courbe-2d 'courbe-2d-x-shift 'x-shift 'superseed)
+(add-method 'courbe-2d 'courbe-2d-forme-distribution 'forme-distribution 'superseed)
+(add-method 'courbe-2d 'courbe-2d-cut 'cut 'superseed)
+(add-method 'courbe-2d 'courbe-2d-integrale->x 'integrale->x 'superseed)
+(add-method 'courbe-2d 'courbe-2d-integrale 'integrale 'superseed)
+(add-method 'courbe-2d 'courbe-2d-volatilite-ponctuelle 'volatilite-ponctuelle 'superseed)
+(add-method 'courbe-2d 'courbe-2d-volatilite-glissante 'volatilite-glissante 'superseed)
+
+(add-expand-method 'courbe-2d 'convert-time 'courbe-2d-expand-convert-time)
+(add-expand-method 'courbe-2d 'minimum-local 'courbe-2d-expand-minimum-local)
+(add-expand-method 'courbe-2d 'maximum-local 'courbe-2d-expand-maximum-local)
+(add-expand-method 'courbe-2d 'extremum-local 'courbe-2d-expand-extremum-local)
+(add-expand-method 'courbe-2d 'droite-technique 'courbe-2d-expand-droite-technique)
+
+
+(add-method 'courbe-2d 'courbe-2d-plus '+ 'superseed)
+(add-method 'courbe-2d 'courbe-2d-difference '- 'superseed)
+(add-method 'courbe-2d 'courbe-2d-times '* 'superseed)
+(add-method 'courbe-2d 'courbe-2d-quotient '/ 'superseed)
+(add-method 'courbe-2d 'courbe-2d-somme-de-fourier 'somme-de-fourier 'superseed)
+(add-method 'courbe-2d 'courbe-2d-integrale-de-fourier 'integrale-de-fourier 'superseed)
+(add-method 'courbe-2d 'courbe-2d-interpolation 'interpolation 'superseed)
+(add-method 'courbe-2d 'courbe-2d-inverse-de-fourier 'inverse-de-fourier 'superseed)
+(add-method 'courbe-2d 'courbe-2d-convert-time 'convert-time 'superseed)
+(add-method 'courbe-2d 'courbe-2d-module 'module 'superseed)
+(add-method 'courbe-2d 'courbe-2d-module 'abs 'superseed)
+(add-method 'courbe-2d 'courbe-2d-argument 'argument 'superseed)  
+(add-method 'courbe-2d 'courbe-2d-partie-reelle 'partie-reelle 'superseed)
+(add-method 'courbe-2d 'courbe-2d-partie-imaginaire 'partie-imaginaire 'superseed)
+(add-method 'courbe-2d 'courbe-2d-ln 'ln 'superseed)
+(add-method 'courbe-2d 'courbe-2d-exp 'exp 'superseed)
+(add-method 'courbe-2d 'courbe-2d-log 'log 'superseed)
+(add-method 'courbe-2d 'courbe-2d-antilog 'antilog 'superseed)
+
+
+  ;methodes traitants des extremums
+  ;(mais ne traitant que les y)
+
+
+
+(add-method 'courbe-2d 'courbe-plus-haut-extremum 'plus-haut-extremum 'superseed)
+(add-method 'courbe-2d 'courbe-plus-bas-extremum 'plus-bas-extremum 'superseed)
+(add-method 'courbe-2d 'courbe-premier-extremum 'premier-extremum 'superseed)
+(add-method 'courbe-2d 'courbe-2d-premier-extremum-slot-value 'premier-extremum-slot-value 'superseed)
+(add-method 'courbe-2d 'courbe-dernier-extremum 'dernier-extremum 'superseed)
+
+  ;methode retournant un reel a partir d'une coube-2d 
+  ;avec xtype=date
+
+(add-method 'courbe-2d 'courbe-integrale-t-mesuree 'integrale-bi-mesuree 'superseed)
+
+  ;methode retournant un reel a partir d'une courbe-2d 
+  ;avec xtype = real
+
+(add-method 'courbe-2d 'courbe-integrale-r-mesuree 'integrale-mesuree 'superseed)
+
+
+(add-method 'courbe-2d 'courbe-2d-premiere-moitie 'premiere-moitie 'superseed)
+(add-method 'courbe-2d 'courbe-2d-premiere-moitie-star 'premiere-moitie-star 'superseed)
+(add-method 'courbe-2d 'courbe-2d-deuxieme-moitie 'deuxieme-moitie 'superseed)
+
+
+
+
+
+(user-instanciate 'metaclass 'courbe-de-probabilite '(courbe-2d))
+(add-slot-user 'courbe-de-probabilite 'echeance 'instance)
+(add-attribute-user 'courbe-de-probabilite 'moyenne 'courbe-de-probabilite-moyenne 'instance)
+(add-attribute-user 'courbe-de-probabilite 'ecart-type 'courbe-de-probabilite-ecart-type 'instance)
+
+(de courbe-de-probabilite-moyenne (c slot)
+    (let ((h (get-fondamental-value c 'body))
+           (l (get-fondamental-value c 'pointeur-max))
+           (s 0) (p 0))
+          (mapvector '(lambda (elem) (setq s (+ (* (car elem) (cadr elem)) s))
+                        (setq p (+ (cadr elem) p)))
+                     h)
+         (/ s p)))
+
+(de courbe-de-probabilite-ecart-type (c slot)
+    (let ((h (get-fondamental-value c 'body))
+           (l (get-fondamental-value c 'pointeur-max))
+           (s 0) (p 0)
+           (m (user-get-value c 'moyenne)))
+          (mapvector '(lambda (elem) (setq s (+ (* (square (- (car elem) m)) (cadr elem)) s))
+                        (setq p (+ (cadr elem) p)))
+                     h)
+          (sqrt (/ s p))))
+
+
+(de courbe-2d-volatilite-njours-ponctuelle (c njour rang)
+    (prog ((h  (get-slot-value c 'body))
+           xn yn xn-1 yn-1 v rn rbar sigma-rn sigma-j sigma-vn  vol vol-jour x0)
+          (setq v (- rang njour))
+          (setq sigma-rn 0)
+          (setq sigma-j 0)
+          loop
+          (when (> v rang) (go suite))
+          (setq xn (car (vref h v)))
+          (setq yn (cadr (vref h v)))
+          (setq xn-1 (car (vref h (1- v))))
+          (setq yn-1 (cadr (vref h (1- v))))
+          (setq rn (log (/ yn yn-1)))
+          (setq sigma-j (+ 1 sigma-j))
+          (setq sigma-rn (+ sigma-rn rn))
+          (setq v (1+ v))
+          (go loop)
+          suite
+          (setq mu (/ sigma-rn sigma-j))
+          (setq sigma-vn 0)
+          (setq v (- rang njour))
+          (setq x0  (car (vref h v)))
+          loop1
+          (when (> v rang) (go suite1))
+          (setq xn (car (vref h v)))
+          (setq yn (cadr (vref h v)))
+          (setq xn-1 (car (vref h (1- v))))
+          (setq yn-1 (cadr (vref h (1- v))))
+          (setq rn (- (log (/ yn yn-1)) mu))
+          (setq sigma-vn (+ sigma-vn (* rn rn )))
+          (setq v (1+ v))
+          (go loop1)
+          suite1
+          (setq vol (/ sigma-vn (- sigma-j 1)))
+          (setq vol-jour (* (sqrt vol) (sqrt (/ (- xn x0) sigma-j))))
+          (return vol-jour))))
+
+
+(de courbe-2d-volatilite-glissante (c n)
+    (prog (h h1 c1 d v)
+          (setq v 0)
+          (setq h (get-slot-value c 'body))
+          (setq l (get-slot-value c 'pointeur-max))
+          (setq d (- l n))
+          (setq h1 (makevector (1+ d) ()))
+          loop
+          (setf (vref h1 v ) (list (car (vref h (+ v n))) 
+                                   (courbe-2d-volatilite-njours-ponctuelle c n (+ v n))))
+          (setq v (1+ v) )
+          (when (> v d) (go fin))
+          (go loop)
+          fin
+          (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+          (setf (get-slot-value c1 'body) h1)
+          (setf (get-slot-value c1 'xtype) (get-slot-value c 'xtype))
+          (setf (get-slot-value c1 'pointeur) 0)
+          (setf (get-slot-value c1 'pointeur-max) d)
+          (setf (get-slot-value c1 'courbe-origine) (list c))
+          (setf (get-slot-value c1 'transformation) (list 'volatilite n 'jours))
+          (setf (get-slot-value c1 'ytype) (get-slot-value c 'ytype))
+          (return c1)))
+
+(de courbe-2d-volatilite (c slot)
+    (courbe-2d-volatilite-njours-ponctuelle c
+                                            (1- (get-slot-value c 'pointeur-max))
+                                            (get-slot-value c 'pointeur-max)))
+(de courbe-2d-volatilite-ponctuelle (c n)
+    (courbe-2d-volatilite-njours-ponctuelle c n (get-slot-value c 'pointeur-max)))
+
+
+
+
+
+
+
+(de courbe-2d-premiere-moitie (c) 
+    (prog (k h l moitie)
+          (setq h (get-slot-value c 'body))
+          (setq l (get-slot-value c 'pointeur-max))
+          (setq moitie (/ (+ (car (vref h l)) (car (vref h 0))) 2))
+          (setq k 0)
+          loop
+          (when (> (car (vref h k)) moitie) (go fin))
+          (setq k (1+ k))
+          (go loop)
+          fin
+          (setq c1 (courbe-2d-sous-courbe c 0 k))
+          (return c1)))
+
+(de courbe-2d-premiere-moitie-star (c) 
+    (prog (k h l moitie)
+          (setq h (get-slot-value c 'body))
+          (setq l (get-slot-value c 'pointeur-max))
+          (setq moitie (/ (+ (car (vref h l)) (car (vref h 0))) 2))
+          (setq k 0)
+          loop
+          (when (> (car (vref h k)) moitie) (go fin))
+          (setq k (1+ k))
+          (go loop)
+          fin
+          (setq c1 (courbe-2d-sous-courbe c 1 k))
+          (return c1)))
+
+(de courbe-2d-deuxieme-moitie (c) 
+    (prog (k h l moitie)
+          (setq h (get-slot-value c 'body))
+          (setq l (get-slot-value c 'pointeur-max))
+          (setq moitie (/ (+ (car (vref h l)) (car (vref h 0))) 2))
+          (setq k 0)
+          loop
+          (when (> (car (vref h k)) moitie) (go fin))
+          (setq k (1+ k))
+          (go loop)
+          fin
+          (setq c1 (courbe-2d-sous-courbe c k l))
+          (return c1)))
+
+
+(de courbe-2d-sous-courbe (c i j)
+    (prog (h h1 c1 d v)
+          (setq v 0)
+          (setq h (get-slot-value c 'body))
+          (setq l (get-slot-value c 'pointeur-max))
+          (setq d (- j i))
+          (setq h1 (makevector (1+ d) ()))
+          loop
+          (setf (vref h1 v ) (vref h  (+ v i)))
+          (setq v (1+ v) )
+          (when (> v d) (go fin))
+          (go loop)
+          fin
+          (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+          (setf (get-slot-value c1 'body) h1)
+          (setf (get-slot-value c1 'xtype) (get-slot-value c 'xtype))
+          (setf (get-slot-value c1 'pointeur) 0)
+          (setf (get-slot-value c1 'pointeur-max) d)
+          (setf (get-slot-value c1 'courbe-origine) (list c))
+          (setf (get-slot-value c1 'transformation) (list 'sous-courbe i j))
+          (setf (get-slot-value c1 'ytype) (get-slot-value c 'ytype))
+          (return c1)))
+
+           
+(de courbe-2d-maximums-locaux (courbe) (mapcan '(lambda (x) (cond ((eq (get-slot-value x 'courbe) courbe) (list x))
+						  (t nil)))
+			       (get-all-instances 'maximum-local)))
+
+(de courbe-2d-minimums-locaux (courbe) (mapcan '(lambda (x) (cond ((eq (get-slot-value x 'courbe) courbe) (list x))
+						  (t nil)))
+			       (get-all-instances 'minimum-local)))
+
+(de courbe-2d-extremums-locaux (courbe) (mapcan '(lambda (x) (cond ((eq (get-slot-value x 'courbe) courbe) (list x))
+						  (t nil)))
+			       (get-all-instances 'extremum-local)))
+
+(de courbe-2d-premier-extremum (courbe slot)
+    (premier-extremum (mapcan '(lambda (x) (cond((eq (get-slot-value x 'courbe) courbe) (list x))
+									     (t nil)))
+							   (get-all-instances 'extremum-local))))
+
+(de courbe-2d-dernier-extremum (courbe slot)
+    (dernier-extremum (mapcan '(lambda (x) (cond((eq (get-slot-value x 'courbe) courbe) (list x))
+									     (t nil)))
+							   (get-all-instances 'extremum-local))))
+(de courbe-2d-premier-extremum-slot-value (courbe slot value)
+    (premier-extremum (mapcan '(lambda (x) (cond((and (eq (get-slot-value x 'courbe) courbe)
+                                                      (eq (get-slot-value x slot) value))
+                                                 (list x))
+                                                (t nil)))
+                              (get-all-instances 'extremum-local))))
+
+(de courbe-2d-premier-maximum (courbe)
+    (let ((ext (user-get-value courbe 'premier-extremum)))
+      (cond ((eq (get-fondamental-value ext 'metaclass) 'maximum-local) ext)
+            (t (get-fondamental-value ext 'extremum-droit)))))
+
+(de courbe-2d-dernier-maximum (courbe)
+    (let ((ext (user-get-value courbe 'dernier-extremum)))
+      (cond ((eq (get-fondamental-value ext 'metaclass) 'maximum-local) ext)
+            (t (get-fondamental-value ext 'extremum-gauche)))))
+
+(de courbe-2d-premier-minimum (courbe)
+    (let ((ext (user-get-value courbe 'premier-extremum)))
+      (cond ((eq (get-fondamental-value ext 'metaclass) 'minimum-local) ext)
+            (t (get-fondamental-value ext 'extremum-droit)))))
+
+(de courbe-2d-dernier-minimum (courbe)
+    (let ((ext (user-get-value courbe 'dernier-extremum)))
+      (cond ((eq (get-fondamental-value ext 'metaclass) 'minimum-local) ext)
+            (t (get-fondamental-value ext 'extremum-gauche)))))
+
+
+(de courbe-premier-extremum (courbe)
+    (user-get-value courbe 'premier-extremum))
+
+
+(de courbe-2d-plus-haut (courbe)
+    (prog (r rmax h plus-haut)
+          (setq rmax (get-slot-value courbe 'pointeur-max))
+          (setq h (get-slot-value courbe 'body))
+          (setq r 1)
+          (setq plus-haut (vref h 0))
+          loop
+          (when (> r rmax ) (return plus-haut))
+          (cond ((> (cadr (vref h r)) (cadr plus-haut))
+                 (setq plus-haut (vref h r)))
+                (t (setq r (1+ r))
+                   (go loop)))))
+
+
+(de courbe-2d-plus-bas (courbe)
+    (prog (r rmax h plus-bas)
+          (setq rmax (get-slot-value courbe 'pointeur-max))
+          (setq h (get-slot-value courbe 'body))
+          (setq r 1)
+          (setq plus-bas (vref h 0))
+          loop
+          (when (> r rmax ) (return plus-bas))
+          (cond ((< (cadr (vref h r)) (cadr plus-bas))
+                 (setq plus-bas (vref h r)))
+                (t (setq r (1+ r))
+                   (go loop)))))
+
+          
+
+(de courbe-dernier-extremum (courbe)
+    (car (mapcan '(lambda (x) (cond ((and (eq (get-slot-value x 'courbe) courbe)
+					  (null (get-slot-value x 'extremum-droit)))
+				     (list x))
+				    (t nil)))
+		 (get-all-instances 'extremum-local))))
+
+(de courbe-premier-extremum-niveau-2 (courbe)
+    (premier-extremum (mapcan '(lambda (x) (cond ((and (eq (get-slot-value x 'courbe) courbe)
+						       (not (null (get-slot-value x 'extremum-niveau-2))))
+						  (list x))
+						 (t nil)))
+			      (get-all-instances 'extremum-local))))
+
+
+(de courbe-premier-extremum-niveau-3 (courbe)
+    (premier-extremum (mapcan '(lambda (x) (cond ((and (eq (get-slot-value x 'courbe) courbe)
+						       (not (null (get-slot-value x 'extremum-niveau-3))))
+						  (list x))
+						 (t nil)))
+			      (get-all-instances 'extremum-local))))
+
+
+(de courbe-premier-extremum-niveau-4 (courbe)
+    (premier-extremum (mapcan '(lambda (x) (cond ((and (eq (get-slot-value x 'courbe) courbe)
+						       (not (null (get-slot-value x 'extremum-niveau-4))))
+						  (list x))
+						 (t nil)))
+			      (get-all-instances 'extremum-local))))
+
+
+(de courbe-premier-extremum-niveau-5 (courbe)
+    (premier-extremum (mapcan '(lambda (x) (cond ((and (eq (get-slot-value x 'courbe) courbe)
+						       (not (null (get-slot-value x 'extremum-niveau-5))))
+						  (list x))
+						 (t nil)))
+			      (get-all-instances 'extremum-local))))
+
+
+
+
+(de courbe-2d-initialize(courbe)
+    (setf (get-slot-value courbe 'pointeur) 0))
+
+(de courbe-2d-get-new(courbe)
+    (prog1 (vref (get-slot-value courbe 'body)
+	         (get-slot-value courbe 'pointeur))
+)
+           (setf (get-slot-value courbe 'pointeur)
+		 (1+ (get-slot-value courbe 'pointeur)))))
+
+(de courbe-2d-get(courbe)
+     (cond((< (get-slot-value courbe 'pointeur) (get-slot-value courbe 'pointeur-max))
+	   (vref (get-slot-value courbe 'body)
+		 (get-slot-value courbe 'pointeur)))))
+
+(de courbe-2d-new (courbe)
+      (setf (get-slot-value courbe 'pointeur)
+		 (1+ (get-slot-value courbe 'pointeur))))
+
+(de courbe-2d-add-point (courbe point)
+    (prog (a b )
+	  (setq a (get-slot-value courbe 'body))
+	  (when (null a)
+		(setq a (makevector 0 0)))
+	  (setq b (makevector (1+ (vlength a)) ()))
+	  (bltvector b 0 a 0 (vlength a))
+	  (setf (vref b (vlength a)) point)
+	  (setf (get-slot-value courbe 'body ) b)
+	  (return point)))
+
+(de courbe-plus-haut-extremum (courbe)
+    (prog (extremum hauteur extremum-precedent hauteur-precedente)
+	 (setq extremum-precedent (user-get-value courbe 'premier-extremum))
+	 (when (is-a extremum-precedent 'minimum-local)
+	       (setq extremum-precedent (get-slot-value extremum-precedent 'extremum-droit)))
+	 (when (null extremum-precedent) (return nil))
+	 (setq hauteur-precedente (cadr (get-slot-value extremum-precedent 'hauteur)))
+	 (setq extremum (get-slot-value (get-slot-value extremum-precedent 'extremum-droit) 'extremum-droit))
+	 (setq hauteur (cadr (get-slot-value extremum 'hauteur)))
+	 (when (null extremum) (return extremum-precedent))
+	 loop
+	 (when (>= hauteur hauteur-precedente)
+	       (setq extremum-precedent extremum)
+	       (setq hauteur-precedente hauteur))
+	 
+	 (setq extremum (get-slot-value (get-slot-value extremum 'extremum-droit) 'extremum-droit))
+	 (setq hauteur (cadr (get-slot-value extremum 'hauteur)))
+	 (when (null extremum) (return extremum-precedent))
+	 (go loop)))
+
+
+(de courbe-plus-bas-extremum (courbe)
+    (prog (extremum hauteur extremum-precedent hauteur-precedente)
+	 (setq extremum-precedent (user-get-value courbe 'premier-extremum))
+	 (when (is-a extremum-precedent 'maximum-local)
+	       (setq extremum-precedent (get-slot-value extremum-precedent 'extremum-droit)))
+	 (when (null extremum-precedent) (return nil))
+	 (setq hauteur-precedente (cadr (get-slot-value extremum-precedent 'hauteur)))
+	 (setq extremum (get-slot-value (get-slot-value extremum-precedent 'extremum-droit) 'extremum-droit))
+	 (setq hauteur (cadr (get-slot-value extremum 'hauteur)))
+	 (when (null extremum) (return extremum-precedent))
+	 loop
+	 (when (<= hauteur hauteur-precedente)
+	       (setq extremum-precedent extremum)
+	       (setq hauteur-precedente hauteur))
+	 
+	 (setq extremum (get-slot-value (get-slot-value extremum 'extremum-droit) 'extremum-droit))
+	 (setq hauteur (cadr (get-slot-value extremum 'hauteur)))
+	 (when (null extremum) (return extremum-precedent))
+	 (go loop)))
+
+
+
+
+(de courbe-2d-cut (courbe bout delta-x)
+    (prog ((v 0) vcritique 
+           (h (get-slot-value courbe 'body))
+           (l (get-slot-value courbe 'pointeur-max))
+           vecteur-final (longueur 0) c1
+           x0 (delta-x-courrant 0))
+          (setq v (cond ((eq bout 'debut) 0)
+                        ((eq bout 'fin) l)))
+          (setq x0 (car (vref h v)))
+          loop
+          (cond ((eq bout 'debut) 
+                 (setq v (1+ v))
+                 (when (> v l) (setq longueur (1+ l)) (go next))
+                 )
+                ((eq bout 'fin) 
+                 (setq v (1- v))
+                 (when (< v 0) (setq longueur (1+ l) (go next))        )
+                 ))
+          (setq delta-x-courrant (abs (- x0 (car (vref h v)))))
+          (when (< delta-x-courrant delta-x) (go loop))
+          next
+          (setq vecteur-final (makevector (1+ (- l longueur)) nil))
+          (cond ((eq bout 'debut)
+                 (bltvector vecteur-final 0 h longueur (1+ (- l longueur)))
+                 )
+                ((eq bout 'fin)
+                 (bltvector 'vecteur-final 0 h 0 (1+ (- l longueur)))
+                 ))
+          (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+          (setf (get-slot-value c1 'body) h)
+          (setf (get-slot-value c1 'xtype) 'real)
+          (setf (get-slot-value c1 'pointeur) 0)
+          (setf (get-slot-value c1 'pointeur-max) (1- (vlength h)))
+          (setf (get-slot-value c1 'courbe-origine) (list courbe))
+          (setf (get-slot-value c1 'transformation) (list 'cut delta-x))
+          (setf (get-slot-value c1 'ytype) (get-slot-value courbe 'ytype))
+          (return c1)
+          ))
+
+           
+
+(de courbe-2d-forme-distribution (courbe nb-de-cases)
+    (prog ((plus-haut (cadr (plus-haut-point courbe)))
+           (plus-bas (cadr (plus-bas-point courbe)))
+           (h (get-slot-value courbe 'body))
+           (l (get-slot-value courbe 'pointeur-max))
+           (v 0)
+           distribution y c1)
+          (setq distribution (forme-distribution-initiale plus-haut plus-bas nb-de-cases))
+          loop
+          (when (> v l) (go fin))
+          (setq y (vref h v))
+          (setq r (forme-rang-de-placement distribution (cadr y)))
+          (setf (cadr (vref distribution r)) (1+ (cadr (vref distribution r))))
+          (setq v (1+ v))
+          (go loop)
+          fin
+          (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+          (setf (get-slot-value c1 'body) distribution)
+          (setf (get-slot-value c1 'xtype) (get-slot-value courbe 'ytype))
+          (setf (get-slot-value c1 'pointeur) 0)
+          (setf (get-slot-value c1 'pointeur-max) (1- (vlength distribution)))
+          (setf (get-slot-value c1 'courbe-origine) (list courbe))
+          (setf (get-slot-value c1 'transformation) (list 'distribution y))
+          (setf (get-slot-value c1 'ytype) 'real)
+          (return c1)))
+
+
+(de plus-haut-point (courbe)
+    (prog ((h (get-fondamental-value courbe 'body))
+           (v 0)
+           (l (get-fondamental-value courbe 'pointeur-max))
+           plus-haut)
+          (setq plus-haut (vref h 0))
+          loop
+          (when (> v l) (return plus-haut))
+          (when (> (cadr (vref h v)) (cadr plus-haut)) (setq plus-haut (vref h v)))
+          (setq v (1+ v))
+          (go loop)))
+
+(de plus-bas-point (courbe)
+    (prog ((h (get-fondamental-value courbe 'body))
+           (v 0)
+           (l (get-fondamental-value courbe 'pointeur-max))
+           plus-bas)
+          (setq plus-bas (vref h 0))
+          loop
+          (when (> v l) (return plus-bas))
+          (when (< (cadr (vref h v)) (cadr plus-bas)) (setq plus-bas (vref h v)))
+          (setq v (1+ v))
+          (go loop)))
+
+
+          
+
+(de forme-distribution-initiale (plus-haut plus-bas nb-de-cases)
+    (prog ((v 0 ) (delta (/ (- plus-haut plus-bas) nb-de-cases))
+           (h (makevector (1+ nb-de-cases) nil)))
+          loop
+          (when (> v nb-de-cases) (return h))
+          (setf (vref h v) (list (cond ((< v nb-de-cases) (+ plus-bas (* delta v)))
+                                       (t plus-haut))
+                                 0))
+          (setq v (1+ v))
+          (go loop)))
+
+
+(de forme-rang-de-placement (distribution y)
+    (prog ((v 0) (l (vlength distribution)))
+          loop
+          (when (> v l) (return l))
+          (when (<= y (car (vref distribution v))) (return v))
+          (setq v (1+ v))
+          (go loop)))
+          
+
+
+(de courbe-2d-derniere-date (courbe)
+    (car (vref (get-slot-value courbe 'body) (get-slot-value courbe 'pointeur-max))))
+
+(de courbe-2d-dernier-point (courbe)
+    (vref (get-slot-value courbe 'body) (get-slot-value courbe 'pointeur-max)))
+
+(de courbe-2d-premier-point (courbe)
+    (vref (get-slot-value courbe 'body) 0))
+
+
+(de dernier-point (courbe)
+       (vref (get-slot-value courbe 'body) (get-slot-value courbe 'pointeur-max)))
+
+(de premier-point (courbe)
+       (vref (get-slot-value courbe 'body) 0))
+
+(de plus-haut-maximum (courbe) 
+    (courbe-plus-haut-extremum courbe))
+
+(de plus-bas-minimum (courbe)
+    (courbe-plus-bas-extremum courbe))
+
+(de courbe-get-a-value (courbe rang)
+    (vref (get-slot-value courbe 'body) rang))
+
+
+(add-post-instanciation-demon 'courbe-2d '(lambda(courbe) (setf (get-slot-value courbe 'origin)
+							       courbe)) 'merge-before)
+
+
+                                 ;NOTION D'OPERATEUR
+
+
+(de courbe-operation-t-binaire (c1 c2 func ytype)
+					; cette fonction fabrique une courbe 2d a partir de 2 courbe 2d 
+					;avec la dimension x etant du type date
+					; cette fonction servira de base au fonction time-**** 
+					;qui premetront de  composer des fonction avec des
+					; abcisse de point different
+					; le temps est represente sous la forme (aa mm jj hh mm ss)
+    (prog (c3 ll h1 h2 h3  l1 l2 v1 v2)
+	  (when (not(eq (get-slot-value c1 'xtype ) 'date))
+		(cerror 124 "genere-match:courbe de mauvais xtype " (list c1 (get-slot-value c1 'xtype))))
+	  (when (not(eq (get-slot-value c2 'xtype ) 'date))
+		(cerror 125 "genere-match:courbe de mauvais xtype " (list c2 (get-slot-value c2 'xtype))))
+	  (setq ll nil)
+	  (setq v1 0)
+	  (setq v2 0)
+	  (setq h1 (get-slot-value c1 'body))
+	  (setq h2 (get-slot-value c2 'body))
+	  (setq l1 (get-slot-value c1 'pointeur-max))
+	  (setq l2 (get-slot-value c2 'pointeur-max))
+	  loop 
+ 	  (cond ((time-> (car (vref h1 v1)) (car (vref h2 v2)))
+		 (cond ((equal (caar ll) (car (vref h2 v2))) nil)
+		       (t(setq ll (cons (list (car (vref h2 v2)) 
+					      (funcall func 
+						     (cond ((eq v1 0) 
+							    (courbe-interpole-time (car (vref h1 0))
+										   (car (vref h1 1))
+										   (car (vref h2 v2))
+										   (cadr (vref h1 0))
+										   (cadr (vref h1 1))))
+							   (t
+							    (courbe-interpole-time (car (vref h1 (1- v1)))
+										   (car (vref h1 v1))
+										   (car (vref h2 v2))
+										   (cadr (vref h1 (1- v1)))
+										   (cadr (vref h1 v1)))))
+									
+						     (cadr (vref h2 v2))))
+					ll))
+ 			 (setq v2 (1+ v2))
+			 (when (> v2 l2) 
+			       (prog ()
+				     loop1 
+				     (setq ll (cons (list (car (vref h1 v1)) 
+							  (funcall func
+								 (cadr (vref h1 v1))
+								 (courbe-interpole-time (car (vref h2 (- v2 2)))
+											(car (vref h2 (1- v2)))
+											(car (vref h1 v1))
+											(cadr (vref h2 (- v2 2)))
+											(cadr (vref h2 (1- v2))))))
+						    ll))
+				     (setq v1 (1+ v1))
+				     (when (> v1 l1) (go fin))
+				     (go loop1)))
+			 )))
+		((time-> (car (vref h2 v2)) (car (vref h1 v1)))
+		 (cond ((equal (caar ll) (car (vref h1 v1))) nil)
+		       (t(setq ll (cons (list (car (vref h1 v1)) 
+					      (funcall func 
+						     (cadr (vref h1 v1))
+						     (cond ((eq v2 0) 
+							    (courbe-interpole-time (car (vref h2 0))
+										   (car (vref h2 1))
+										   (car (vref h1 v1))
+										   (cadr (vref h2 0))
+										   (cadr (vref h2 1))))
+							   (t
+							    (courbe-interpole-time (car (vref h2 (1- v2)))
+										   (car (vref h2 v2))
+										   (car (vref h1 v1))
+										   (cadr (vref h2 (1- v2)))
+										   (cadr (vref h2 v2)))))))
+					ll))
+			 (setq v1 (1+ v1))
+			 (when (> v1 l1)
+			       (prog ()
+				     loop2 
+				     (setq ll (cons (list (car (vref h2 v2))
+							  (funcall func
+								 (courbe-interpole-time (car (vref h1 (- v1 2)))
+											(car (vref h1 (1- v1)))
+											(car (vref h2 v2))
+											(cadr (vref h1 (- v1 2)))
+											(cadr (vref h1 (1- v1))))
+								 (cadr (vref h2 v2))))
+						    ll))
+				     (setq v2 (1+ v2))
+				     (when (> v2 l2) (go fin))
+				     (go loop2)))
+			 )))
+		(t (cond ((equal (caar ll) (car (vref h1 v1))) nil)
+			 (t(setq ll (cons (list (car (vref h1 v1))
+						(funcall func (cadr (vref h1 v1)) (cadr (vref h2 v2))))
+					  ll))
+			   (setq v1 (1+ v1))
+			
+			   (when (> v1 l1)
+				 (prog ()
+				       loop2  
+				       (setq v2 (1+ v2))
+				       (when (> v2 l2) (go fin))
+				       (setq ll (cons (list (car (vref h2 v2))
+							    (funcall func    (courbe-interpole-time (car (vref h1 (- v1 2)))
+												  (car (vref h1 (1- v1)))
+												  (car (vref h2 v2))
+												  (cadr (vref h1 (- v1 2)))
+												  (cadr (vref h1 (1- v1))))
+								   (cadr (vref h2 v2))))
+						      ll))
+				       (go loop2)))
+			   (setq v1 (1- v1))
+			   (setq v2 (1+ v2))
+			   (when (> v2 l2) 
+				 (prog ()
+				       loop1 
+				       (setq v1 (1+ v1))
+				       (when (> v1 l1) (go fin))
+				       (setq ll (cons (list (car (vref h1 v1))
+							    (funcall func
+								   (cadr (vref h1 v1))
+								   (courbe-interpole-time (car (vref h2 (- v2 2)))
+											  (car (vref h2 (1- v2)))
+											  (car (vref h1 v1))
+											  (cadr (vref h2 (- v2 2)))
+											  (cadr (vref h2 (1- v2))))))
+						      ll))
+				       (go loop1)))
+                           (setq v1 (1+ v1))))))
+
+	  (go loop)
+	  fin
+	  (setq h3 (makevector  (length ll) nil))
+	  (prog(r lr)
+	       (setq r 0)
+	       (setq lr (length ll))
+	       loopr
+	       (setq r (1+ r))
+	       (when (> r lr) (return nil))
+	       (setf (vref h3 (- lr r)) (car ll))
+	       (setq ll (cdr ll))
+	       (go loopr))
+	  (setq c3 ($ 'courbe-2d 'instanciate nil nil))
+	  (setf (get-slot-value c3 'body) h3)
+	  (setf (get-slot-value c3 'xtype) 'date)
+	  (setf (get-slot-value c3 'pointeur) 0)
+	  (setf (get-slot-value c3 'pointeur-max) (1- (length ll)))
+	  (setf (get-slot-value c3 'courbe-origine ) (list c1 c2))
+	  (setf (get-slot-value c3 'transformation) func)
+	  (setf (get-slot-value c3 'ytype) ytype)
+						      
+	  (return c3)))
+
+
+
+
+(de courbe-operation-r-binaire (c1 c2 func ytype)
+                                        ; cette fonction fabrique une courbe 2d a partir de 2 courbe 2d 
+                                        ;avec la dimension x etant du type compatible avac des reels
+                                        ; cette fonction servira de base au fonction time-**** 
+                                        ;qui premetront de  composer des fonction avec des
+                                        ; abcisses de point different
+				
+    (prog (c3 ll h1 h2 h3  l1 l2 v1 v2 lr)
+	
+	  (setq ll nil)
+	  (setq v1 0)
+	  (setq v2 0)
+	  (setq h1 (get-slot-value c1 'body))
+	  (setq h2 (get-slot-value c2 'body))
+	  (setq l1 (get-slot-value c1 'pointeur-max))
+	  (setq l2 (get-slot-value c2 'pointeur-max))
+	  loop 
+ 	  (cond ((> (car (vref h1 v1)) (car (vref h2 v2)))
+		 (cond ((equal (caar ll) (car (vref h2 v2))) nil)
+		       (t(setq ll (cons (list (car (vref h2 v2)) 
+					      (funcall func 
+                                                       (cond ((eq v1 0) 
+                                                              (courbe-interpole-reel (car (vref h1 0))
+                                                                                     (car (vref h1 1))
+                                                                                     (car (vref h2 v2))
+                                                                                     (cadr (vref h1 0))
+                                                                                     (cadr (vref h1 1))))
+                                                             (t
+                                                              (courbe-interpole-reel (car (vref h1 (1- v1)))
+                                                                                     (car (vref h1 v1))
+                                                                                     (car (vref h2 v2))
+                                                                                     (cadr (vref h1 (1- v1)))
+                                                                                     (cadr (vref h1 v1)))))
+									
+                                                       (cadr (vref h2 v2))))
+					ll))
+ 			 (setq v2 (1+ v2))
+			 (when (> v2 l2) 
+			       (prog ()
+				     loop1 
+				     (setq ll (cons (list (car (vref h1 v1)) 
+							  (funcall func
+                                                                   (cadr (vref h1 v1))
+                                                                   (courbe-interpole-reel (car (vref h2 (- v2 2)))
+                                                                                          (car (vref h2 (1- v2)))
+                                                                                          (car (vref h1 v1))
+                                                                                          (cadr (vref h2 (- v2 2)))
+                                                                                          (cadr (vref h2 (1- v2))))))
+						    ll))
+				     (setq v1 (1+ v1))
+				     (when (> v1 l1) (go fin))
+				     (go loop1)))
+			 )))
+		((> (car (vref h2 v2)) (car (vref h1 v1)))
+		 (cond ((equal (caar ll) (car (vref h1 v1))) nil)
+		       (t(setq ll (cons (list (car (vref h1 v1)) 
+					      (funcall func 
+                                                       (cadr (vref h1 v1))
+                                                       (cond ((eq v2 0) 
+                                                              (courbe-interpole-reel (car (vref h2 0))
+                                                                                     (car (vref h2 1))
+                                                                                     (car (vref h1 v1))
+                                                                                     (cadr (vref h2 0))
+                                                                                     (cadr (vref h2 1))))
+                                                             (t
+                                                              (courbe-interpole-reel (car (vref h2 (1- v2)))
+                                                                                     (car (vref h2 v2))
+                                                                                     (car (vref h1 v1))
+                                                                                     (cadr (vref h2 (1- v2)))
+                                                                                     (cadr (vref h2 v2)))))))
+					ll))
+			 (setq v1 (1+ v1))
+			 (when (> v1 l1)
+			       (prog ()
+				     loop2 
+				     (setq ll (cons (list (car (vref h2 v2))
+							  (funcall func
+                                                                   (courbe-interpole-reel (car (vref h1 (- v1 2)))
+                                                                                          (car (vref h1 (1- v1)))
+                                                                                          (car (vref h2 v2))
+                                                                                          (cadr (vref h1 (- v1 2)))
+                                                                                          (cadr (vref h1 (1- v1))))
+                                                                   (cadr (vref h2 v2))))
+						    ll))
+				     (setq v2 (1+ v2))
+				     (when (> v2 l2) (go fin))
+				     (go loop2)))
+			 )))
+		(t (cond ((equal (caar ll) (car (vref h1 v1))) nil)
+			 (t(setq ll (cons (list (car (vref h1 v1))
+						(funcall func (cadr (vref h1 v1)) (cadr (vref h2 v2))))
+					  ll))
+			   (setq v1 (1+ v1))
+			
+			   (when (> v1 l1)
+				 (prog ()
+				       loop2  
+				       (setq v2 (1+ v2))
+				       (when (> v2 l2) (go fin))
+				       (setq ll (cons (list (car (vref h2 v2))
+							    (funcall func    (courbe-interpole-reel (car (vref h1 (- v1 2)))
+                                                                                                    (car (vref h1 (1- v1)))
+                                                                                                    (car (vref h2 v2))
+                                                                                                    (cadr (vref h1 (- v1 2)))
+                                                                                                    (cadr (vref h1 (1- v1))))
+                                                                     (cadr (vref h2 v2))))
+						      ll))
+				       (go loop2)))
+			   (setq v1 (1- v1))
+			   (setq v2 (1+ v2))
+			   (when (> v2 l2) 
+				 (prog ()
+				       loop1 
+				       (setq v1 (1+ v1))
+				       (when (> v1 l1) (go fin))
+				       (setq ll (cons (list (car (vref h1 v1))
+							    (funcall func
+                                                                     (cadr (vref h1 v1))
+                                                                     (courbe-interpole-reel (car (vref h2 (- v2 2)))
+                                                                                            (car (vref h2 (1- v2)))
+                                                                                            (car (vref h1 v1))
+                                                                                            (cadr (vref h2 (- v2 2)))
+                                                                                            (cadr (vref h2 (1- v2))))))
+						      ll))
+				       (go loop1)))
+                           (setq v1 (1+ v1))))))
+
+	  (go loop)
+	  fin
+	  (setq lr (length ll))
+	  (setq h3 (makevector lr nil))
+	  (prog(r)
+	       (setq r 0)
+	       loopr
+	       (setq r (1+ r))
+	       (when (> r lr) (return nil))
+	       (setf (vref h3 (- lr r)) (car ll))
+	       (setq ll (cdr ll))
+	       (go loopr))
+	  (setq c3 ($ 'courbe-2d 'instanciate nil nil))
+	  (setf (get-slot-value c3 'body) h3)
+	  (setf (get-slot-value c3 'xtype) 'real)
+	  (setf (get-slot-value c3 'pointeur) 0)
+	  (setf (get-slot-value c3 'pointeur-max) (1- lr))
+	  (setf (get-slot-value c3 'courbe-origine ) (list c1 c2))
+	  (setf (get-slot-value c3 'transformation) func)
+	  (setf (get-slot-value c3 'ytype) ytype)
+						      
+	  (return c3)))
+
+
+(de courbe-operation-unaire (c func ytype)
+    (prog (d v h l c1)
+	    (setq v 0)
+	    (setq h (get-slot-value c 'body))
+	    (setq l (get-slot-value c 'pointeur-max))
+	    (setq d (makevector (1+ l) ()))
+	    loop
+	    (setf (vref d v) (list (car (vref h v)) (funcall func (cadr (vref h v)))))
+	    (setq v (1+ v) )
+	    (when (> v l) (go fin))
+	    (go loop)
+	    fin
+	    (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+	    (setf (get-slot-value c1 'body) d)
+	    (setf (get-slot-value c1 'xtype) (get-slot-value c 'x-type))
+	    (setf (get-slot-value c1 'pointeur) 0)
+	    (setf (get-slot-value c1 'pointeur-max) l)
+	    (setf (get-slot-value c1 'courbe-origine) (list c))
+	    (setf (get-slot-value c1 'transformation) func)
+	    (setf (get-slot-value c1 'ytype) ytype)
+	    (return c1)))
+
+(de courbe-operation-unaire-x (c func xtype)
+;effectue une operation unaire sur les x
+    (prog (d v h l c1 ytype)
+	    (setq v 0)
+	    (setq h (get-slot-value c 'body))
+	    (setq l (get-slot-value c 'pointeur-max))
+	    (setq ytype (get-slot-value c 'ytype))
+	    (setq d (makevector (1+ l) ()))
+	    loop
+	    (setf (vref d v) (list (funcall func (car (vref h v))) (cadr (vref h v))))
+	    (setq v (1+ v) )
+	    (when (> v l) (go fin))
+	    (go loop)
+	    fin
+	    (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+	    (setf (get-slot-value c1 'body) d)
+	    (setf (get-slot-value c1 'xtype) xtype)
+	    (setf (get-slot-value c1 'pointeur) 0)
+	    (setf (get-slot-value c1 'pointeur-max) l)
+	    (setf (get-slot-value c1 'courbe-origine) (list c))
+	    (setf (get-slot-value c1 'transformation) func)
+	    (setf (get-slot-value c1 'ytype) ytype)
+	    (return c1)))
+
+(de courbe-2d-plus (c1 c2) (cond ((and (eq (get-slot-value c1 'ytype) 'real)
+				       (numberp c2))
+				  (courbe-operation-unaire c1 '(lambda(x) (+ x c2)) 'real))
+				 ((and (eq (get-slot-value c1 'ytype) 'complex)
+				       (numberp c2))
+				  (courbe-operation-unaire c1 '(lambda(x) (c+ x (list c2 0))) 'complex))
+				 ((and (eq (get-slot-value c1 'ytype) 'real)
+				       (consp c2))
+				  (courbe-operation-unaire c1 '(lambda(x) (c+ (list x 0) c2)) 'complex))
+				 ((and (eq (get-slot-value c1 'ytype) 'complex)
+				       (consp c2))
+				  (courbe-operation-unaire c '(lambda(x) (+ x c2)) 'complex))
+				 
+				 ((and (eq (get-slot-value c1 'xtype) 'date)
+				       (eq (get-slot-value c2 'xtype) 'date)
+				       (eq (get-slot-value c1 'ytype) 'real)
+				       (eq (get-slot-value c2 'ytype) 'real))
+				  (courbe-operation-t-binaire c1 c2 '+ 'real))
+				 ((and (eq (get-slot-value c1 'xtype) 'real)
+				       (eq (get-slot-value c2 'xtype) 'real)
+				       (eq (get-slot-value c1 'ytype) 'real)
+				       (eq (get-slot-value c2 'ytype) 'real))
+				  (courbe-operation-r-binaire c1 c2 '+ 'real))
+				 ((and (eq (get-slot-value c1 'xtype) 'real)
+				       (eq (get-slot-value c2 'xtype) 'real)
+				       (eq (get-slot-value c1 'ytype) 'complex)
+				       (eq (get-slot-value c2 'ytype) 'complex))
+				  (courbe-operation-r-binaire c1 c2 'c+ 'complex))
+				 ((and (eq (get-slot-value c1 'xtype) 'real)
+				       (eq (get-slot-value c2 'xtype) 'real)
+				       (eq (get-slot-value c1 'ytype) 'real)
+				       (eq (get-slot-value c2 'ytype) 'complex))
+				  (courbe-operation-r-binaire c1 c2 '(lambda (x y) (c+ (list x 0) y)) 'complex))
+				 ((and (eq (get-slot-value c1 'xtype) 'real)
+				       (eq (get-slot-value c2 'xtype) 'real)
+				       (eq (get-slot-value c1 'ytype) 'complex)
+				       (eq (get-slot-value c2 'ytype) 'real))
+				  (courbe-operation-r-binaire c1 c2 '(lambda (x y) (c+ x (list y 0))) 'complex))
+
+				 (t (cerror 209 "erreur sur les types pour effectuer + entre " (list c1 "et" c2)))))
+
+
+(de courbe-2d-difference (c1 c2) (cond ((and (eq (get-slot-value c1 'ytype) 'real)
+					     (numberp c2))
+					(courbe-operation-unaire c1 '(lambda(x) (- x c2)) 'real))
+				       ((and (eq (get-slot-value c1 'ytype) 'complex)
+					     (numberp c2))
+					(courbe-operation-unaire c1 '(lambda(x) (c- x (list c2 0))) 'complex))
+				       ((and (eq (get-slot-value c1 'ytype) 'real)
+					     (consp c2))
+					(courbe-operation-unaire c1 '(lambda(x) (c- (list x 0) c2)) 'complex))
+				       ((and (eq (get-slot-value c1 'ytype) 'complex)
+					     (consp c2))
+					(courbe-operation-unaire c '(lambda(x) (c- x c2)) 'complex))
+				       ((and (eq (get-slot-value c1 'xtype) 'date)
+					     (eq (get-slot-value c2 'xtype) 'date)
+					     (eq (get-slot-value c1 'ytype) 'real)
+					     (eq (get-slot-value c2 'ytype) 'real))
+					(courbe-operation-t-binaire c1 c2 '- 'real))
+				       ((and (eq (get-slot-value c1 'xtype) 'real)
+					     (eq (get-slot-value c2 'xtype) 'real)
+					     (eq (get-slot-value c1 'ytype) 'real)
+					     (eq (get-slot-value c2 'ytype) 'real))
+					(courbe-operation-r-binaire c1 c2 '- 'real))
+				       ((and (eq (get-slot-value c1 'xtype) 'real)
+					     (eq (get-slot-value c2 'xtype) 'real)
+					     (eq (get-slot-value c1 'ytype) 'complex)
+					     (eq (get-slot-value c2 'ytype) 'complex))
+					(courbe-operation-r-binaire c1 c2 'c- 'complex))
+				       ((and (eq (get-slot-value c1 'xtype) 'real)
+					     (eq (get-slot-value c2 'xtype) 'real)
+					     (eq (get-slot-value c1 'ytype) 'real)
+					     (eq (get-slot-value c2 'ytype) 'complex))
+					(courbe-operation-r-binaire c1 c2 '(lambda (x y) (c- (list x 0) y)) 'complex))
+				       ((and (eq (get-slot-value c1 'xtype) 'real)
+					     (eq (get-slot-value c2 'xtype) 'real)
+					     (eq (get-slot-value c1 'ytype) 'complex)
+					     (eq (get-slot-value c2 'ytype) 'real))
+					(courbe-operation-r-binaire c1 c2 '(lambda (x y) (c- x (list y 0))) 'complex))
+				       (t (cerror 209 "erreur sur les types pour effectuer - entre " (list c1 "et" c2)))))
+
+(de courbe-2d-times (c1 c2) (cond ((and (eq (get-slot-value c1 'ytype) 'real)
+					(numberp c2))
+				   (courbe-operation-unaire c1 '(lambda(x) (* x c2)) 'real))
+				  ((and (eq (get-slot-value c1 'ytype) 'complex)
+					(numberp c2))
+				   (courbe-operation-unaire c1 '(lambda(x) (c* x (list c2 0))) 'complex))
+				  ((and (eq (get-slot-value c1 'ytype) 'real)
+					(consp c2))
+				   (courbe-operation-unaire c1 '(lambda(x) (c* (list x 0) c2)) 'complex))
+				  ((and (eq (get-slot-value c1 'ytype) 'complex)
+					(consp c2))
+				   (courbe-operation-unaire c '(lambda(x) (c* x c2)) 'complex))
+				  ((and (eq (get-slot-value c1 'xtype) 'date)
+					(eq (get-slot-value c2 'xtype) 'date)
+					(eq (get-slot-value c1 'ytype) 'real)
+					(eq (get-slot-value c2 'ytype) 'real))
+				   (courbe-operation-t-binaire c1 c2 '* 'real))
+				  ((and (eq (get-slot-value c1 'xtype) 'real)
+					(eq (get-slot-value c2 'xtype) 'real)
+					(eq (get-slot-value c1 'ytype) 'real)
+					(eq (get-slot-value c2 'ytype) 'real))
+				   (courbe-operation-r-binaire c1 c2 '* 'real))
+				  ((and (eq (get-slot-value c1 'xtype) 'real)
+					(eq (get-slot-value c2 'xtype) 'real)
+					(eq (get-slot-value c1 'ytype) 'complex)
+					(eq (get-slot-value c2 'ytype) 'complex))
+				   (courbe-operation-r-binaire c1 c2 'c* 'complex))
+				  ((and (eq (get-slot-value c1 'xtype) 'real)
+					(eq (get-slot-value c2 'xtype) 'real)
+					(eq (get-slot-value c1 'ytype) 'real)
+					(eq (get-slot-value c2 'ytype) 'complex))
+				   (courbe-operation-r-binaire c1 c2 '(lambda (x y) (c* (list x 0) y)) 'complex))
+				  ((and (eq (get-slot-value c1 'xtype) 'real)
+					(eq (get-slot-value c2 'xtype) 'real)
+					(eq (get-slot-value c1 'ytype) 'complex)
+					(eq (get-slot-value c2 'ytype) 'real))
+				   (courbe-operation-r-binaire c1 c2 '(lambda (x y) (c* x (list y 0))) 'complex))
+				  (t (cerror 209 "erreur sur les types pour effectuer * entre " (list c1 "et" c2)))))
+
+(de courbe-2d-quotient (c1 c2) (cond ((and (eq (get-slot-value c1 'ytype) 'real)
+					   (numberp c2))
+				      (courbe-operation-unaire c1 '(lambda(x) (/ x c2)) 'real))
+				     ((and (eq (get-slot-value c1 'ytype) 'complex)
+					   (numberp c2))
+				      (courbe-operation-unaire c1 '(lambda(x) (c/ x (list c2 0))) 'complex))
+				     ((and (eq (get-slot-value c1 'ytype) 'real)
+					   (consp c2))
+				      (courbe-operation-unaire c1 '(lambda(x) (c/ (list x 0) c2)) 'complex))
+				     ((and (eq (get-slot-value c1 'ytype) 'complex)
+					   (consp c2))
+				      (courbe-operation-unaire c '(lambda(x) (c/ x c2)) 'complex))
+				     ((and (eq (get-slot-value c1 'xtype) 'date)
+					   (eq (get-slot-value c2 'xtype) 'date)
+					   (eq (get-slot-value c1 'ytype) 'real)
+					   (eq (get-slot-value c2 'ytype) 'real))
+				      (courbe-operation-t-binaire c1 c2 '/ 'real))
+				     ((and (eq (get-slot-value c1 'xtype) 'real)
+					   (eq (get-slot-value c2 'xtype) 'real)
+					   (eq (get-slot-value c1 'ytype) 'real)
+					   (eq (get-slot-value c2 'ytype) 'real))
+				      (courbe-operation-r-binaire c1 c2 '/ 'real))
+				     ((and (eq (get-slot-value c1 'xtype) 'real)
+					   (eq (get-slot-value c2 'xtype) 'real)
+					   (eq (get-slot-value c1 'ytype) 'complex)
+					   (eq (get-slot-value c2 'ytype) 'complex))
+				      (courbe-operation-r-binaire c1 c2 'c/ 'complex))
+				     ((and (eq (get-slot-value c1 'xtype) 'real)
+					   (eq (get-slot-value c2 'xtype) 'real)
+					   (eq (get-slot-value c1 'ytype) 'real)
+					   (eq (get-slot-value c2 'ytype) 'complex))
+				      (courbe-operation-r-binaire c1 c2 '(lambda (x y) (c/ (list x 0) y)) 'complex))
+				     ((and (eq (get-slot-value c1 'xtype) 'real)
+					   (eq (get-slot-value c2 'xtype) 'real)
+					   (eq (get-slot-value c1 'ytype) 'complex)
+					   (eq (get-slot-value c2 'ytype) 'real))
+				      (courbe-operation-r-binaire c1 c2 '(lambda (x y) (c/ x (list y 0))) 'complex))
+				     (t (cerror 209 "erreur sur les types pour effectuer / entre " (list c1 "et" c2)))))
+
+
+(de  c+ (a1 a2)
+     (list (+ (car a1) (car a2)) (+ (cadr a1) (cadr a2))))
+
+
+(de  c- (a1 a2)
+     (list (- (car a1) (car a2)) (- (cadr a1) (cadr a2))))
+
+
+
+(de c* (a1 a2)
+    (list (- (* (car a1) (car a2) ) (* (cadr a1) (cadr a2))) (+ (* (car a1) (cadr a2)) (* (cadr a1) (car a2)))))  
+
+
+(de c/ (a1 a2)
+    (let ((r (+ (* (car a2) (car a2)) (* (cadr a2) (cadr a2)))))
+      (list (/ (+ (* (car a1) (car a2) ) (* (cadr a1) (cadr a2))) r) (/  (- (* (cadr a1) (car a2))  (* (car a1) (cadr a2))) r))))  
+
+
+			 
+(de c-exp (a) 
+    (list (* (exp (car a)) (cos (cadr a))) (* (exp (car a)) (sin (cadr a)))))
+
+(de c-ln (b)
+    (let(c)
+      (setq c (cond ((eq b '(0 0)) 0)
+		    (t (ln (sqrt (+ (* (car b) (car b)) (* (cadr b) (cadr b))))))))
+      (cond ((eq (car b) 0) (list c (/ pi 2)))
+	    (t (list c (atg (/ (cadr b) (car b))))))))
+
+(de c-log (b) (let ((c (c-ln b))) (list (/ (car c) 2.302585) (/ (cadr c) 2.302585))))
+
+
+(de c-antilog (b)
+    (c-exp (list (* (car b) 2.302585) (* (cadr b) 2.302585))))
+
+
+
+(de courbe-2d-convert-time (c1) (cond((eq (get-slot-value c1 'xtype) 'date)
+				      (courbe-operation-unaire-x c1 'convert-time 'real))
+				     ((eq (get-slot-value c1 'xtype) 'real)
+				      c1)
+				     (t (cerror 209 "mauvais type de courbe " c1))))
+
+(de courbe-2d-x-shift (c1 shift) (cond ((eq (get-slot-value c1 'xtype) 'real)
+                                        (courbe-operation-unaire-x c1 '(lambda (x) (- x shift)) 'real))
+                                       (t (cerror 209 "mauvais type de courbe " c1))))
+
+
+(de courbe-2d-ln (c) (cond((eq (get-slot-value c 'ytype) 'real) (courbe-operation-unaire c 'log 'real))
+			  ((eq (get-slot-value c 'ytype) 'complex) (courbe-operation-unaire c 'c-ln 'complex))
+			  (t (cerror 209 "mauvais ytype de courbe " c))))
+
+(de courbe-2d-log (c) (cond((eq (get-slot-value c 'ytype) 'real) (courbe-operation-unaire c 'log10 'real))
+			  ((eq (get-slot-value c 'ytype) 'complex) (courbe-operation-unaire c 'c-log 'complex))
+			  (t (cerror 209 "mauvais ytype de courbe " c))))
+
+(de courbe-2d-exp (c) (cond((eq (get-slot-value c 'ytype) 'real) (courbe-operation-unaire c 'exp 'real))
+			  ((eq (get-slot-value c 'ytype) 'complex) (courbe-operation-unaire c 'c-exp 'complex))
+			  (t (cerror 209 "mauvais ytype de courbe " c))))
+
+(de courbe-2d-antilog (c) (cond((eq (get-slot-value c 'ytype) 'real) (courbe-operation-unaire c '(lambda (x) (power 10 x)) 'real))
+			  ((eq (get-slot-value c 'ytype) 'complex) (courbe-operation-unaire c 'c-antilog 'complex))
+			  (t (cerror 209 "mauvais ytype de courbe " c))))
+
+
+(de courbe-2d-module (c)(cond((eq (get-slot-value c 'ytype) 'real)
+			    (courbe-operation-unaire c 'abs 'real))
+			  ((eq (get-slot-value c 'ytype) 'complex)
+			   (courbe-operation-unaire c '(lambda (x) (sqrt (+ (* (car x) (car x)) (* (cadr x) (cadr x))))) 'real))
+			  (t (cerror 209 "mauvais ytype de courbe " c1))))
+
+
+(de courbe-2d-argument (c) 
+    (cond((eq (get-slot-value c 'ytype) 'real)
+	  (courbe-operation-unaire c '(lambda(x) 0) 'real))
+	 ((eq (get-slot-value c 'ytype) 'complex)
+	  (courbe-operation-unaire c 
+				   '(lambda (x) (prog (m)
+						      (setq m (sqrt (+ (* (car x) (car x)) (* (car x) (car x)))))
+						      (cond ((equal m 0) (return '(1 0)))
+							    (t (return (list (/ (car x) m) (/ (cadr x) m)))))))
+				   'complex))
+	 (t  (cerror 209 "mauvais ytype de courbe " c1))))
+
+(de courbe-2d-partie-reelle (c)
+    (cond ((eq (get-slot-value c 'ytype) 'real)
+	   c)
+	  ((eq (get-slot-value c 'ytype) 'complex)
+	   (courbe-operation-unaire c 'car 'real))
+	  (t (cerror 209 "mauvais ytype de courbe " c1))))
+
+(de courbe-2d-partie-imaginaire (c)
+    (cond ((eq (get-slot-value c 'ytype) 'real)
+	   (courbe-operation-unaire c '(lambda(x) 0) 'real))
+	  ((eq (get-slot-value c 'ytype) 'complex)
+	   (courbe-operation-unaire c 'cadr 'real))
+	  (t (cerror 209 "mauvais ytype de courbe " c1))))
+
+
+
+
+(de courbe-2d-interpolation (c tt)
+    (cond ((and (eq (get-slot-value c 'xtype) 'date)
+		(consp tt))
+	   (courbe-t-interpolation c tt))
+	  ((and (eq (get-slot-value c 'xtype) 'date)
+	       (numberp tt))
+	   (courbe-t-interpolation c (inverse-convert-time tt)))
+	   ((and (eq (get-slot-value c 'xtype) 'real)
+		(consp tt))
+	   (courbe-r-interpolation c (convert tt)))
+	   ((and (eq (get-slot-value c 'xtype) 'real)
+                 (eq (get-slot-value c 'ytype) 'real)
+		(numberp tt))
+	    (courbe-r-interpolation c tt))
+           ((and (eq (get-slot-value c 'xtype) 'real)
+                 (eq (get-slot-value c 'ytype) 'complex)
+                 (numberp tt))
+            (courbe-c-interpolation c tt))
+           
+	   (t (ctrace 210 " erreur de type pour effectuer une interpolation entre " (list c "et" tt)))))
+
+
+;il y a deux fonction d interpolation car on estime qu il faut etre plus rapide en interpolation sans
+;necessairement creer pour une seule interpolation une courbe intermediaire passee par convert-time
+
+
+(de courbe-c-interpolation (c tt)
+      (prog (h  old-f old-a r a f rmax)
+	  (setq h (get-slot-value c 'body))
+	  (setq rmax (get-slot-value c 'pointeur-max))
+          (when (equal (vlength h ) 0) (return nil))
+	  (setq r 0)
+	  (setq a (car (vref h 0)))
+	  (setq f (cadr (vref h 0)))
+	  (when (<= tt a)
+		(return f))
+	  loop
+	  (setq r (1+ r))
+	  (when (> r rmax)
+		(return (cadr (vref h rmax))))
+	  (setq old-f f)
+	  (setq old-a a)
+	  (setq f (cadr (vref h r)))
+	  (setq a (car (vref h r)))
+	  (when (<= tt a)
+                (return (list  (+ (car old-f)
+                                  (* (- tt old-a)
+                                     (/ (- (car old-f) (car f))
+                                        (- old-a a))))
+                                (+ (cadr old-f)
+                                   (* (- tt old-a)
+                                      (/ (- (cadr old-f) (cadr f))
+                                         (- old-a a))))
+                                )))
+		
+	  (go loop)))
+
+(de courbe-r-interpolation (c tt)
+    (prog (h  old-f old-a r a f rmax)
+	  (setq h (get-slot-value c 'body))
+	  (setq rmax (get-slot-value c 'pointeur-max))
+          (when (equal (vlength h ) 0) (return nil))
+	  (setq r 0)
+	  (setq a (car (vref h 0)))
+	  (setq f (cadr (vref h 0)))
+	  (when (<= tt (car (vref h 0)))
+		(return (cadr (vref h 0))))
+	  loop
+	  (setq r (1+ r))
+	  (when (> r rmax)
+		(return (cadr (vref h rmax))))
+	  (setq old-f f)
+	  (setq old-a a)
+	  (setq f (cadr (vref h r)))
+	  (setq a (car (vref h r)))
+	  (when (<= tt a)
+		(return (+ old-f
+			   (* (- tt old-a)
+			      (/ (- old-f f)
+				 (- old-a a))))))
+	  (go loop)))
+
+
+(de courbe-t-interpolation (c tt)
+    (prog (h  old-f old-a r a f rmax)
+	  (setq h (get-slot-value c 'body))
+	  (setq rmax (get-slot-value c 'pointeur-max))
+          (when (equal (vlength h ) 0) (return nil))
+	  (setq r 0)
+	  (setq a (car (vref h 0)))
+	  (setq f (cadr (vref h 0)))
+	  (when (time->= (car (vref h 0)) tt)
+		(return (cadr (vref h 0))))
+	  loop
+	  (setq r (1+ r))
+	  (when (> r rmax)
+		(return (cadr (vref h rmax))))
+	  (setq old-f f)
+	  (setq old-a a)
+	  (setq f (cadr (vref h r)))
+	  (setq a (car (vref h r)))
+	  (when (time->= a tt)
+		(return (+ old-f
+			   (* (courbe-distance-time old-a tt)
+			      (/ (- old-f f)
+				 (courbe-distance-time a old-a))))))
+	  (go loop)))
+
+
+
+
+(de courbe-interpole-time (t1 t2 t3 f1 f2)
+    (+ f1 (* (/ (courbe-distance-time t1 t3) (courbe-distance-time t1 t2)) (- f2 f1))))
+
+
+(de courbe-interpole-reel (t1 t2 t3 f1 f2)
+    (+ f1 (* (/ (- t1 t3) (- t1 t2)) (- f2 f1))))
+     
+
+
+
+(de courbe-distance-time (t1 t2)
+    (prog ((c1(1- (+(caddr t1)(+ (nombre-de-jour-mois (cadr t1) (car t1)) (nombre-de-jour-annee (car t1))))))
+	   (c2(1- (+(caddr t2)(+ (nombre-de-jour-mois (cadr t2) (car t2)) (nombre-de-jour-annee (car t2)))))) )
+	  (setq c1 (+ c1(/ (+ (cadddr t1)   (+ (/ (cadddr (cddr t1)) 3600.) (/ (cadddr (cdr t1)) 60.))) 24.)))
+	  (setq c2 (+ c2(/ (+ (cadddr t2)   (+ (/ (cadddr (cddr t2)) 3600.) (/ (cadddr (cdr t2)) 60.))) 24.)))
+	  (return (- c2 c1))))
+	   
+(de convert-time (t1)
+    (+(1-  (+(caddr t1)(+ (nombre-de-jour-mois (cadr t1) (car t1)) (nombre-de-jour-annee (car t1)))) )
+      (/ (+ (cadddr t1)   (+ (/ (cadddr (cddr t1)) 3600.) (/ (cadddr (cdr t1)) 60.))) 24.)))            
+     
+(de date-string (st1)
+    (cond ((consp st1) (date-string-* st1))
+          (t (date-string-* (inverse-convert-time st1)))))
+
+(de time-cut-midi (t1)
+    (let ((annee (car t1))
+          (mois-n (cadr t1))
+          (jours (caddr t1))
+          (heure (cadddr t1))
+          (minute (cadr (cdddr t1)))
+          (seconde (caddr (cdddr t1))))
+      (list annee mois-n jours 12 0 0 0)))
+
+(de date-string-* (t1)
+    (let ((annee (car t1))
+          (mois-n (cadr t1))
+          mois-c
+          (jours (caddr t1))
+          (heure (cadddr t1))
+          (minute (cadr (cdddr t1)))
+          (seconde (caddr (cdddr t1))))
+      (setq mois-c (cond ((equal mois-n 1) "janvier")
+                         ((equal mois-n 2) "fevrier")
+                         ((equal mois-n 3) "mars")
+                         ((equal mois-n 4) "avril")
+                         ((equal mois-n 5) "mai")
+                         ((equal mois-n 6) "juin")
+                         ((equal mois-n 7) "juillet")
+                         ((equal mois-n 8) "aout")
+                         ((equal mois-n 9) "septembre")
+                         ((equal mois-n 10) "octobre")
+                         ((equal mois-n 11) "novembre")
+                         ((equal mois-n 12) "decembre")))
+      (catenate jours " " mois-c " 19" annee " : " heure "h " minute "mn " seconde "s")))
+      
+(de nombre-de-jour-mois (m a)
+    (prog((h (cond((eq m 1) 0)
+		  ((eq m 2) 31)
+		  ((eq m 3) 59)
+		  ((eq m 4) 90)
+		  ((eq m 5) 120)
+		  ((eq m 6) 151)
+		  ((eq m 7) 181)
+		  ((eq m 8) 212)
+		  ((eq m 9) 243)
+		  ((eq m 10) 273)
+		  ((eq m 11) 304)
+		  ((eq m 12) 334))))
+	 (return (cond((and (memq a '(72 76 80 84 88 92 96 00))
+			    (> m 2))
+		       (1+ h))
+		      (t h)))))
+	 
+(de nombre-de-jour-annee (a)
+    (cond((> a 96) (+ 7 (* (- a 70) 365)))
+	 ((> a 92) (+ 6 (* (- a 70) 365)))
+	 ((> a 88) (+ 5 (* (- a 70) 365)))
+	 ((> a 78) (+ 4 (* (- a 70) 365)))
+	 ((> a 72) (+ 3 (* (- a 70) 365)))
+	 ((> a 68) (+ 2 (* (- a 70) 365)))
+	 ((> a 64) (+ 1 (* (- a 70) 365)))
+	 (t (* (- a 70) 365))))
+
+
+(de time- (t1 d)
+    (inverse-convert-time (- (convert-time t1) d)))
+(de time+ (t1 d)
+    (inverse-convert-time (+ (convert-time t1) d)))
+
+
+(de time-<= (t1 t2)
+    (not (time-> t1 t2)))
+
+(de time-< (t1 t2)
+    (not (time->= t1 t2)))
+
+(de time->= (t1 t2)
+    (cond((not(equal (car t1) (car t2))) (> (car t1) (car t2)))
+	 ((not(equal (cadr t1) (cadr t2))) (> (cadr t1) (cadr t2)))
+	 ((not(equal (caddr t1) (caddr t2))) (> (caddr t1) (caddr t2)))
+	 ((not(equal (cadddr t1) (cadddr t2))) (> (cadddr t1) (cadddr t2)))
+	 ((not(equal (cadddr(cdr t1)) (cadddr (cdr t2)))) (> (cadddr (cdr t1)) (cadddr (cdr t2))))
+	 ((not(equal (cadddr(cddr t1)) (cadddr (cddr t2)))) (> (cadddr (cddr t1)) (cadddr (cddr t2))))
+	 (t)))
+
+(de time-> (t1 t2)
+    (cond((not(equal (car t1) (car t2))) (> (car t1) (car t2)))
+	 ((not(equal (cadr t1) (cadr t2))) (> (cadr t1) (cadr t2)))
+	 ((not(equal (caddr t1) (caddr t2))) (> (caddr t1) (caddr t2)))
+	 ((not(equal (cadddr t1) (cadddr t2))) (> (cadddr t1) (cadddr t2)))
+	 ((not(equal (cadddr(cdr t1)) (cadddr (cdr t2)))) (> (cadddr (cdr t1)) (cadddr (cdr t2))))
+	 ((not(equal (cadddr(cddr t1)) (cadddr (cddr t2)))) (> (cadddr (cddr t1)) (cadddr (cddr t2))))
+	 (t nil)))
+
+
+                                        ;TRANSFORMEE DE FOURIER (INTEGRALE AVEC ABCISSE REELLE) 
+
+(de courbe-2d-integrale-de-fourier (c)
+    (prog(cc c1 c2)
+	 (cond((and (eq (get-slot-value c 'xtype) 'real)
+		    (eq (get-slot-value c 'ytype) 'real))
+	       (courbe-r-integrale-de-fourier c))
+	      ((and (eq (get-slot-value c 'xtype) 'date)
+		    (eq (get-slot-value c 'ytype) 'real))
+	       (setq c1   ($ courbe 'expand 'convert-time))
+	       (courbe-r-integrale-de-fourier c1))
+	      ((and (eq (get-slot-value c 'xtype) 'real)
+		    (eq (get-slot-value c 'ytype) 'complex))
+	       (setq c1 ($ c 'partie-reelle))
+	       (setq c2 ($ c 'partie-imaginaire))
+	       ($ (courbe-integrale-de-fourier c1) '+ ($ (courbe-integrale-de-fourier c2) '* '(0 1))))
+	      ((and (eq (get-slot-value c 'xtype) 'date)
+		    (eq (get-slot-value c 'ytype) 'complex))
+	       (setq cc ($ c 'expand 'convert-time))
+	       (setq c1 ($ cc 'partie-reelle))
+	       (setq c2 ($ cc 'partie-imaginaire))
+	       ($ (courbe-integrale-de-fourier c1) '+ ($ (courbe-integrale-de-fourier c2) '* '(0 1)))))))
+
+(de courbe-integrale-de-fourier (c)
+					; la transformee de fourier d une fonction est indexee ici
+					;par la vitesse-angulaire (T = 2*pi/W)
+					;calcule les coefficients de fourier correspondant 
+					;aux vitesse-angulaires egales a 1 ,2,3.. fois 2pi/ptime
+
+    (prog (h l ptime c1 h1 v)
+	  (setq h (get-slot-value c 'body))
+	  (setq l (get-slot-value c 'pointeur-max))
+	  (setq ptimes (- (car (vref h l)) (car (vref h 0))))
+	  (setq ptime (quotient ptimes 1))
+	  (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+	  (setq h1 (makevector  (1+ ptime) nil))
+	  (setq v 0)
+	  loop1
+	  (when (> v ptime) (go fin))
+	  (setf (vref h1 v) (list (/ (* 2 pi v) (1+ ptime)) (integrale-fourier-r-1 h l (/ (* 2 pi v) (1+ ptime)) ptimes)))
+	  (setq v (1+ v))
+	  (go loop1)
+	  fin
+	  (setf (get-slot-value c1 'body ) h1)
+	  (setf (get-slot-value c1 'pointeur ) 0)
+	  (setf (get-slot-value c1 'pointeur-max)  ptime)
+	  (setf (get-slot-value c1 'xtype) 'real)
+	  (setf (get-slot-value c1 'ytype) 'complex)
+	  (setf (get-slot-value c1 'courbe-origine) (list c))
+	  (setf (get-slot-value c1 'transformation) 'integrale-de-fourier)
+	  (return c1)))
+
+(de integrale-fourier-r-1 (h l wj ptimes)
+    (prog((r (list 0 0)) v  ti ti+1  xi xi+1 rr)
+	 (setq v 0)
+	 loop
+	 (when (>= v l) (go fin1))
+	 (setq ti (car (vref h v)))
+	 (setq xi (cadr (vref h v)))
+	 (setq ti+1 (car (vref h (1+ v))))
+	 (setq xi+1 (cadr (vref h (1+ v))))
+	 (setq r (c+ r (integrale-fourier-fij ti ti+1 xi xi+1 wj)))
+	 (setq v (1+ v))
+	 (go loop)
+	 fin1
+	 (return (list (/ (car r) ptimes) (/ (cadr r) ptimes)))))
+
+	
+
+
+
+(de integrale-fourier-fij (ti ti+1 xi xi+1 wj)
+    (let (a b c )
+      (setq a wj)
+      (setq c (/ (- xi+1 xi) (- ti+1 ti)))
+      (setq b (- xi (* ti c)))
+      (list (real-integrale-fourier-fij-1 a b c ti ti+1)
+	    (imaginaire-integrale-fourier-fij-1 a b c ti ti+1))))
+
+
+
+
+(de real-integrale-fourier-fij-1 (a b c alpha beta)
+					;calcule la partie reele de somme de alpha a beta de](b+ct)exp(-iat)dt
+					; = 1/a^2 {c(cos(a.beta) - cos(a.alpha)) + a.(b+c.beta)sin(a.beta) - a(b+c.alpha)sin(a.alpha)}
+    (prog (x y z)
+	  (when (= a 0) (setq x (* b (- beta alpha)))
+		(setq y (* (/ c 2) (* (+ beta alpha) (- beta alpha))))
+		(return (+ x y)))
+	  (setq x (* c (- (cos (* a beta)) (cos (* a alpha)))))
+	  (setq y (* a (+ b (* c beta)) (sin (* a beta))))
+	  (setq z (* a (+ b (* c alpha)) (sin (* a alpha))))
+	  (return (/ (+ x (- y z)) (* a a )))))
+
+(de imaginaire-integrale-fourier-fij-1 (a b c alpha beta)
+			     ;calcule la partie imaginaire de [Somme de alpha a beta de](b+ct)exp(-iat)dt
+			     ;= 1/a^2.rac(2pi) {a(b+c.beta)cos(a.beta) - a(b+c.alpha)cos(a.alpha) - c(sin(a.beta) - sin(a.alpha))}
+    (prog (x y z)
+	  (when (= a 0) (return 0))
+	  (setq x (* a (+ b (* c beta)) (cos (* a beta))))
+	  (setq y (* a (+ b (* c alpha)) (cos (* a alpha))))
+	  (setq z (* c (- (sin (* a beta)) (sin (* a alpha)))))
+	  (return (/ (- x (+ y z)) (* a a)))))
+
+
+
+					;TRANSFORMEE DE FOURIER  (SOMME) (ABCISSE REELE)
+
+(de courbe-2d-somme-de-fourier (c)
+    (prog(cc c1 c2)
+	 (cond((and (eq (get-slot-value c 'xtype) 'real)
+		    (eq (get-slot-value c 'ytype) 'real))
+	       (courbe-r-somme-de-fourier c))
+	      ((and (eq (get-slot-value c 'xtype) 'date)
+		    (eq (get-slot-value c 'ytype) 'real))
+	       (setq c1   ($ courbe 'expand 'convert-time))
+	       (courbe-r-somme-de-fourier c1))
+	      ((and (eq (get-slot-value c 'xtype) 'real)
+		    (eq (get-slot-value c 'ytype) 'complex))
+	       (setq c1 ($ c 'partie-reelle))
+	       (setq c2 ($ c 'partie-imaginaire))
+	       ($ ($ c1 'somme-de-fourier) '+ ($ ($ c2 'somme-de-fourier) '* '(0 1))))
+	      ((and (eq (get-slot-value c 'xtype) 'date)
+		    (eq (get-slot-value c 'ytype) 'complex))
+	       (setq cc ($ c 'expand 'convert-time))
+	       (setq c1 ($ cc 'partie-reelle))
+	       (setq c2 ($ cc 'partie-imaginaire))
+	       ($ ($ c1 'somme-de-fourier) '+ ($ ($ c2 'somme-de-fourier) '* '(0 1)))))))
+	 
+	
+
+(de courbe-r-somme-de-fourier (c)
+			  ; la transfomee de fourier d une fonction est indexee ici par la vitesse-angulaire (w=2pi/T)
+			  ;calcule les coefficients de fourier correspondant aux vitesse-angulaires
+                          ; egales a 1 ,2,3.. fois 2pi*lmin/ptime
+    (prog (h l lmin ptime c1 h1 t0 v v1)
+	  (setq h (get-slot-value c 'body))
+	  (setq l (get-slot-value c 'pointeur-max))
+	  (setq ptime (quotient (- (car (vref h l)) (car (vref h 0))) 1))
+          (setq lmin  (/ ptime l))
+	  (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+	  (setq h1 (makevector  (1+ l) nil))
+	  (setq v 0)
+          (setq v1 0)
+	  (setq t0 (car (vref h 0)))
+	  loop
+	  (when (> v ptime) (go fin))
+	  (setf (vref h1 v1) (list  (* 2 pi (/ v ptime)) (s-r-integrale-fourier-1 h l v t0 ptime)))
+	  (setq v (+ v lmin))
+          (setq v1 (1+ v1))
+	  (go loop)
+	  fin
+	  (setf (get-slot-value c1 'body ) h1)
+	  (setf (get-slot-value c1 'pointeur ) 0)
+	  (setf (get-slot-value c1 'pointeur-max) (1- v1))
+	  (setf (get-slot-value c1 'xtype) 'real)
+	  (setf (get-slot-value c1 'ytype) 'complex)
+	  (setf (get-slot-value c1 'courbe-origine) (list c))
+	  (setf (get-slot-value c1 'transformation) 'somme-de-fourier)
+	  (return c1)))
+
+ (de s-r-integrale-fourier-1 (h l vj t0 ptime)
+     (prog((r (list 0 0))(v 0) ti  xi )
+          loop
+          (when (> v l) (return (list (/ (car r) (1+ l)) (/ (cadr r) (1+ l)))))
+          (setq ti  (car (vref h v)))
+          (setq xi (cadr (vref h v)))
+          (setq r (c+ r (s-integrale-fourier-fi ti xi (* 2 pi (/ vj ptime)) ptime)))
+          (setq v (1+ v))
+          (go loop)))
+
+(de s-integrale-fourier-fi (ti xi wj ptime)
+					;calcule xi*expi(-i.wj*ti)
+  
+    (list  (*  xi (cos (* wj ti))) 
+	   (-  (* xi (sin (* wj ti))))))
+
+					;TRANSFORMEE DE FOURIER INVERSE (ABCISSE REELLE)
+
+
+(de courbe-2d-inverse-de-fourier (c ll)
+    (cond ((liste-de-dates-p ll) 
+	   (let (cc) (setq cc (courbe-inverse-de-fourier c (mapcar 'inverse-convert-time ll)))
+		  (setf (get-slot-value cc 'xtype) 'date)))	   
+	  ((liste-de-nombres-p ll)
+	   (let (cc) (setq cc (courbe-inverse-de-fourier c ll))
+		(setf (get-slot-value cc 'xtype) 'real)
+		cc))
+	  (t (cerror 209 "mauvais type pour la liste de dates " ll))))
+
+(de liste-de-dates-p (ll)
+    (cond((and (consp ll)
+	       ( eq (length (car ll)) 6))
+	  t)
+	 (t nil)))
+
+		
+(de liste-de-nombres-p (ll)
+    (cond((and (consp ll)
+	       (numberp (car ll)))
+	  t)
+	 (t nil)))
+
+
+(de courbe-inverse-de-fourier (c ll1)
+					;c est une courbe dont le xtype est : complex
+					;et ll1 est une liste de reels representant des dates pour lesquelle il faut calculer
+					; la valeur de la transformee de fourier inverse
+    (prog (c1 l1 h1 v h l l2 ptime)
+	  (setq h (get-slot-value c 'body))
+	  (setq l (get-slot-value c 'pointeur-max))
+
+	  (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+	  (setq l1 (length ll1))
+	  (setq h1 (makevector l1 ()))
+	  (setq v 0)
+	  (setq ll2 ll1)
+	
+	  loop
+
+	  (when (>= v l1) (go fin))
+	  (setf (vref h1 v)  (list (car ll2) (inverse-integrale-fourier-1 h l (car ll2))))
+	  (setq v (1+ v))
+	  (setq ll2 (cdr ll2))
+	  (go loop)
+	  fin 
+	  (setf (get-slot-value c1 'ytype) 'complex)
+	  (setf (get-slot-value c1 'body) h1)
+	  (setf (get-slot-value c1 'pointeur) 0)
+	  (setf (get-slot-value c1 'pointeur-max) (1- l1))
+	  (setf (get-slot-value c1 'courbe-origine) (list c))
+	  (setf (get-slot-value c1 'transformation) 'inverse-de-fourier)
+	  (return c1)))
+
+
+(de inverse-integrale-fourier-1 (h l tj)
+					;calcule la somme de fourier pour les mode propres definit par h
+					; apriori tous entier  associe a un nombre entier de fois 1/ptime*2pi
+					; comme vitesse-angulaire
+
+    (prog((r (list 0 0))(v 0) wi xi)
+	 loop
+
+	 (when (> v l) (return r))
+	 (setq wi (car (vref h v)))
+	 (setq xi (cadr (vref h v)))
+	 (setq r (c+ r (inverse-integrale-fourier-fi wi xi  tj)))
+	 (setq v (1+ v))
+	 (go loop)))
+
+(de inverse-integrale-fourier-fi (wi xi  tj)
+					;calcule xi*expi(wi*tj)
+    
+    (list (- (* (car xi) (cos (* wi tj))) (* (cadr xi) (sin (* wi tj))))
+	  (+ (* (car xi) (sin (* wi tj))) (* (cadr xi) (cos (* wi tj))))))
+
+
+                  				;AUTRES FONCTIONS
+
+(de genere-date-reelle-list (date-reelle njour)       ;retourne une liste de njour jour exprimes sous forme de reels
+    (prog (v r ll)
+	  (setq ll nil)
+	  (setq v 0)
+	  (setq r 0)
+	  loop
+	  (when (>= v njour) (go fin))
+	  (setq v (1+ v))
+	  (setq r (1+ r))
+	  (when (> r 5)
+		(setq r 0)
+		(setq v (+ v 1))
+		(go loop))
+	  (setq ll (cons (+ date-reelle v) ll))
+	  (go loop)
+	  fin
+	  (return (reverse ll))))
+
+
+
+
+	
+(de genere-date-list (date njour)     ;retourne une liste de njour jour exprimes sous forme de dates
+    (prog (v r ll)
+	  (setq ll nil)
+	  (setq v 0)
+	  (setq r 0)
+	  loop
+	  (when (>= v njour) (go fin))
+	  (setq v (1+ v))
+	  (setq r (1+ r))
+	  (when (> r 5)
+		(setq r 0)
+		(setq v (+ v 1))
+		(go loop))
+	  (setq ll (cons (date-from-time-glissant date v) ll))
+	  (go loop)
+	  fin
+	  (return (reverse ll))))
+
+
+(de courbe-list-de-date (c)
+					;retourne la liste de date des points de la courbe 
+
+    (prog (ll v h l)
+	  (setq ll nil)
+	  (setq h (get-slot-value c 'body))
+	  (setq l (get-slot-value c 'pointeur-max))
+	  (setq v 0)
+	  loop
+	  (when (> v l) (go fin))
+	  (setq ll (cons (car (vref h v)) ll))
+	  (setq v (1+ v))
+	  (go loop)
+	  fin
+	  (return ll)))
+
+
+
+(de date-from-time-glissant (t1 ddays)
+					;retourne une date a partir d'une autre date et un delai exprime en jours
+    (inverse-convert-time (+ (convert-time t1) ddays)))
+
+(de inverse-convert-time (d)
+					;convertit un nombre de jour depuis le 29/12/69 en une date (aa mm jj hh nn ss)
+					; valable pour les date entre 1970 et 1999
+    (prog (aa mm dd hh nn ss rest (bis nil))
+	  (setq rest  (cond
+		       ((>=  d 10592) (setq aa 99) (- d 10592))
+		       ((>=  d 10227) (setq aa 98) (- d 10227))
+		       ((>=  d 9862) (setq aa 97) (- d 9862))
+		       ((>=  d 9496) (setq aa 96)(setq bis t) (- d 9496))
+		       ((>=  d 9131) (setq aa 95) (- d 9131))
+		       ((>=  d 8766) (setq aa 94) (- d 8766))
+		       ((>=  d 8401) (setq aa 93) (- d 8401))
+		       ((>=  d 8035) (setq aa 92)(setq bis t) (- d 8035))
+		       ((>=  d 7670) (setq aa 91) (- d 7670))
+		       ((>=  d 7305) (setq aa 90) (- d 7305))
+		       ((>=  d 6940) (setq aa 89) (- d 6940))
+		       ((>=  d 6574) (setq aa 88)(setq bis t) (- d 6574))
+		       ((>=  d 6209) (setq aa 87) (- d 6209))
+		       ((>=  d 5844) (setq aa 86) (- d 5844))
+		       ((>=  d 5479) (setq aa 85) (- d 5479))
+		       ((>=  d 5114) (setq aa 84)(setq bis t) (- d 5114))
+		       ((>=  d 4749) (setq aa 83) (- d 4749))
+		       ((>=  d 4384) (setq aa 82) (- d 4384))
+		       ((>=  d 4019) (setq aa 81) (- d 4019))
+		       ((>=  d 3654) (setq aa 80)(setq bis t) (- d 3654))
+		       ((>=  d 3289) (setq aa 79) (- d 3289))
+		       ((>=  d 2924) (setq aa 78) (- d 2924))
+		       ((>=  d 2559) (setq aa 77) (- d 2559))
+		       ((>=  d 2193) (setq aa 76)(setq bis t) (- d 2193))
+		       ((>=  d 1828) (setq aa 75) (- d 1828))
+		       ((>=  d 1463) (setq aa 74) (- d 1463))
+		       ((>=  d 1098) (setq aa 73) (- d 1098))
+		       ((>=  d 732) (setq aa 72)(setq bis t) (- d 732))		      
+		       ((>=  d 367) (setq aa 71) (- d 367))
+		       ((>=  d 2) (setq aa 70) (- d 2))))
+
+	  (when (eq bis nil)
+		(setq rest (cond
+			    ((>= rest 334) (setq mm 12)(- rest 334))
+			    ((>= rest 304) (setq mm 11)(- rest 304))
+			    ((>= rest 273) (setq mm 10)(- rest 273))
+			    ((>= rest 243) (setq mm 9)(- rest 243))
+			    ((>= rest 212) (setq mm 8)(- rest 212))
+			    ((>= rest 181) (setq mm 7)(- rest 181))
+			    ((>= rest 151) (setq mm 6)(- rest 151))
+			    ((>= rest 120) (setq mm 5)(- rest 120))
+			    ((>= rest 90) (setq mm 4)(- rest 90))
+			    ((>= rest 59) (setq mm 3)(- rest 59))
+			    ((>= rest 31) (setq mm 2)(- rest 31))
+			    ((>= rest 0) (setq mm 1)(- rest 0)))))
+	  (when (eq bis t)
+		(setq rest (cond
+			    ((>= rest 335) (setq mm 12)(- rest 334))
+			    ((>= rest 305) (setq mm 11)(- rest 304))
+			    ((>= rest 274) (setq mm 10)(- rest 273))
+			    ((>= rest 244) (setq mm 9)(- rest 243))
+			    ((>= rest 213) (setq mm 8)(- rest 212))
+			    ((>= rest 182) (setq mm 7)(- rest 181))
+			    ((>= rest 152) (setq mm 6)(- rest 151))
+			    ((>= rest 121) (setq mm 5)(- rest 120))
+			    ((>= rest 91) (setq mm 4)(- rest 90))
+			    ((>= rest 60) (setq mm 3)(- rest 59))
+			    ((>= rest 31) (setq mm 2)(- rest 31))
+			    ((>= rest 0) (setq mm 1)(- rest 0)))))
+	  (setq dd (1+(quotient rest 1)))
+
+	  (setq rest (- rest (1- dd)))
+	  (setq hh (quotient (* rest 24.) 1))
+	  (setq rest (- rest (/ hh 24)))
+	  (setq nn (quotient (* rest 1440.) 1))
+	  (setq rest (- rest (/ nn 1440.)))
+	  (setq ss (* rest 86400.))
+	  (return (list aa mm dd hh nn ss))))
+
+
+
+(de courbe-2d-rang-juste-apres (courbe x)
+    (prog ((h (get-fondamental-value courbe 'body))
+           (l (get-fondamental-value courbe 'pointeur-max))
+           (v 0))
+          loop
+          (when (> v l) (return l))
+          (when (<= x (car (vref h v))) (return v))
+          (setq v (1+ v))
+          (go loop)))
+
+(de courbe-2d-integrale->x (courbe x)
+    (let ((r (courbe-2d-rang-juste-apres courbe x))
+          (h (get-fondamental-value courbe 'body))
+          (l (get-fondamental-value courbe 'pointeur-max))
+          integrale x1 x2 y1 y2 y)
+      (cond((> r 0)
+            (setq integrale (courbe-integrale-r-mesuree courbe r l '(lambda (x) x)))
+            (setq x1 (car (vref h (1- r))))
+            (setq x2 (car (vref h r)))
+            (setq y1 (cadr (vref h (1- r))))
+            (setq y2 (cadr (vref h r)))
+            (setq y (+ y1 (* (/ (- y2 y1) (- x2 x1)) (- x x1))))
+            (+ integrale (* (- x2 x) (+ y y2) 0.5)))
+           (t 
+            (courbe-integrale-r-mesuree courbe 0 l '(lambda (x) x))))))
+
+         
+
+(de courbe-2d-integrale (courbe)
+    (let ((l (get-fondamental-value courbe 'pointeur-max)))
+      (courbe-integrale-r-mesuree courbe 0 l '(lambda (x) x))))
+
+
+
+;somme de func(x courbe(x)) * dx
+(de courbe-integrale-t-mesuree (courbe rang1 rang2  func)
+    (prog ((v rang1) (s 0) h)
+	  (setq h (get-slot-value courbe 'body))
+	  loop
+	  (when (>= v rang2) (go fin))
+	  (setq s (+ s (* (/ (+ (funcall func  (car (vref h v)) (cadr (vref h v))) 
+				(funcall func  (car (vref h (1+ v)))  (cadr (vref h (1+ v))))) 2.)
+			  (courbe-distance-time (car (vref h v)) (car (vref h (1+ v)))))))
+	  (setq v (1+ v))
+	  (go loop)
+	  fin 
+	  (return s)))
+
+;somme de  courbe(x) * func(x) * dx
+(de courbe-integrale-r-mesuree (courbe rang1 rang2  func)
+    (prog ((v rang1) (s 0) h)
+	  (setq h (get-slot-value courbe 'body))
+	  loop
+	  (when (>= v rang2) (go fin))
+	  (setq s (+ s (* (/ (+ (funcall func (cadr (vref h v))) 
+				(funcall func (cadr (vref h (1+ v))))) 2.)
+			  (- (car (vref h (1+ v))) (car (vref h v))))))
+	  (setq v (1+ v))
+	  (go loop)
+	  fin 
+	  (return s)))
+
+(de courbe-synthetize (form-list abcisse-list)
+    (prog (c llist)
+	  (setq c ($ 'courbe-2d 'instanciate nil nil))
+	  (setq llist (mapcar '(lambda (x) (prog ((r 0))
+						 (mapc '(lambda (z) (setq r (plus r (courbe-synthetize-1 z x))))
+						       form-list)
+						 (return (list x r))))
+			      abcisse-list))
+	  (setf (get-slot-value c 'body) llist)
+	  (setf (get-slot-value c 'pointeur) 0)
+	  (setf (get-slot-value c 'pointeur-max) (1- (length llist)))
+	  (setf (get-slot-value c 'transformation) 'synthese)
+	  (setf (get-slot-value c 'xtype) 'real)
+	  (setf (get-slot-value c 'ytype) 'real)
+	  (return c))))
+
+
+(de courbe-synthetize-1 (form x)
+
+    (cond ((eq (car form) 'gaussienne) (exp (* (- x (cadr form)) (- (cadr form) x))))
+	  ))
+
+
+(de abcisse-list (courbe)
+    (prog (h l (v 0) ll)
+	  (setq h (get-slot-value courbe 'body))
+	  (setq l (get-slot-value courbe 'pointeur-max))
+	  loop
+	  (when (> v l) (return ll))
+	  (setq ll (cons (car (vref h (- l v))) ll))
+	  (setq v (1+ v))
+	  (go loop)))
+
+(de vector-makelist (vector)
+    (let (x)
+      (mapvector '(lambda (y) (setq x (append x (list y))))
+                 vector)
+      x))
+
+
+
+
+(de synthetize-butterworth ( wup wlist n)
+					;wdown limite down
+					;wup limite up
+					;wlist liste des abcisse a generer
+					;n ordre du filtre
+    (prog (c h l wl)
+	  (setq c ($ 'courbe-2d 'instanciate nil nil))
+	  (setq l (length wlist))
+	  (setq h (makevector l ()))
+	  (setq v 0)
+	  (setq wl wlist)
+	  loop
+	  (when (>= v l) (go fin))
+	  (setf (vref h  v) (list (car wl ) (list (synthetize-butterworth-1 (car wl) wup n)  0.)))
+	  (setq v (1+ v))
+	  (setq wl (cdr wl))
+	  (go loop)
+	  fin
+	  (setf (get-slot-value c 'body) h)
+	  (setf (get-slot-value c 'pointeur) 0)
+	  (setf (get-slot-value c 'pointeur-max) (1- l))
+	  (setf (get-slot-value c 'transformation) 'butterworth)
+	  (setf (get-slot-value c 'xtype) 'real)
+	  (setf (get-slot-value c 'ytype) 'complex)
+	  (return c)))
+
+
+
+(de synthetize-butterworth-1 (w wc n)
+					;calcule 1/(1+(w/wc)^2n)^1/2
+    (/ 1 (sqrt (1+ (power (/ w wc) (* 2 n))))))
+
+
+
+
+
+(user-instanciate 'metaclass 'formule  nil)
+(add-slot-user 'formule 'indice-name 'instance)
+(add-slot-user 'formule 'long-name 'instance)
+(add-slot-user 'formule 'argument-list 'instance)
+(add-slot-user 'formule 'body 'instance)
+(add-slot-user 'formule 'compiled-body 'instance)
+(add-slot-user 'formule 'access-function-list 'instance)
+(add-method 'formule 'formule-evaluate 'evaluate 'superseed)
+;l argument-list comporte une liste de couple (var type object)
+;ou var est le nom sous-lequel l object passe en argument de type type
+;sera manipule dans access-function-list les object <object> seront donne ou non
+;a la formule lors de l'evaluation
+;
+;dans access-function-list se trouvera une liste de doublet
+;de la forme (<nom-var> <fonction1> <fomction2> .. <fonctionN>)
+; ou <nom-var> sera un symbole
+;utilise dans body dont le calcul se fait en appellant <fonction1> sur les
+;arguments presents , si les argument necessaires sont non-present , on
+;essaye <fonction2> et ainsi de suite
+;lors de l evaluation on transmet comme argument la formule (evidement)
+;et la ou les courbes pointe ou non ainsi que les objects liees au circonstances
+;ex : ($ formule 'evaluate '((c courbe-etudiee) (d circonstances)))
+; ou cours-du-jours et circonstances sont des entrees particulieres de 
+;argument-list (la partie var de (var type object))
+; compiled-body contiendra une fonction funcallable sur la liste des arguments
+; fournie dans argument-list
+
+
+(de add-formule (indice-name argument-list body access-function-list long-name)
+    (prog (f compiled-body)
+	  (setq f ($ 'formule 'instanciate nil nil))
+	  ($ f 'put-value 'indice-name indice-name)
+	  ($ f 'put-value 'argument-list argument-list)
+	  ($ f 'put-value 'body body)
+	  ($ f 'put-value 'access-function-list access-function-list)
+	  ($ f 'put-value 'long-name long-name)
+	  (setq compiled-body (compile-formule body f))
+	  ($ f 'put-value 'compiled-body compiled-body)
+	  (return f)))
+
+
+(de formule-evaluate (formule arg-list)
+    (prog (arguments)
+	  (setq arguments (mapcar '(lambda (x) 
+				     (cadr (assoc (car x) arg-list)))
+                                  (get-slot-value formule 'argument-list)))
+	  (return (apply (get-slot-value formule 'compiled-body) arguments))))
+
+
+
+(de compile-formule (body formule)
+    (prog ()
+	  `(lambda ,(first-list (get-slot-value formule 'argument-list))
+	     (prog ,(first-list (get-slot-value formule 'access-function-list))
+		   (mapc '(lambda (*x*)	;pour toute les variables intermediaires
+			    (any '(lambda (*y*)	; pour toutes les manieres d'obtenir les variables interm.
+				    (when (every '(lambda (*z*) (eval *z*))
+					   (cadr *y*))
+					  (set (car *x*)  (eval (caddr *y*)))
+					  t))
+				 (cdr *x*)))		      
+			 (get-slot-value formule 'access-function-list))
+		   (return  ,body)))))
+
+
+                                             ;EXTREMUMS LOCAUX
+
+(user-instanciate 'metaclass 'extremum-local  nil)
+
+(add-slot-user 'extremum-local 'courbe 'instance)
+(add-slot-user 'extremum-local 'rang 'instance)
+(add-slot-user 'extremum-local 'hauteur 'instance)
+(add-slot-user 'extremum-local 'rang-gauche 'instance)
+(add-slot-user 'extremum-local 'hauteur-gauche 'instance)
+(add-slot-user 'extremum-local 'rang-droit 'instance)
+(add-slot-user 'extremum-local 'hauteur-droit 'instance)
+(add-slot-user 'extremum-local 'extremum-gauche 'instance)
+(add-slot-user 'extremum-local 'extremum-droit 'instance)
+(add-slot-user 'extremum-local 'liste-de-droites-techniques 'instance)
+(add-slot-user 'extremum-local 'extremum-niveau-2 'instance)
+(add-slot-user 'extremum-local 'extremum-droit-niveau-2 'instance)
+(add-slot-user 'extremum-local 'extremum-gauche-niveau-2 'instance)
+(add-slot-user 'extremum-local 'extremum-niveau-3 'instance)
+(add-slot-user 'extremum-local 'extremum-droit-niveau-3 'instance)
+(add-slot-user 'extremum-local 'extremum-gauche-niveau-3 'instance)
+(add-slot-user 'extremum-local 'extremum-niveau-4 'instance)
+(add-slot-user 'extremum-local 'extremum-droit-niveau-4 'instance)
+(add-slot-user 'extremum-local 'extremum-gauche-niveau-4 'instance)
+;(add-slot-user 'extremum-local 'extremum-niveau-5 'instance)
+;(add-slot-user 'extremum-local 'extremum-droit-niveau-5 'instance)
+;(add-slot-user 'extremum-local 'extremum-gauche-niveau-5 'instance)
+
+;(add-attribute-user 'extremum-local 'xmoyen 'module-spectre-extremum-xmoyen 'instance)
+;(add-attribute-user 'extremum-local 'surface 'module-spectre-extremum-surface 'instance)
+;(add-attribute-user 'extremum-local 'sigma 'module-spectre-extremum-sigma 'instance)
+
+(add-slot-user 'extremum-local 'sharpness 'instance)
+
+
+(user-instanciate 'metaclass 'maximum-local '(extremum-local))
+
+
+(user-instanciate 'metaclass 'minimum-local  '(extremum-local))
+
+
+(user-instanciate 'metaclass 'pseudo-extremum  nil)
+(add-slot-user 'pseudo-extremum 'courbe 'instance)
+(add-slot-user 'pseudo-extremum 'rang 'instance)
+(add-slot-user 'pseudo-extremum 'hauteur 'instance)
+(add-attribute-user 'pseudo-extremum 'convexite 'pseudo-extremum-calcule-convexite 'instance)
+
+(de pseudo-extremum-calcule-convexite (pseudo slot)
+    (prog((h (get-fondamental-value (get-fondamental-value pseudo 'courbe) 'body)) r1 (r (get-fondamental-value pseudo 'rang)) r2 
+          (l (get-fondamental-value  (get-fondamental-value pseudo 'courbe) 'pointeur-max)) x1 x x2 y1 y y2 a1 a2)
+         (setq r1 (1- r))
+         (setq r2 (1+ r))
+         (cond ((> r2 l) (return 'haute))
+               ((< r1 0) (return 'haute)))
+         (setq x1 (car (vref h r1)))
+         (setq x (car (vref h r)))
+         (setq x2 (car (vref h r2)))
+         (setq y1 (cadr (vref h r1)))
+         (setq y (cadr (vref h r)))
+         (setq y2 (cadr (vref h r2)))
+         (setq a1 (/ (- y y1) (- x x1)))
+         (setq a2 (/ (- y y2) (- x x2)))
+         (cond ((>= a1 a2) (return 'haute))
+               (t (return 'basse)))))
+         
+               
+                                              
+
+
+(de module-spectre-extremum-xmoyen (extremum slot)
+    (prog(courbe)
+	 (setq courbe (get-slot-value extremum 'courbe))
+	 (return ($ courbe  'integrale-r-mesuree 
+		    (get-slot-value courbe 'rang-gauche)
+		    (get-slot-value courbe 'rang-droit)
+		    '(lambda (x fx) (* x fx))))))
+
+(de module-spectre-extremum-surface (extremum slot)
+    (prog(courbe)
+	 (setq courbe (get-slot-value extremum 'courbe))
+	 (return ($ courbe  'integrale-r-mesuree 
+		    (get-slot-value courbe 'rang-gauche)
+		    (get-slot-value courbe 'rang-droit)
+		    '(lambda (x fx) fx)))))
+
+
+(de module-spectre-extremum-sigma   (extremum slot)
+    (prog(courbe xmoyen)
+	 (setq xmoyen (user-get-value extremum 'xmoyen))
+	 (setq courbe (get-slot-value extremum 'courbe))
+	 (return ($ courbe  'integrale-r-mesuree 
+		    (get-slot-value courbe 'rang-gauche)
+		    (get-slot-value courbe 'rang-droit)
+		    '(lambda (x fx) (* fx (- x xmoyen) (- x xmoyen)))
+		    ))))
+
+
+(de courbe-2d-expand-convert-time (courbe)
+    (prog (l)
+	  (cond((eq (get-slot-value courbe 'xtype) 'real) courbe)
+	       ((eq (get-slot-value courbe 'xtype) 'date)
+		(setq l (mapcan '(lambda (x) (cond((and (eq (get-slot-value x 'courbe-origine) courbe)
+							(eq (get-slot-value x 'transformation) 'convert-time))
+						   (list x))
+						  (t nil)))
+				(get-all-instances 'courbe-2d)))
+		(cond ((null l) ($ courbe 'convert-time))
+		      (t (car l))))
+	       (t (return nil)))))
+
+(de courbe-2d-expand-extremum-local (courbe  mode bornes)
+					; mode peut valoir courbe , objects ,courbe-and-objects
+					; pour l'instant bornes n est pas utilise
+
+    (prog (h l v v1down v1up point-extremum-list precedent-extremum extremum c1 c2 h1 h2)
+	  (setq h (get-slot-value courbe 'body) )
+	  (setq l (get-slot-value courbe 'pointeur-max))
+	  (setq extremun-list nil)
+	  (setq v 0)
+	  (when (> (cadr (vref h 0 )) (cadr (vref h 1))) (setq v1up 0) (go go-down))
+	  (setq v1down 0)
+	  go-up
+
+	  (when (>= v l)
+		(when  (and v1up v1down)
+		       (when (member mode '(objects courbe-and-objects))
+			     (setq precedent-extremum extremum)
+			     (setq extremum (expand-method-create-minimum v1up v1down l courbe h))
+			     (when precedent-extremum
+				   (setf (get-slot-value precedent-extremum 'extremum-droit) extremum)
+				   (setf (get-slot-value extremum 'extremum-gauche) precedent-extremum)))
+		       (setq point-extremum-list (cons (vref h v1down) point-extremum-list)))
+		       
+		(go fin))
+	  (when (<= (cadr (vref h v)) (cadr (vref h (1+ v)))) (setq v (1+ v)) (go go-up))
+					; atteinte d un maximum
+	  (when v1up 
+		(when (member mode '(objects courbe-and-objects))
+		      (setq precedent-extremum extremum)
+		      (setq extremum (expand-method-create-minimum v1up v1down v courbe h))
+		      (when precedent-extremum
+			    (setf (get-slot-value precedent-extremum 'extremum-droit) extremum)
+			    (setf (get-slot-value extremum 'extremum-gauche) precedent-extremum)))
+		(setq point-extremum-list (cons (vref h v1down) point-extremum-list)))
+	  (setq v1up v)
+	  (setq v (1+ v))
+	  go-down
+
+	  (when (>= v l)
+		(when  (and v1up v1down)
+		       (when (member mode '(objects courbe-and-objects))
+			     (setq precedent-extremum extremum)
+			     (setq extremum (expand-method-create-maximum v1down v1up l courbe h))
+			     (when precedent-extremum
+				   (setf (get-slot-value precedent-extremum 'extremum-droit) extremum)
+				   (setf (get-slot-value extremum 'extremum-gauche) precedent-extremum)))
+		       (setq point-extremum-list (cons (vref h v1up) point-extremum-list)))
+		(go fin))
+	  (when (>= (cadr (vref h v)) (cadr (vref h (1+ v)))) (setq v (1+ v)) (go go-down))
+					; atteinte d un minimum
+	  (when v1down 
+		(when (member mode '(objects courbe-and-objects))
+		      (setq precedent-extremum extremum)
+		      (setq extremum (expand-method-create-maximum v1down v1up v courbe h))
+		      (when precedent-extremum
+			    (setf (get-slot-value precedent-extremum 'extremum-droit) extremum)
+			    (setf (get-slot-value extremum 'extremum-gauche) precedent-extremum)))
+		(setq point-extremum-list (cons (vref h v1up) point-extremum-list)))
+	  (setq v1down v)
+	  (setq v (1+ v))
+	  (go go-up)
+	  fin
+	  (when (eq mode 'objects) (return nil))
+	  (setq h1 (make-vector-from-list point-extremum-list))
+	  (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+	  (setf (get-slot-value c1 'body ) h1)
+	  (setf (get-slot-value c1 'pointeur ) 0)
+	  (setf (get-slot-value c1 'pointeur-max)  (1- (vlength h1)))
+	  (setf (get-slot-value c1 'xtype) (get-slot-value courbe 'xtype))
+	  (setf (get-slot-value c1 'ytype) 'real)
+	  (setf (get-slot-value courbe 'courbe-des-extremums) c1)
+	  (setf (get-slot-value c1 'courbe-origine ) courbe)
+	  (setf (get-slot-value c1 'transformation) 'extremums)
+	  (return c1)
+	  ))
+
+   
+(de courbe-2d-expand-maximum-local (courbe  mode bornes)
+					; mode peut valoir courbe , objects ,courbe-and-objects
+					; pour l'instant bornes n est pas utilise
+
+    (prog (h l v v1down  v1up  maximum-list  c1  h1  )
+	  (setq h (get-slot-value courbe 'body) )
+	  (setq l (get-slot-value courbe 'pointeur-max))
+	  (setq v 0)
+	  (when (> (cadr (vref h 0 )) (cadr (vref h 1))) (setq v1up 0) (go go-down))
+	  (setq v1down 0)
+	  go-up
+	  (when (>= v l)
+		
+		(go fin))
+	  (when (<= (cadr (vref h v)) (cadr  (vref h (1+ v)))) (setq v (1+ v)) (go go-up))
+					; atteinte d un maximum
+	  
+	  (setq v1up v)
+	  (setq v (1+ v))
+	  go-down
+	  (when (>= v l)
+		(when  (and v1up v1down)
+		       (when (member mode '(objects courbe-and-objects))
+			     (expand-method-create-maximum v1down v1up l courbe h))
+		       (setq maximum-list (cons (vref h v1up) maximum-list)))
+		(go fin))
+	  (when (>= (cadr (vref h v)) (cadr (vref h (1+ v)))) (setq v (1+ v)) (go go-down))
+					; atteinte d un minimum
+	  (when v1down 
+		(when (member mode '(objects courbe-and-objects))
+		      (expand-method-create-maximum v1down v1up v courbe h ))
+		(setq maximum-list (cons (vref h v1up) maximum-list)))
+	  (setq v1down v)
+	  (setq v (1+ v))
+	  (go go-up)
+	  fin
+	  (when (eq mode 'objects) (return nil))
+	  (setq h1 (make-vector-from-list maximum-list))
+	  (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+	  (setf (get-slot-value c1 'body ) h1)
+	  (setf (get-slot-value c1 'pointeur ) 0)
+	  (setf (get-slot-value c1 'pointeur-max)  (1- (vlength h1)))
+	  (setf (get-slot-value c1 'xtype) (get-slot-value courbe 'xtype))
+	  (setf (get-slot-value c1 'ytype) 'real)
+	  (setf (get-slot-value courbe 'courbe-des-max) c1)
+	  (setf (get-slot-value c1 'courbe-origine ) courbe)
+	  (setf (get-slot-value c1 'transformation) 'maximums) 
+	  (return c1)))
+
+
+(de courbe-2d-expand-minimum-local (courbe  mode bornes)
+					; mode peut valoir courbe , objects ,courbe-and-objects
+					; pour l'instant bornes n est pas utilise
+
+    (prog (h l v v1down v1up  minimum-list  c2  h2 )
+	  (setq h (get-slot-value courbe 'body) )
+	  (setq l (get-slot-value courbe 'pointeur-max))
+	  (setq v 0)
+	  (when (> (cadr (vref h 0 )) (cadr (vref h 1))) (setq v1up 0) (go go-down))
+	  (setq v1down 0)
+	  go-up
+	  (when (>= v l)
+		(when  (and v1up v1down)
+		       (when (member mode '(objects courbe-and-objects))
+			     (expand-method-create-minimum v1up v1down l courbe h))
+		       (setq minimum-list (cons (vref h v1down) minimum-list)))
+		(go fin))
+	  (when (<= (cadr (vref h v)) (cadr (vref h (1+ v)))) (setq v (1+ v)) (go go-up))
+					; atteinte d un maximum
+	  (when v1up 
+		(when (member mode '(objects courbe-and-objects))
+		      (expand-method-create-minimum v1up v1down v courbe h))
+		(setq minimum-list (cons (vref h v1down) minimum-list)))
+	  (setq v1up v)
+	  (setq v (1+ v))
+	  go-down
+	  (when (>= v l)
+		(go fin))
+	  (when (>= (cadr (vref h v)) (cadr (vref h (1+ v)))) (setq v (1+ v)) (go go-down))
+					; atteinte d un minimum
+	  
+	  (setq v1down v)
+	  (setq v (1+ v))
+	  (go go-up)
+	  fin
+	  (when (eq mode 'objects) (return nil))
+	  (setq h2 (make-vector-from-list minimum-list))
+	  (setq c2 ($ 'courbe-2d 'instanciate nil nil))
+	  (setf (get-slot-value c2 'body ) h2)
+	  (setf (get-slot-value c2 'pointeur ) 0)
+	  (setf (get-slot-value c2 'pointeur-max)  (1- (vlength h2)))
+	  (setf (get-slot-value c2 'xtype) (get-slot-value courbe 'xtype))
+	  (setf (get-slot-value c2 'ytype) 'real)
+	  (setf (get-slot-value courbe 'courbe-des-min) c2)
+	  (setf (get-slot-value c2 'courbe-origine ) courbe)
+	  (setf (get-slot-value c2 'transformation) 'minimums)
+	  (return c2)
+	  ))
+
+(de expand-method-create-maximum (v1down v1up v2down courbe h)
+    (prog (max)
+
+	  (setq max ($ 'maximum-local 'instanciate nil nil))
+	  (setf (get-slot-value max 'courbe) courbe)
+	  (setf (get-slot-value max 'rang) v1up)
+	  (setf (get-slot-value max 'hauteur) (vref h v1up))
+	  (setf (get-slot-value max 'rang-gauche) v1down)
+	  (setf (get-slot-value max 'hauteur-gauche) (vref h v1down))
+	  (setf (get-slot-value max 'rang-droit) v2down)
+	  (setf (get-slot-value max 'hauteur-droit) (vref h v2down))
+	  (return max)))
+
+(de expand-method-create-minimum (v1up v1down v2up courbe h)
+	    (prog (max)
+
+		  (setq min ($ 'minimum-local 'instanciate nil nil))
+		  (setf (get-slot-value min 'courbe) courbe)
+		  (setf (get-slot-value min 'rang) v1down)
+		  (setf (get-slot-value min 'hauteur) (vref h v1down))
+		  (setf (get-slot-value min 'rang-gauche) v1up)
+		  (setf (get-slot-value min 'hauteur-gauche) (vref h v1up))
+		  (setf (get-slot-value min 'rang-droit) v2up)
+		  (setf (get-slot-value min 'hauteur-droit) (vref h v2up))
+		  (return min)))
+
+(add-method 'courbe-2d 'courbe-2d-save 'save 'superseed)
+(de courbe-2d-save (courbe)
+    (complete-courbe-2d-save courbe courbe  "/usr/jupiter/olivier/expert/tmp"))
+
+					;TEST ET FONCTIONS DIVERSES
+
+
+
+(de bpp11 () 
+    (setq e (add-formule 'obv
+			 '((courbe-etudiee courbe-2d) (contexte situation))
+			 '(/ cours-du-jours volume-du-jours)
+			 '((cours-du-jours (lambda ( courbe-etudiee) (car ($ courbe-etudiee 'get))) (lambda () 0))
+			   (volume-du-jours (lambda ( courbe-etudiee) (cadr ($ courbe-etudiee  'get))) (lambda () 1)))
+			 nil)))
+
+ (de bb ()
+    
+     (bpp11)
+     )

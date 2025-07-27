@@ -1,0 +1,174 @@
+; liste des objects concernes par l interface utilisateur du systeme
+
+(user-instanciate 'metaclass 'interface nil)
+(add-slot-user 'interface 'nom 'instance)
+(add-slot-user 'interface 'nombre-de-selectionneurs 'instance)
+(add-slot-user 'interface 'selectionneur-1 'instance)
+(add-slot-user 'interface 'titre-du-selectionneur-1 'instance)
+(add-slot-user 'interface 'liste-de-choix-du-selectionneur-1 'instance)
+(add-slot-user 'interface 'item-choisi-du-selectionneur-1 'instance)
+(add-slot-user 'interface 'selectionneur-2 'instance)
+(add-slot-user 'interface 'titre-du-selectionneur-2 'instance)
+(add-slot-user 'interface 'liste-de-choix-du-selectionneur-2 'instance)
+(add-slot-user 'interface 'item-choisi-du-selectionneur-2 'instance)
+(add-slot-user 'interface 'selectionneur-3 'instance)
+(add-slot-user 'interface 'titre-du-selectionneur-3 'instance)
+(add-slot-user 'interface 'liste-de-choix-du-selectionneur-3 'instance)
+(add-slot-user 'interface 'item-choisi-du-selectionneur-3 'instance)
+(add-slot-user 'interface 'selectionneur-4 'instance)
+(add-slot-user 'interface 'titre-du-selectionneur-4 'instance)
+(add-slot-user 'interface 'liste-de-choix-du-selectionneur-4 'instance)
+(add-slot-user 'interface 'item-choisi-du-selectionneur-4 'instance)
+(add-slot-user 'interface 'selectionneur-5 'instance)
+(add-slot-user 'interface 'titre-du-selectionneur-5 'instance)
+(add-slot-user 'interface 'liste-de-choix-du-selectionneur-5 'instance)
+(add-slot-user 'interface 'item-choisi-du-selectionneur-5 'instance)
+(add-slot-user 'interface 'fonction-d-execution-des-commandes 'instance) ;est forcement une fonction (interface)
+
+(add-slot-user 'interface 'liste-des-choix-associes 'instance)
+(add-slot-user 'interface 'symbole-choisi 'instance)
+(add-slot-user 'interface 'application-aida 'instance)
+
+(add-method 'interface 'interface-activation 'activation 'superseed)
+(add-method 'interface 'interface-execute-commande 'execute-commande 'superseed)
+
+
+(de interface-activation (interface)
+    (let ((exit-boutton (standardbutton " exit "))
+          
+          appli
+          selectionneur-1
+          selectionneur-2
+          selectionneur-3
+          selectionneur-4
+          selectionneur-5
+          )
+      (set-action exit-boutton
+                    '(lambda (fin)
+                     (remove-application (component 'appli fin))
+                     (end)))
+ 
+      (setq appli (mixed-applicationq
+                   image 
+                   (:fond-gris
+                    (margin-view
+                     (column 
+                      (boxedimage 0 0 200 95 (string (get-slot-value interface 'nom)))
+                      exit-boutton)
+                     10))
+                   name 'appli
+                   exit-boutton exit-boutton
+                   selectionneur-1 selectionneur-1
+                   selectionneur-2 selectionneur-2
+                   selectionneur-3 selectionneur-3
+                   selectionneur-4 selectionneur-4
+                   selectionneur-5 selectionneur-5
+                   ))
+      (setf (get-slot-value interface 'application-aida) appli)
+      (add-application appli)
+      (when (>= (get-slot-value interface 'nombre-de-selectionneurs) 1)
+            (setq selectionneur-1 (forme-selectionneur 210
+                                                       1
+                                                       (get-slot-value interface 'titre-du-selectionneur-1)
+                                                       (get-slot-value interface  'liste-de-choix-du-selectionneur-1)))
+            (setf (get-slot-value interface 'selectionneur-1) selectionneur-1)
+            (add-component appli 'selectionneur-1 selectionneur-1)
+            (add-application selectionneur-1)
+
+            )))
+      
+      
+
+(de forme-selectionneur (place rang titre liste-de-choix)
+    (let ((selector (stringselector ()))
+          scroller
+          appli)
+      (set-action selector 'select-selectionneur)
+      (setq scroller   (verticalscroller 0 0 130 100 selector))
+   
+      (send 'set-strings selector (mapcar 'string liste-de-choix))
+      (setq appli (translation place 0 (mixed-applicationq
+                                         image
+                                      
+                                         scroller
+                                        
+                                         name 'appli
+                                         interface interface
+                                         rang rang
+                                         scroller scroller
+                                         selector selector
+                                         )))
+      
+      appli))
+                     
+
+(de select-selectionneur (selector)
+    (let ((rang (component 'rang selector))
+          (interface (component 'interface selector))
+          (symbol-selecte (:symbol-selection selector))
+          selectionneur-suivant appli nom-slot-du-selectionneur-suivant)
+      (print (send 'get-selected-string selector) "  selectionne !")
+      (setq appli (get-slot-value interface 'application-aida))
+      (setq nom-slot-du-selectionneur-suivant   (cond ((eq rang 1) 'selectionneur-2)
+                                                      ((eq rang 2) 'selectionneur-3)
+                                                      ((eq rang 3) 'selectionneur-4)
+                                                      ((eq rang 4) 'selectionneur-5)))
+      (setf (get-slot-value interface (cond((eq rang 1) 'item-choisi-du-selectionneur-1)
+                                           ((eq rang 2) 'item-choisi-du-selectionneur-2)
+                                           ((eq rang 3) 'item-choisi-du-selectionneur-3)
+                                           ((eq rang 4) 'item-choisi-du-selectionneur-4)
+                                           ((eq rang 5) 'item-choisi-du-selectionneur-5)))
+            symbol-selecte)
+      (cond ((eq (get-slot-value interface 'nombre-de-selectionneurs) rang)
+             ($ interface 'execute-commande))
+            ((>= rang 5) nil)
+            (t (setq selectionneur-suivant (forme-selectionneur (+ 210 (*  rang 137))
+                                                                (+ rang 1)
+                                                                (get-slot-value interface 
+                                                                                (cond ((eq rang 1)  'titre-du-selectionneur-2)
+                                                                                      ((eq rang 2)  'titre-du-selectionneur-3)
+                                                                                      ((eq rang 3)  'titre-du-selectionneur-4)
+                                                                                      ((eq rang 4)  'titre-du-selectionneur-5)
+                                                                                      ))
+                                                                (get-slot-value interface 
+                                                                                (cond ((eq rang 1)  
+                                                                                       'liste-de-choix-du-selectionneur-2)
+                                                                                      ((eq rang 2)  
+                                                                                       'liste-de-choix-du-selectionneur-3)
+                                                                                      ((eq rang 3)  
+                                                                                       'liste-de-choix-du-selectionneur-4)
+                                                                                      ((eq rang 4)  
+                                                                                       'liste-de-choix-du-selectionneur-5)
+                                                                                      ))))
+               (when  (get-slot-value interface nom-slot-du-selectionneur-suivant)
+                      (remove-application (remove-application  (get-slot-value interface nom-slot-du-selectionneur-suivant))))
+
+               (setf (get-slot-value interface nom-slot-du-selectionneur-suivant) selectionneur-suivant)              
+               (add-component appli nom-slot-du-selectionneur-suivant
+                              selectionneur-suivant)
+               (add-application selectionneur-suivant)
+            ))))
+               
+(de interface-execute-commande (interface)
+    (apply (get-slot-value interface 'fonction-d-execution-des-commandes) (list interface)))
+
+(de execute-un-cas (nom-titre) 
+    ($ 'object-de-base 'reinitialise ())
+    (setq *already-studied-h-valeur* nil)
+    (setq *already-studied-q-valeur* nil)
+    (setq *files-of-data-charged-?* nil)
+    (setq *contens-of-files-of-data* nil)
+    (setq *where-to-answer* (catenate "/usr/jupiter/olivier/expert/base-de-donnees/" nom-titre "-q" ".answer"))
+    ($ 'load 'cours-quotidien (list (catenate nom-titre)))
+    ($ 'expertise-en-meta 'analyse-cours-de-fermeture (list (catenate nom-titre "-q")))
+    (print nom-titre " quotidien execute")
+    ($ 'object-de-base 'reinitialise ())
+    (setq *already-studied-h-valeur* nil)
+    (setq *already-studied-q-valeur* nil)
+    (setq *files-of-data-charged-?* nil)
+    (setq *contens-of-files-of-data* nil)
+    (setq *where-to-answer* (catenate "/usr/jupiter/olivier/expert/base-de-donnees/" nom-titre "-h" ".answer"))
+    ($ 'load 'cours-hebdomadaire (list (catenate nom-titre)))
+    ($ 'expertise-en-meta 'analyse-cours-de-fermeture (list (catenate nom-titre "-h")))
+    (print nom-titre " hebdomadaire execute")
+    )
