@@ -1,0 +1,7 @@
+laser|lp|laserwriter:\
+	:br#9600:rw:fc#0000374:fs#0000003:xc#0:xs#0040040:mx#0:\
+	:lp=/dev/ttyb:sd=/usr/spool/laser:pl#66:pw#89:\
+	:lf=/dev/console:\
+	:of=/usr/lib/tex/bin/applef:\
+	:vf=/usr/lib/tex/bin/nofilter:\
+	:df=/usr/lib/tex/bin/dvipsf:
