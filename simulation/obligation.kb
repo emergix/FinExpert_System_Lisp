@@ -1,0 +1,636 @@
+;fichier des objects et fonctions relatif aux obligation emetteurs
+(add-knowledge-base 'obligation-kb
+                    'object-de-base
+                    '(emetteur expert-en-rating expert-en-rating-01 expert-en-rating-02 expert-en-rating-03
+                               expert-en-rating-04 expert-en-rating-05 expert-en-rating-06 expert-en-rating-07
+                               expert-en-rating-08 expert-en-rating-09 expert-en-rating-10
+                               obligation-normale obligation-a-taux-fixe obligation-convertible)
+                    nil)
+
+
+;**********************************************************************************
+;                                  EMETTEUR
+;**********************************************************************************
+
+(user-instanciate 'metaclass 'emetteur '())
+
+(add-slot-user 'emetteur 'nom 'instance)
+
+(add-slot-user 'emetteur 'monnaie-d-emission 'instance)
+(add-slot-user 'emetteur 'emissions-possibles 'instance)
+(add-slot-user 'emetteur 'differentiel-de-taux-du-a-la-signature 'instance)
+(add-slot-user 'emetteur 'montant-initialement-requis 'instance)
+(add-slot-user 'emetteur 'duree-initialement-requise 'instance)
+
+(add-write-after-demon 'emetteur 'monnaie-d-emission 
+                       'monnaie-normalisation-a-l-entree
+                       'merge-after)
+                                      
+(set-determination-slot 'emetteur
+                        '(nom emissions-possibles differentiel-de-taux-du-a-la-signature monnaie-d-emission 
+                             montant-initialement-requis duree-initialement-requise))
+(setf (get-slot-facet-value 'emetteur 'nom 'question-to-ask) "quelle est le nom de l emetteur ?   :")
+(setf (get-slot-facet-value 'emetteur 'differentiel-de-taux-du-a-la-signature 'determination-means) '(expert-en-rating)) 
+(setf (get-slot-facet-value 'emetteur 'differentiel-de-taux-du-a-la-signature 'question-to-ask)
+      "quelle est le delta de taux applicable au cas ?   :")
+(setf (get-slot-facet-value 'emetteur 'monnaie-d-emission 'question-to-ask)
+      "quelle est la monnaie d emission applicable au cas ?   :")
+(setf (get-slot-facet-value 'emetteur 'montant-initialement-requis 'question-to-ask)
+      "quelle est le montant auquel on pense a priori (en millions) ?   :")
+(setf (get-slot-facet-value 'emetteur 'duree-initialement-requise 'question-to-ask)
+      "quelle est la duree auquelle on pense a priori (en annee) ?   :")
+
+
+
+(add-backward-chainer 'expert-en-rating nil)
+
+(add-slot-user 'emetteur 'rating 'instance)
+(set-determination-slot 'emetteur '(rating))
+(setf (get-slot-facet-value 'emetteur 'rating 'means)
+      '(expert-en-rating))
+(setf (get-slot-facet-value 'emetteur 'rating 'question-to-ask) 
+      "quelle est la quotation de l emetteur :")
+(setf (get-slot-facet-value 'emetteur 'rating 'value-list) 
+      '(aaa aa a bbb bb b ccc cc c))
+(setf (get-slot-facet-value 'emetteur 'rating 'determination-predicat)
+      'check-value-list-determination-predicat)
+
+(add-backward-rule
+ 'expert-en-rating-01
+ 'expert-en-rating
+ '(eq rating{e} 'aaa)
+ '0.75
+ '(differentiel-de-taux-du-a-la-signature{e} emetteur)
+ "differentiel de taux du a la signature :cas aaa")
+
+(add-backward-rule
+ 'expert-en-rating-02
+ 'expert-en-rating
+ '(eq rating{e} 'aa)
+ '1.0
+ '(differentiel-de-taux-du-a-la-signature{e} emetteur)
+ "differentiel de taux du a la signature :cas aa")
+
+(add-backward-rule
+ 'expert-en-rating-03
+ 'expert-en-rating
+ '(eq rating{e} 'a)
+ '1.5
+ '(differentiel-de-taux-du-a-la-signature{e} emetteur)
+ "differentiel de taux du a la signature :cas a")
+
+(add-backward-rule
+ 'expert-en-rating-04
+ 'expert-en-rating
+ '(eq rating{e} 'bbb)
+ '2.0
+ '(differentiel-de-taux-du-a-la-signature{e} emetteur)
+ "differentiel de taux du a la signature :cas bbb")
+
+
+(add-backward-rule
+ 'expert-en-rating-05
+ 'expert-en-rating
+ '(eq rating{e} 'bb)
+ '2.0
+ '(differentiel-de-taux-du-a-la-signature{e} emetteur)
+ "differentiel de taux du a la signature :cas bb")
+
+(add-backward-rule
+ 'expert-en-rating-06
+ 'expert-en-rating
+ '(eq rating{e} 'b)
+ '2.5
+ '(differentiel-de-taux-du-a-la-signature{e} emetteur)
+ "differentiel de taux du a la signature :cas b")
+
+(add-backward-rule
+ 'expert-en-rating-07
+ 'expert-en-rating
+ '(eq rating{e} 'ccc)
+ '3.0
+ '(differentiel-de-taux-du-a-la-signature{e} emetteur)
+ "differentiel de taux du a la signature :cas ccc")
+
+
+(add-backward-rule
+ 'expert-en-rating-08
+ 'expert-en-rating
+ '(eq rating{e} 'cc)
+ '3.5
+ '(differentiel-de-taux-du-a-la-signature{e} emetteur)
+ "differentiel de taux du a la signature :cas cc")
+
+
+(add-backward-rule
+ 'expert-en-rating-09
+ 'expert-en-rating
+ '(eq rating{e} 'c)
+ '4.0
+ '(differentiel-de-taux-du-a-la-signature{e} emetteur)
+ "differentiel de taux du a la signature :cas c")
+
+
+(add-backward-rule
+ 'expert-en-rating-10
+ 'expert-en-rating
+ '(eq (get-slot-value e 'nom) 'andree)
+ '1.0
+ '(differentiel-de-taux-du-a-la-signature{e} emetteur)
+ "differentiel de taux du a la signature :cas d andree")
+
+
+
+
+
+;************************************************************************************
+                                     ;OBLIGATION NORMALE
+;***********************************************************************************
+
+(user-instanciate 'metaclass 'obligation-normale '(instrument-financier))
+
+(add-slot-user 'obligation-normale 'emetteur 'instance)
+(add-slot-user 'obligation-normale 'prix-de-marche 'instance)
+(add-slot-user 'obligation-normale 'fonction-de-dividendes 'instance)
+(add-slot-user 'obligation-normale 'nominal 'instance)
+(add-slot-user 'obligation-normale 'prix-d-emission 'instance)
+(add-slot-user 'obligation-normale 'monnaie 'instance)
+(add-slot-user 'obligation-normale 'liste-des-dates-de-versement-de-l-interet  'instance)
+(add-slot-user 'obligation-normale 'date-de-remboursement 'instance)
+(add-slot-user 'obligation-normale 'prix-de-remboursement 'instance)
+
+
+(add-write-after-demon 'obligation-normale 'monnaie  'monnaie-normalisation-a-l-entree   'merge-after)
+
+(add-attribute-user 'obligation-normale 'duration 'obligation-normale-duration 'instance)
+(add-attribute-user 'obligation-normale 'obligation-normale-taux-utilisable 'taux-utilisable 'instance)
+
+(set-determination-slot 'obligation-normale '(emetteur prix-de-marche fonction-de-dividendes 
+                                                                  liste-des-dates-de-versement-de-l-interet
+                                                                  nominal prix-d-emission
+                                                                  prix-d-emission monnaie))
+(setf (get-slot-facet-value 'obligation-normale 'emetteur 'question-to-ask) "quelle est l'emetteur preconise ? :")
+(add-write-after-demon 'obligation-normale 'emetteur 
+                       '(lambda (object slot)
+                          (cond ((not (is-a (get-slot-value object slot) 'emetteur))
+                                 (setq e (user-instanciate 'emetteur (get-slot-value object slot) nil)))))
+                       'merge-after)
+
+(setf (get-slot-facet-value 'obligation-normale 'prix-de-marche 'question-to-ask) "quelle est le prix de marche  ? :")
+(setf (get-slot-facet-value 'obligation-normale 'fonction-de-dividendes 'question-to-ask)
+      "quelle est la fonction de dividendes preconise ? :")
+(setf (get-slot-facet-value 'obligation-normale 'liste-des-dates-de-versement-de-l-interet 'question-to-ask)
+      "quelle est la liste de date de dividendes preconisee preconise ? :")
+(setf (get-slot-facet-value 'obligation-normale 'nominal 'question-to-ask) "quelle est le nominal  preconise ? :")
+(setf (get-slot-facet-value 'obligation-normale 'prix-d-emission 'question-to-ask) "quelle est le prix d emission  preconise ? :")
+(setf (get-slot-facet-value 'obligation-normale 'monnaie 'question-to-ask) "quelle est la monnaie preconise ? :")
+
+
+; slot facultatif
+
+
+(add-slot-user 'obligation-normale 'duree 'instance)
+(set-determination-slot 'obligation-normale '(duree))
+(setf (get-slot-facet-value 'obligation-normale 'duree 'question-to-ask) 
+      "quel est la duree ? : ")
+
+(add-write-after-demon 'obligation-normale 'duree 
+                       '(lambda (object slot)
+                          (let ((duree (get-slot-value object 'duree)) l)
+                            (setq l (genere-sequence-de-nombres duree))
+                            (setq l (mapcar '(lambda (x) (inverse-convert-time (+ (convert-time *date-des-calculs* ) (* x 365)))) l))
+                            (setf (get-slot-value object 'liste-des-dates-de-versement-de-l-interet) l)))
+                       'merge-after)
+
+
+(de obligation-normale-duration (obligation slot)
+    (let ((liste-des-dates-de-dividendes (user-get-value obligation 'liste-des-dates-de-versement-de-l-interet))
+          (emetteur (user-get-value obligation 'emetteur))
+          (fonction-de-dividendes (user-get-value obligation 'fonction-de-dividendes))
+          (nominal (user-get-value obligation 'nominal))
+          (prix-d-emission (user-get-value obligation 'prix-d-emission))
+          (conjoncture (car (get-slot-value 'conjoncture-generale 'instances)))
+          liste-de-paires-cash-jours taux r p)
+      (setq taux  (+ (interpole-par-la-courbe-des-taux conjoncture  3.  (user-get-value obligation 'monnaie))
+                     ($ emetteur 'determine 'differentiel-de-taux-du-a-la-signature)))
+      (setq r (+ 1. (/ taux 100.)))
+      (setq liste-de-paires-cash-jours  (append (list (list (get-slot-value obligation 'prix-de-remboursement)
+                                                            (get-slot-value obligation 'date-de-remboursement)))
+                                                (mapcan '(lambda (x)(let ((cash (funcall fonction-de-dividendes obligation x)))
+                                                                      (cond ((null cash) nil)
+                                                                            (t (list (list cash x))))))
+                                                        liste-des-dates-de-dividendes)))
+      
+      (setq p (apply '+ (mapcar '(lambda (x) (let ((cash (car x)) (jours (- (convert-time (cadr x))
+                                                                            (convert-time *date-des-calculs*))))
+                                               (cond ((>= jours 0)
+                                                      (/ cash (power r (/ jours 365.))))
+                                                     (t 0.))))
+                                liste-de-paires-cash-jours)))
+      (/ (apply '+ (mapcar '(lambda (x) (let ((cash (car x)) (jours (cadr x)))
+                                          (* jours (/ cash (power r (/ jours 365.))))))
+                           liste-de-paires-cash-jours))
+         p)))
+
+(de obligation-normale-taux-utilisable (obligation)
+    (let ((conjoncture (car (get-slot-value 'conjoncture-generale 'instances))))
+      (+ (interpole-par-la-courbe-des-taux conjoncture
+                                           (user-get-value obligation 'duration)  
+                                           (user-get-value obligation 'monnaie))
+         )))
+
+(add-method 'obligation-normale 'obligation-normale-valeur-theorique-nue 'valeur-theorique-nue 'merge-after)
+
+
+(de obligation-normale-valeur-theorique-nue (obligation)
+    (let ((liste-des-dates-de-dividendes (user-get-value obligation 'liste-des-dates-de-versement-de-l-interet))
+          (emetteur (user-get-value obligation 'emetteur))
+          (fonction-de-dividendes (user-get-value obligation 'fonction-de-dividendes))
+          (nominal (user-get-value obligation 'nominal))
+          (prix-d-emission (user-get-value obligation 'prix-d-emission))
+         
+          liste-de-paires-cash-jours taux r)
+      (setq taux (user-get-value obligation 'taux-utilisable))
+
+      (setq r (+ 1. (/ taux 100.)))
+      (setq liste-de-paires-cash-jours (append (list (list (get-slot-value obligation 'prix-de-remboursement)
+                                                           (get-slot-value obligation 'date-de-remboursement)))
+                                               (mapcan '(lambda (x)(let ((cash (funcall fonction-de-dividendes obligation x)))
+                                                                     (cond ((null cash) nil)
+                                                                           (t (list (list cash x))))))
+                                                       liste-des-dates-de-dividendes)))
+      
+      
+      (apply '+ (mapcar '(lambda (x) (let ((cash (car x))  (jours (- (convert-time (cadr x))
+                                                                      (convert-time *date-des-calculs*))))
+                                              (cond ((>= jours 0)
+                                                     (/ cash (power r (/ jours 365.))))
+                                                    (t 0))))
+                        liste-de-paires-cash-jours))
+      ))
+
+;*********************************************************************************
+;                                         OBLIGATION A TAUX FIXE
+;*********************************************************************************
+
+(user-instanciate 'metaclass 'obligation-a-taux-fixe '(obligation-normale))
+
+(setf (get-slot-value obligation-a-taux-fixe 'fonction-de-dividendes) 'fonction-de-dividende-obligation-a-taux-fixe)
+
+(de fonction-de-dividende-obligation-a-taux-fixe (obligation date)
+    ;taux fixe remboursable au pair
+    (prog ((dividendes-liste (user-get-value obligation 'liste-des-dates-de-versement-de-l-interet))
+           (nominal (user-get-value obligation 'nominal))
+           (taux (user-get-value obligation 'taux-fixe)))
+          (cond ((memq date dividendes-liste ) (return (* (/ nominal 100.) taux))))))
+
+
+(add-slot-user 'obligation-a-taux-fixe 'taux-fixe 'instance)
+
+(set-determination-slot 'obligation-a-taux-fixe '(taux-fixe))
+
+(setf (get-slot-facet-value 'obligation-a-taux-fixe 'taux-fixe 'question-to-ask)
+      "quel est le taux fixe ? : ")
+
+;**********************************************************************************
+;                                    OBLIGATION CONVERTIBLE
+;**********************************************************************************
+
+(user-instanciate 'metaclass 'obligation-convertible '(obligation-a-taux-fixe))
+(add-slot-user 'obligation-convertible 'ticker 'instance)
+(add-slot-user 'obligation-convertible 'dernier-cours 'instance)
+(add-attribute-user 'obligation-convertible 'support-action 'obligation-convertible-support 'instance)
+(add-attribute-user 'obligation-convertible 'emetteur 'obligation-convertible-remplit-donnees 'instance)
+(add-attribute-user 'obligation-convertible 'monnaie 'obligation-convertible-remplit-donnees 'instance)
+(add-attribute-user 'obligation-convertible 'nominal 'obligation-convertible-remplit-donnees 'instance)
+(add-attribute-user 'obligation-convertible 'prix-a-l-emission 'obligation-convertible-remplit-donnees 'instance)
+(add-attribute-user 'obligation-convertible 'date-d-emission 'obligation-convertible-remplit-donnees 'instance)
+(add-attribute-user 'obligation-convertible 'taux-de-conversion 'obligation-convertible-remplit-donnees 'instance)
+(add-attribute-user 'obligation-convertible 'conversion-en 'obligation-convertible-remplit-donnees 'instance)
+(add-attribute-user 'obligation-convertible 'interet 'obligation-convertible-remplit-donnees 'instance)
+(add-attribute-user 'obligation-convertible 'rachat-quand-support-sur-prix-de-conversion
+                    'obligation-convertible-remplit-donnees 'instance)
+(add-attribute-user 'obligation-convertible 'prix-de-rachat-conditionnel 'obligation-convertible-remplit-donnees 'instance)
+(add-attribute-user 'obligation-convertible 'date-de-debut-du-rachat-eventuel 'obligation-convertible-remplit-donnees 'instance)
+(add-attribute-user 'obligation-convertible 'prix-de-rachat-eventuel 'obligation-convertible-remplit-donnees 'instance)
+(add-attribute-user 'obligation-convertible 'fin-de-la-convertibilite 'obligation-convertible-remplit-donnees 'instance)
+(add-attribute-user 'obligation-convertible 'marche 'obligation-convertible-remplit-donnees 'instance)
+
+(add-attribute-user 'obligation-convertible 'taux-utilisable 'obligation-convertible-taux-utilisable 'instance)
+(add-attribute-user 'obligation-convertible '%-de-conversion 'obligation-convertible-%-de-conversion 'instance)
+(add-attribute-user 'obligation-convertible 'prix-de-conversion 'obligation-convertible-prix-de-conversion 'instance)
+(add-attribute-user 'obligation-convertible 'quotite-de-conversion 'obligation-convertible-quotite-de-conversion 'instance)
+(add-attribute-user 'obligation-convertible 'plancher-actuariel 'obligation-convertible-plancher-actuariel 'instance)
+(add-attribute-user 'obligation-convertible 'duree-de-vie 'obligation-convertible-duree-de-vie  'instance)
+(add-attribute-user 'obligation-convertible 'volatilite-implicite-courante 
+                    'obligation-convertible-volatilite-implicite-courante 'instance)
+
+(add-method 'obligation-convertible 'obligation-convertible-valeur-theorique-nue 'valeur-theorique-nue 'superseed)
+(add-method 'obligation-convertible 'obligation-convertible-evaluation-du-warrant-associe
+            'evaluation-du-warrant-associe 'superseed)
+(add-method 'obligation-convertible 'obligation-convertible-reinitialisation-du-support 
+            'reinitialisation-du-support 'superseed)
+
+(add-method 'obligation-convertible 'obligation-convertible-delta-local 'delta-local 'superseed)
+(add-method 'obligation-convertible 'obligation-convertible-delta-asymtotique 'delta-asymptotique 'superseed)
+(add-method 'obligation-convertible 'obligation-convertible-delta-30+ 'delta-30+ 'superseed)
+(add-method 'obligation-convertible 'obligation-convertible-delta-30- 'delta-30- 'superseed)
+
+(de obligation-convertible-support (o slot)
+    (let ((tik (user-get-value o 'conversion-en)))
+      (action-from-ticker tik)))
+
+(de obligation-convertible-remplit-donnees (object slot)
+    (prog ((ticker (get-slot-value object 'ticker))
+           savechan-1 chan name input)
+          (when (not (memq ticker *liste-de-convertibles-de-base*)) (return  (get-slot-value object slot)))
+          (setq name (catenate "/usr/jupiter/olivier/expert/donnees/" 
+                               (string ticker)
+                               ".dat"))
+          
+          (setq savechan-1 (inchan))
+          (setq chan (openi name))
+          (inchan chan)
+          (untilexit eof 
+                     (setq input (read))
+                     (when (and (consp input)
+                                (get-slot object (car input))
+                                )
+                           (setf (get-slot-value object (car input)) (cadr input))
+                           (setf (get-slot-facet-value object (car input) 'determined) t)
+                           ))
+          (inchan savechan-1)
+          (when  *chargement-des-historiques*
+                 (setq valeur-q (fetch-courbe-quotidien-from-current-directory
+                                 (catenate (string ticker)  "-q")  ""))
+                 (setf (get-slot-value object 'historique-quotidien) valeur-q)
+                 ;(setq valeur-h (fetch-courbe-hebdomadaire-from-current-directory (catenate (string ticker)
+                 ;                                                              "-h")
+                 ;                                                   ""))
+                 ;(setf (get-slot-value object 'historique-hebdomadaire) valeur-h)
+                 )
+      
+          (return (get-slot-value object slot))))
+
+
+
+
+(de obligation-convertible-reinitialisation-du-support  (o)
+    (user-get-value o 'quotite-de-conversion)
+    (undetermine o '%-de-conversion)
+    (setf (get-slot-value o '%-de-conversion) nil)
+    (undetermine o 'prix-de-conversion)
+    (setf (get-slot-value o 'prix-de-conversion) nil)
+    )
+
+(de obligation-convertible-duree-de-vie (o slot)
+    (- (convert-time (user-get-value o 'date-de-remboursement))
+       (convert-time *date-des-calculs*))
+    )
+
+(de obligation-convertible-volatilite-implicite-courante (o slot)
+    0.2)
+
+(de obligation-convertible-quotite-de-conversion (o slot)
+    (let ((nominal (get-slot-value o 'nominal))
+          (support (get-slot-value o 'support-action))
+          (quotite-de-conversion (get-slot-value o 'quotite-de-conversion))
+          (prix-de-conversion (get-slot-value o 'prix-de-conversion))
+          (%-de-conversion (get-slot-value o '%-de-conversion))
+          s)
+      (cond (quotite-de-conversion)
+            (prix-de-conversion (/ nominal prix-de-conversion))
+            (%-de-conversion (setq s (get-slot-value support 'dernier-cours))
+                             (setq prix-de-conversion (* (+ 1 (/ %-de-conversion 100.)) s))
+                             (setf (get-slot-value o 'prix-de-conversion) prix-de-conversion)
+                             (/ nominal prix-de-conversion))
+            
+      
+    )))
+
+(de obligation-convertible-prix-de-conversion (o slot)
+        (let ((nominal (get-slot-value o 'nominal))
+          (support (get-slot-value o 'support-action))
+          (quotite-de-conversion (get-slot-value o 'quotite-de-conversion))
+          (prix-de-conversion (get-slot-value o 'prix-de-conversion))
+          (%-de-conversion (get-slot-value o '%-de-conversion))
+          s)
+      (cond (prix-de-conversion)
+            (quotite-de-conversion (/ nominal quotite-de-conversion))
+            (%-de-conversion (setq s (get-slot-value support 'dernier-cours))
+                             (* (+ 1 (/ %-de-conversion 100.)) s))
+                           
+            
+    )))
+
+(de obligation-convertible-%-de-conversion (o slot)
+    (let ((nominal (get-slot-value o 'nominal))
+          (support (get-slot-value o 'support-action))
+          (quotite-de-conversion (get-slot-value o 'quotite-de-conversion))
+          (prix-de-conversion (get-slot-value o 'prix-de-conversion))
+          (%-de-conversion (get-slot-value o '%-de-conversion))
+          s)
+      (cond  (%-de-conversion)
+             (prix-de-conversion (* 100 (- (/ prix-de-conversion nominal) 1)))
+             (quotite-de-conversion (setq s (get-slot-value support 'dernier-cours))
+                                    (setq prix-de-conversion  (/ nominal quotite-de-conversion))
+                                    (setf (get-slot-value o 'prix-de-conversion) prix-de-conversion)
+                                     (* 100 (- (/ prix-de-conversion nominal) 1)))
+                                    )))
+(de obligation-convertible-taux-utilisable (o slot)
+      (let ((echeance (user-get-value o 'duree-de-vie))
+          (monnaie (monnaie-normalisation-a-l-entree o 'monnaie)))
+       (interpole-par-la-courbe-des-taux *conjoncture-principale* echeance monnaie)))
+
+
+(de obligation-convertible-plancher-actuariel (o slot)
+     (obligation-normale-valeur-theorique-nue o))
+
+(de obligation-convertible-valeur-theorique-nue (o)
+    (+ (user-get-value o 'plancher-actuariel)
+       ($ o 'evaluation-du-warrant-associe)))
+
+
+
+
+
+(de obligation-convertible-evaluation-du-warrant-associe (o)
+    (prog ((k (/ (user-get-value o 'plancher-actuariel)
+                 (user-get-value o 'quotite-de-conversion))) 
+           (tech (/ (user-get-value o 'duree-de-vie) 365.))
+           (vol (user-get-value  o 'volatilite-implicite-courante))
+           (taux (/ (user-get-value o 'taux-utilisable) 100.))
+           (type 'call)
+           (tdiv (user-get-value (user-get-value o 'support-action) 'liste-des-versements-de-dividendes))
+           (mu (user-get-value (user-get-value o 'support-action) 'rendement))
+           (s (user-get-value (user-get-value o 'support-action) 'dernier-cours))
+           u d r aux1 n cur cur.1)
+          (setq n 10)                   ;nombre d iterations
+          (setq u (exp (* (sqrt (/ tech n) ) vol)))
+          (setq d (/ 1 u))
+          (setq r (power (1+ taux) (/ tech n)))
+          (setq aux1 (/ r (exp (*  (/ tech n) (/ (square vol) 2)))))
+          (setq u (* u aux1))
+          (setq d (* d aux1))
+          (when (<= tech 0) (return 0))
+          (setq cur (makevector (1+ n) 0))
+          (for (j 0 1 n) (setf (vref cur  j)
+                               (max 0 
+                                    (* (cond (( eq type 'call) 1)
+                                             (t -1))
+                                       (- (* (power u j) 
+                                             (power d (- n j)) 
+                                             (power (- 1 mu) (option-n-div n 0 tdiv tech) )
+                                             s)
+                                          k)
+                                       ))))
+        
+          (for (i 1 1 n) 
+               (setq cur.1 (makevector n 0))
+               (for (j 0 1 (- n i))
+                    (setf (vref cur.1  j)
+                          (max 
+                           (/ (+ (* (vref cur j) (- u r))
+                                 (* (vref cur (+ j 1)) (- r d)))
+                              (* (- u d) r))
+                     
+                           (max 0 
+                                (* (cond (( eq type 'call) 1)
+                                         (t -1))
+                                   (- (* (power u j) 
+                                         (power d (- (- n i) j)) 
+                                         (power (- 1 mu) (option-n-div n i tdiv tech) )
+                                         s)
+                                      k)
+                                   )))))
+               (bltvector cur 0 cur.1 0 (1+ (- n i)))
+               )
+          (return (vref cur.1 0))
+          ))
+             
+
+
+(de obligation-convertible-delta-local (obligation-convertible)
+    (let ((cours (get-slot-value  (get-slot-value obligation-convertible 'support-action) 'dernier-cours)) val1 val2 delta-cours)
+      (setf  (get-slot-value  (get-slot-value obligation-convertible 'support-action) 'dernier-cours) (* 0.99 cours))
+      ($ obligation-convertible 'reinitialisation-du-support)
+      (setq val1 ($ obligation-convertible 'valeur-theorique-en-francs))
+      (setf  (get-slot-value  (get-slot-value obligation-convertible 'support-action) 'dernier-cours) (* 1.01 cours))
+      ($ obligation-convertible 'reinitialisation-du-support)
+      (setq val2 ($ obligation-convertible 'valeur-theorique-en-francs))
+      (setf  (get-slot-value  (get-slot-value obligation-convertible 'support-action) 'dernier-cours) cours)
+      ($ obligation-convertible 'reinitialisation-du-support)
+      (setq delta-cours (* 0.02 cours))
+      (/ (- val2 val1) delta-cours))) 
+      
+
+(de obligation-convertible-delta-30+ (obligation-convertible)
+    (let ((cours (get-slot-value  (get-slot-value obligation-convertible 'support-action) 'dernier-cours)) val2 val )
+      (setq val ($ obligation-convertible 'valeur-theorique-en-francs))
+      (setf  (get-slot-value  (get-slot-value obligation-convertible 'support-action) 'dernier-cours) (* 1.3 cours))
+      ($ obligation-convertible 'reinitialisation-du-support)
+      (setq val2 ($ obligation-convertible 'valeur-theorique-en-francs))
+      (setf  (get-slot-value  (get-slot-value obligation-convertible 'support-action) 'dernier-cours) cours)
+      ($ obligation-convertible 'reinitialisation-du-support)
+      (- val2 val)))
+      
+(de obligation-convertible-delta-30- (obligation-convertible)
+    (let ((cours (get-slot-value  (get-slot-value obligation-convertible 'support-action) 'dernier-cours)) val2 val)
+      (setq val ($ obligation-convertible 'valeur-theorique-en-francs))
+      (setf  (get-slot-value  (get-slot-value obligation-convertible 'support-action) 'dernier-cours) (* 0.7 cours))
+      ($ obligation-convertible 'reinitialisation-du-support)
+      (setq val2 ($ obligation-convertible 'valeur-theorique-en-francs))
+      (setf  (get-slot-value  (get-slot-value obligation-convertible 'support-action) 'dernier-cours) cours)
+      ($ obligation-convertible 'reinitialisation-du-support)
+      (- val2 val)))
+      
+
+      
+
+(de obligation-convertible-delta-asymtotique (obligation-convertible)
+  (list 0 (user-get-value obligation-convertible 'quotite-de-conversion)))
+
+
+
+(de ticker-expect-mot-1 (ticker)
+    (prog ((limit (slength ticker)) (n 0) (stop-list (list 45 47 95)))  ; ce sont les caracteres "-" , "/"  et "_" 
+          loop
+          (when (>= n limit) (return (list ticker  "")))
+          (when (memq (sref ticker n) stop-list)
+                (return (list (substring ticker 0 n) (substring ticker (1+ n)))))
+          (setq n (1+ n))
+          (go loop)
+          ))
+
+
+        
+(de ticker-expect-convertible (ticker)
+    (prog ((convertibles (get-all-instances 'obligation-convertible)) tik bi-mot convertible
+           annee delta-annee action)
+          (setq bi-mot (ticker-expect-mot ticker))
+          (when (null bi-mot) (return nil))
+          (when (not (eqstring (string (car bi-mot)) "cv"))
+                (return nil))
+          (setq bi-mot (ticker-expect-action (cadr bi-mot)))
+          (when (null bi-mot) (return nil))
+          (setq action (concat (car bi-mot)))
+          (setq bi-mot (ticker-expect-mot-1 (cadr bi-mot)))
+          (when bi-mot (setq interet (car bi-mot)))
+          (when bi-mot
+                (setq bi-mot (ticker-expect-mot (cadr bi-mot)))
+                (when bi-mot 
+                      (setq annee (car bi-mot))
+                      
+                      (setq tik (concat "cv-"
+                                        (string (get-slot-value action 'ticker)) "-" 
+                                        (string interet) "-"
+                                        (string annee)))
+                      (setq convertible (prog ()
+                                              loop
+                                              (when (null convertibles) (go essai-2))
+                                              (when (or (eq (car convertibles) tik)
+                                                        (eq (get-slot-value (car convertibles) 'ticker) tik))
+                                                    (return (string (car convertibles))))
+                                              (setq convertibles (cdr convertibles))
+                                              (go loop)
+                                              essai-2
+                                              (when (null action) (return nil))
+                                              (when (memq tik  *liste-de-convertibles-de-base*)                                  
+                                                    (setq convertible (user-instanciate 'obligation-convertible nil nil))
+                                                    (setf (get-slot-value convertible 'support-action) action)
+                                                    (setf (get-slot-facet-value convertible 'support-action 'determined) t)
+                                                    (setf (get-slot-value convertible 'ticker) tik)
+                                                    (setf (get-slot-value convertible 'quotite-de-conversion)
+                                                          (user-get-value convertible 'taux-de-conversion))
+                                                    (setf (get-slot-value convertible 'taux-fixe)
+                                                          (get-slot-value convertible 'interet))
+                                                    (setf (get-slot-facet-value convertible 'taux-fixe 'determined) t)
+          
+                                                    (return   convertible))
+                                              (return nil)))
+                      (when convertible (return (list convertible (cadr bi-mot))))
+                      (setq convertible (user-instanciate 'obligation-convertible nil nil))
+                      (setf (get-slot-value convertible 'support-action) action)
+                      (setf (get-slot-facet-value convertible 'support-action 'determined) t)
+                      (setf (get-slot-value convertible 'ticker) tik)
+                      (setf (get-slot-value convertible 'nominal) 10000)
+                      (setf (get-slot-value convertible 'prix-de-remboursement) 10000)
+                      (setf (get-slot-value convertible 'monnaie) 'francs)
+                      (setf (get-slot-value convertible 'quotite-de-conversion)
+                            (/ 10000 (get-slot-value action 'dernier-cours)))
+                      (setq annee  (stratom (slength (string annee)) annee nil))
+                      (setq delta-annee 7)
+                      (when (<= annee (car *date-des-calculs*))
+                            (setq annee (+ annee 7))
+                            (setq delta-annee (- annee  (car *date-des-calculs*))))
+                      
+                      (setf (get-slot-value convertible  'date-de-remboursement)
+                            (inverse-convert-time (+ (convert-time *date-des-calculs*) (* delta-annee 365))))
+                      (setf (get-slot-value convertible 'interet) (stratom (slength (string interet)) interet nil))
+                      (setf (get-slot-value convertible 'taux-fixe)
+                            (get-slot-value convertible 'interet))
+                      (setf (get-slot-facet-value convertible 'taux-fixe 'determined) t)
+                      (setf (user-get-value convertible 'duree) delta-annee) 
+                      (return (list convertible (cadr bi-mot)))))
+          (return nil)))
+

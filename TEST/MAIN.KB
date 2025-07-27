@@ -1,0 +1,181 @@
+
+
+(de forward-chainer-super-sature (forchainobject)
+    (prog ( conflictset result ruleset current-hyp-list current-hyp hyp-save bhw)
+          (check-forward-chainer 3 forchainobject)
+          (when *explanation-flag* (trace-main-events (list 3 *current-hypothetical-world* forchainobject 'sature)))
+          (ftrace 2 (catenate "lancement du chaineur avant " forchainobject " en chainage saturant rapide") nil nil)
+          (setq rule-list  (get-slot-value forchainobject 'rule-list))
+          (setf (get-slot-value forchainobject 'fired-binding-list) nil)
+          (setf (get-slot-value forchainobject 'conflict-set) nil)
+          (setf (get-slot-value forchainobject 'basic-hypothetical-world ) *current-hypothetical-world*)
+          (setq bhw  *current-hypothetical-world*)
+          loop
+          (setq result nil)
+          (setq current-hyp-list (get-slot-facet-aspect forchainobject 'current-hypothetical-world-sequence 'value bhw))
+          (setq hyp-save *current-hypothetical-world*)
+          (setf (get-slot-facet-aspect forchainobject 'stop-flag 'value bhw) nil)
+          loop1
+          (when (null current-hyp-list) (go fin1))
+          (setq current-hyp (car current-hyp-list))
+          (setf (get-slot-facet-aspect forchainobject 'current-supplementary-hypothetical-world-sequence 'value bhw) nil)
+          (setq *current-hypothetical-world* current-hyp)
+          (setq result (forward-chainer-one-step-2-super forchainobject))
+          (setq *current-hypothetical-world* hyp-save)
+
+
+                           ;quand des mondes nouveaux et parralleles apparaissent  dans l'hypothese parrallele essaye 
+                           ;on les rajoute dans le monde initial de lancement du chainer (en enlevant le monde parrallele essaye)
+
+          (when (get-slot-facet-aspect forchainobject 
+                                       'current-supplementary-hypothetical-world-sequence 
+                                       'value 
+                                       bhw)
+                (setf (get-slot-facet-aspect forchainobject
+                                             'current-hypothetical-world-sequence
+                                             'value
+                                             bhw)
+                      (append   (remq current-hyp
+                                      (copy (get-slot-facet-aspect forchainobject
+                                                                   'current-hypothetical-world-sequence
+                                                                   'value
+                                                                   bhw)))
+                                (get-slot-facet-aspect forchainobject 
+                                                       'current-supplementary-hypothetical-world-sequence 
+                                                       'value
+                                                       bhw))))
+                            
+
+                         ;quand la regle failed on enleve le monde parrallele essaye dans le contexte du lancement du chainer
+
+          (when (eq result nil)
+                (setf (get-slot-facet-aspect forchainobject 
+                                             'current-hypothetical-world-sequence
+                                             'value
+                                             bhw)
+                      (remq current-hyp
+                            (copy (get-slot-facet-aspect forchainobject 
+                                                         'current-hypothetical-world-sequence
+                                                         'value
+                                                         bhw)))))
+              ;on filtre les monde declares exclus dans le monde parralele essaye  , dans le contexte du chainer de depart
+
+          (setf  (get-slot-facet-aspect forchainobject 
+                                        'current-hypothetical-world-sequence
+                                        'value
+                                        bhw)
+                 (mapcan '(lambda (x) (cond ((null (get-slot-facet-aspect x 'excluded 'value current-hyp))
+                                             (list x))
+                                            (t nil)))
+                         (copy (get-slot-facet-aspect forchainobject 
+                                                      'current-hypothetical-world-sequence
+                                                      'value
+                                                      bhw))))      
+          (when (get-slot-facet-aspect forchainobject 
+                                       'stop-flag
+                                       'value
+                                       bhw) (go fin1))
+        
+          (setq current-hyp-list (cdr current-hyp-list))
+          (go loop1)
+          fin1
+          (when (eq result nil)
+                (setf (get-slot-facet-aspect forchainobject 
+                                             'current-hypothetical-world-sequence
+                                             'value
+                                             bhw) '(fondamental))
+                (when *explanation-flag* (trace-main-events (list 4 *current-hypothetical-world* forchainobject 'sature)))
+                (ftrace 2 (catenate " exit du chaineur avant " forchainobject ) nil nil)
+                (return nil))
+          (go loop)))
+                                      
+
+        
+
+(de forward-chainer-one-step-2-super (forchainobject)
+    (prog (ruleset old-conflict-set old-rule-conflict-set new-rule-conflict-set chain-save)
+          (setq ruleset (get-slot-value forchainobject 'rule-list))
+          (when (variablep ruleset) (setq ruleset (list ruleset)))
+          (setq old-conflict-set  (get-slot-value forchainobject 'conflict-set))
+          (setf (get-slot-value forchainobject 'conflict-set) nil)
+          (setq chain-save  *current-forward-chainer-object*)
+          (setq  *current-forward-chainer-object* forchainobject)
+           loop
+          (when (null ruleset)
+                  (setq  *current-forward-chainer-object* chain-save)
+                  (return (get-slot-value forchainobject 'conflict-set)))
+          (setq rule (car ruleset))
+          (setq old-rule-conflict-set (cdr (assoc rule old-conflict-set)))
+
+          (setq new-rule-conflict-set  (make-conflict-set-for-a-rule-super forchainobject rule old-rule-conflict-set))
+
+          (when (null new-rule-conflict-set)
+                (setq ruleset  (cdr ruleset))
+                (go loop))
+          (setf (get-slot-value forchainobject 'conflict-set)
+                (cons  new-rule-conflict-set
+                      (get-slot-value forchainobject 'conflict-set)))
+          (setq  *current-forward-chainer-object* chain-save)
+          (forward-execute-conclusion  (get-slot-value forchainobject 'conflict-set)  forchainobject)
+          (ftrace 8  (list "== conflict set ===  hypothetical world  : " *current-hypothetical-world*)
+                  (get-slot-value forchainobject 'conflict-set)
+                  "===============================================================================")
+          (setq ruleset  (cdr ruleset))
+          (go loop)))
+         
+  
+
+
+(de make-conflict-set-for-a-rule-super (forchainobject rule old-rule-conflict-set)
+    (prog ( bindings binding bindings1 tagsup taginf new-conflict-set tag-list crdate)
+          (setq tag-list nil)
+          (setq tagsup 0)
+          (setq taginf 99999)
+
+          (setq premisse (forward-try-premisse rule forchainobject))
+          (when (null premisse) (return nil))
+          (setq bindings (get-backward-binding-list forchainobject rule))
+
+          (setq bindings1 bindings)
+       
+          loop
+          (when (null bindings) (go loop1))
+          (setq binding (car bindings))
+          (when (null (cdr binding))
+                (setq bindings (cdr bindings))
+                (go loop))
+          (cond((null tag-list) 
+                (setq tag-list (cond ((and (variablep (cdr binding))
+                                           (get-fondamental-value (cdr binding) 'date-of-creation)))   
+                                     (t 0))))
+               ((numberp tag-list) 
+                (setq y (cond ((and (variablep (cdr binding))
+                                    (get-fondamental-value (cdr binding) 'date-of-creation))) 
+                              (t 0)))
+                (setq tag-list (cond ((> tag-list y) (list tag-list y))
+                                     (t (list y tag-list)))))
+               (t (setq tag-list (make-classification  (cond ((and (variablep (cdr binding))
+                                                                   (get-fondamental-value (cdr binding) 'date-of-creation)))    
+                                                             (t 0))
+                                                       tag-list))))
+          (setq bindings (cdr bindings))
+          (go loop)
+          loop1
+          (setq new-conflict-set  (list 'fired 
+                                        (cons (length bindings1)
+                                              (cond((numberp tag-list) (list tag-list))
+                                                   (t tag-list)))
+                                        bindings1))
+          (cond( (member new-conflict-set old-rule-conflict-set)
+
+                 (return  (list rule (list 'fired
+                                           (cons (length bindings1)  
+                                                 (cond((numberp tag-list) (list tag-list))
+                                                      (t tag-list)))
+                                           bindings1))))
+               ( t (return  (list rule (list 'ready
+                                             (cons (length bindings1)  
+                                                   (cond((numberp tag-list) (list tag-list))
+                                                        (t tag-list)))
+                                             bindings1)))))))
+        

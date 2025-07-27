@@ -1,0 +1,194 @@
+;fichier des objects et fonctions relatifs au risque et a son calcul
+
+(add-knowledge-base 'risque-kb
+                    'object-de-base
+                    ()
+                    nil)
+
+
+(de calcul-de-risque (compte-directory)
+    (prog (savechan chan input compte position-list position instrument actions equivalences )
+          (setq compte (user-instanciate 'compte nil nil))
+          (setf (get-slot-value compte 'nom) compte-directory)
+                                        ; CHARGEMENT DE LA LISTE DE CODES RGA
+            (setq savechan (inchan))
+          (setq chan (openi  "/usr/jupiter/olivier/expert/donnees/rga.lisp"))                           
+          (inchan chan)
+          (setq *rga-list* (read))
+          (inchan savechan)
+          (close)
+          
+                                        ;    CONSTRUCTION DE LA REPRESENTATION DYNAMIQUE DU PORTEFEUILLE
+          (setq savechan (inchan))
+          (setq chan (openi  (catenate "/usr/jupiter/olivier/expert/comptes/"
+                                       (string compte-directory) "/portefeuille-final.lisp")))
+          (inchan chan)
+          (untilexit eof 
+                     (setq input (read)) (print input)
+                     (setq bi-instrument (ticker-expect-instrument-financier (string (cadr input))))
+                     (print bi-instrument)
+                     (setq instrument (concat (car bi-instrument)))
+                     (setf (get-slot-value instrument 'dernier-cours) (caddr input))
+                     (setq position (prog ((pl position-list) qte sens)
+                                          (when (eq (car input) 0) (return nil))
+                                          loop
+                                          (when (null pl) (return nil))
+                                          (when (and (eq (get-slot-value (car pl) 'type-d-instrument) instrument)
+                                                     (eq (get-slot-value (car pl) 'compte) compte))
+                                                (setq qte (get-slot-value (car pl) 'nombre-d-instruments))
+                                                (setq qte (+ qte (car input)))
+                                                (cond ((>= qte 0) (setq sens 'achat))
+                                                      (t (setq sens 'vente)))
+                                                (setf (get-slot-value (car pl) 'nombre-d-instruments) qte)
+                                                (setf (get-slot-value (car pl) 'sens) sens)
+                                                (setf (get-slot-value (car pl) 'date-de-negociation) nil)
+                                                (setf (get-slot-value (car pl) 'prix-negocie) nil)
+                                                (return (car pl)))
+                                          (setq pl (cdr pl))
+                                          (go loop)))
+                     (when (and (not (equal (car input) 0)) 
+                                (null position))
+                           (setq position (user-instanciate 'position nil nil))
+                           (setf (get-slot-value position 'type-d-instrument) instrument)
+                           (setf (get-slot-value position 'sens)   (cond ((>= (car input) 0)  'achat)
+                                                                         (t  'vente)))
+                           (setf (get-slot-value position 'nombre-d-instruments) (car input))
+                           )
+                     (when position 
+                           (setq position-list (cons position position-list))
+                           (setf (get-slot-value position 'compte) compte))
+                     (print position)
+                     )
+          (inchan savechan)
+          (close)
+          (setf (get-slot-value compte 'liste-de-positions) position-list)
+          
+                                      ;  CALCUL DU RISQUE PAR SUPPORT ACTION
+          (setq actions (get-all-instances 'action))
+          (setq risque-list nil)
+          (mapc '(lambda (action) 
+                   (let (risque-local risque-asymptotique risque-30+ risque-30-)
+                     (setq risque-local   ($ action 'delta-local-total compte))
+                     (setq  risque-asymptotique  ($ action 'delta-asymptotique-total compte))
+                     (setq risque-30+   ($ action 'delta-30+-total compte))
+                     (setq risque-30-   ($ action 'delta-30--total compte))
+                     (print " action " (get-slot-value action 'nom)" rl =" risque-local " ra =" risque-asymptotique) 
+                     (setq risque-list (cons (list action risque-local risque-asymptotique risque-30+ risque-30-)
+                                             risque-list))))
+                                               
+                actions)
+
+                                        ;     TRAITEMENT DES EQUIVALENCES 
+                                        ; le fichier set formee des items suivants
+                                        ; (ticker1 = nombre ticker2)
+
+          (setq equivalences nil)
+          (setq savechan (inchan))
+          (setq chan (openi  (catenate "/usr/jupiter/olivier/expert/comptes/"
+                                       (string compte-directory) "/equivalences.lisp")))
+          (inchan chan)
+          (let (action1 action2)
+            (untilexit eof 
+                       (setq input (read)) (print input)
+                     
+                       (cond (( eq (cadr input) '=) 
+                              (setq action1 (action-from-ticker (car input)))
+                              (setq action2 (action-from-ticker (cadddr input)))
+                              (setq equivalences (cons (list action1 (caddr input) action2 )
+                                                       equivalences)))
+                             )
+                       ))
+          (inchan savechan)
+          (close)
+          (mapc '(lambda (equivalence)
+                   (let ((action1 (car equivalence))  (action2  (caddr equivalence)))
+                     (when (and action1 action2)
+                           (print "equivalence " equivalence)
+                           
+                           (when (assoc action1 risque-list)
+                                 (cond ((assoc action2 risque-list)
+                                        (setf (cdr (assoc action2 risque-list))
+                                              (risque-descriptor-plus (cdr (assoc action2 risque-list))
+                                                                      (risque-descriptor-multiplie (cdr (assoc action1 risque-list))
+                                                                                                   (cadr equivalence)))))
+                                       (t (setq risque-list (cons (list action2 
+                                                                        (risque-descriptor-multiplie  (cdr (assoc action1 risque-list))
+                                                                                                      (cadr equivalence)))
+                                                                  risque-list))))
+                                 
+                                 (setq risque-list (mapcan '(lambda (x) (cond ((eq (car x) action1) nil)
+                                                                              (t (list x))))
+                                                           risque-list))
+                                 
+                                 ))
+                     
+                   
+                     ))
+                equivalences)
+                                    
+                                   ; CONVERSION DES RISQUES ACTION A 30% EN MONNAIE
+
+          (mapc '(lambda (x)
+                   (let ((action (car x))
+                         (r-30-+ (car (cdddr x)))
+                         (r-30-- (cadr (cdddr x))))
+                     (when  r-30-+ (setf (car (cdddr x)) (* (get-slot-value action 'dernier-cours) (car (cdddr x)))))
+                     (when  r-30-- (setf (cadr (cdddr x)) (* (get-slot-value action 'dernier-cours) (cadr (cdddr x)))))
+                     ))
+                risque-list)
+
+          (setq risque-total+30% 0)
+          (setq risque-total-30% 0)
+          (mapc '(lambda (x) 
+                   (when  (car (cdddr x)) (setq risque-total+30% (+ risque-total+30%  (car (cdddr x)))))
+                   (when  (cadr (cdddr x)) (setq risque-total-30% (+ risque-total-30%  (cadr (cdddr x)))))
+                   )
+                risque-list)
+          (setq savechan (outchan))
+          (setq chan (openo  (catenate "/usr/jupiter/olivier/expert/comptes/"
+                                       (string compte-directory) "/risque.lisp")))
+          (outchan chan)
+          (print "(compte= " (get-slot-value compte 'nom) ")")
+          (print ";DLT = Delta-Local-Total   DAT = Delta-Asymptotique-Total")
+          (print ";D30+  = risque a +30   D30-  = risque a -30")
+          (print ";*********************************************************")
+          (mapc '(lambda (action) 
+                   (cond ((assoc action risque-list)
+                          (print  "( " (get-slot-value action 'nom)
+                                  "  DLT= " (cadr (assoc action risque-list ))
+                                  "  DAT= " (caddr (assoc action risque-list)))
+                          (print  "          D30+= " (caddr (cdr (assoc action risque-list)))
+                                  "  D30-= " (caddr (cddr (assoc action risque-list)))
+                                  " )"))))
+                actions)
+          (print "risque total : -30% = " risque-total-30%) 
+          (print "risque total : +30% = " risque-total+30%) 
+          
+          (outchan savechan)
+          (close)
+          (print "risque total : -30% = " risque-total-30%) 
+          (print "risque total : +30% = " risque-total+30%) 
+            
+          ))
+          
+        
+
+(de risque-descriptor-plus (r1 r2)
+    (list (+ (car r1) (car r2))
+          (list (+ (car (cadr r1))
+                   (car (cadr r2)))
+                (+ (cadr (cadr r1))
+                   (cadr (cadr r2))))
+          (+ (caddr r1) (caddr r2))
+          (+ (cadddr r1) (cadddr r2))
+          ))
+
+(de risque-descriptor-multiplie (r nb)
+    (list (* (car r) nb)
+          (list (* (car (cadr r))
+                   nb)
+                (* (cadr (cadr r))
+                   nb))
+          (* (caddr r) nb)
+          (* (cadddr r) nb)
+          ))

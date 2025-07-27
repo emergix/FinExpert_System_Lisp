@@ -1,0 +1,67 @@
+(EDLIN)
+(debug t)
+(defun li ()
+   (load "/usr/jupiter/olivier/expert/ilog/loadinterface.lisp")
+                                        ;(load "/usr/jupiter/olivier/expert/kb/expertinterface.lisp")
+  )
+(defun lk ()
+  (load "/usr/jupiter/olivier/expert/kb/setf.lisp")
+  (load-kb "/usr/jupiter/olivier/expert/kb/object.lisp")
+  (load-kb "/usr/jupiter/olivier/expert/kb/forward.lisp")
+  (load-kb "/usr/jupiter/olivier/expert/kb/editor.lisp")
+ 
+
+  (load-kb "/usr/jupiter/olivier/expert/kb/explanation.kb")
+                                     
+  (load-kb "/usr/jupiter/olivier/expert/kb/external.lisp")
+                                      
+  (load-kb "/usr/jupiter/olivier/expert/kb/base.kb")
+  (load-kb "/usr/jupiter/olivier/expert/kb/technique.kb")
+                                    
+  (load-kb "/usr/jupiter/olivier/expert/kb/interface.kb")
+
+  (load-kb "/usr/jupiter/olivier/expert/simulation/interface.lisp")
+
+  (load-kb "/usr/jupiter/olivier/expert/simulation/conjoncture.kb")
+  (load-kb "/usr/jupiter/olivier/expert/simulation/instrument-financier.kb")
+  
+  (load-kb "/usr/jupiter/olivier/expert/simulation/action.kb")
+  (load-kb "/usr/jupiter/olivier/expert/simulation/option.kb")
+  (load-kb "/usr/jupiter/olivier/expert/simulation/obligation.kb")
+  (load-kb "/usr/jupiter/olivier/expert/simulation/compte.kb")
+  (load-kb "/usr/jupiter/olivier/expert/simulation/liste-d-ordres.kb")
+  (load-kb "/usr/jupiter/olivier/expert/simulation/simulation.kb")
+  (load-kb "/usr/jupiter/olivier/expert/simulation/risque.kb")
+  (load-kb "/usr/jupiter/olivier/expert/simulation/main.lisp")
+
+
+
+  )
+	
+
+(de tp ()
+	(add-application
+		(verticalscroller 0 772 #wd 128
+			(setq *tty-aida-prevu-pour-expert-chart* (ttyapplication 0 0 #wd #hd))))
+	;(add-application
+	;	(box 0 170 (div #wd 2) 300))
+	;(add-application
+	;	(box (div #wd 2) 170 (div #wd 2) 300))
+	;(add-application
+	;	(box 0 470 (div #wd 2) 300))
+	;(add-application
+	;	(box (div #wd 2) 470 (div #wd 2) 300))
+	
+	
+	)
+	
+(let ((#:sys-package:tty 'tty)) (li)
+                                (lk)
+	                       )
+;(tp)
+
+(start-application)
+
+
+
+

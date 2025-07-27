@@ -1,0 +1,287 @@
+;fichier comportant les objects et fonctions relatifs aux options
+
+(add-knowledge-base 'option-kb
+                    'object-de-base
+                    '(option)
+                    nil)
+
+
+;**********************************************************************************
+;                                          OPTION
+;*********************************************************************************
+
+
+(user-instanciate 'metaclass 'option '(instrument-financier))
+(add-slot-user 'option 'dernier-cours 'instance)
+(add-slot-user 'option 'prix-d-exercice 'instance)
+(add-slot-user 'option 'monnaie 'instance)
+(add-slot-user 'option 'echeance 'instance)
+(add-attribute-user 'option 'duree-de-vie 'option-duree-de-vie 'instance)
+(add-slot-user 'option 'support 'instance)                ;ticker du support
+(add-slot-user 'option 'support-action 'instance) ;action associee
+(add-slot-user 'option 'type 'instance)                ;put ou call
+(add-slot-user 'option 'option-contraire-associee 'instance) ;si type=call c est un put et reciproquement
+(add-attribute-user 'option 'ticker 'option-ticker 'instance)
+(add-attribute-user 'option 'volatilite-implicite-courante 'option-volatilite-implicite-courante  'instance)
+(add-attribute-user 'option 'taux-utilisable 'option-taux-utilisable  'instance)
+(add-slot-user 'option 'instruments-derives 'instance)
+
+(add-write-after-demon 'option 'monnaie  'monnaie-normalisation-a-l-entree   'merge-after)
+
+
+(add-method 'option 'option-valeur-theorique-nue 'valeur-theorique-nue 'merge-after)
+(add-method 'option 'option-delta-local 'delta-local 'superseed)
+(add-method 'option 'option-delta-asymtotique 'delta-asymptotique 'superseed)
+(add-method 'option 'option-delta-30+ 'delta-30+ 'superseed)
+(add-method 'option 'option-delta-30- 'delta-30- 'superseed)
+
+
+(set-determination-slot-for-a-mean 'option '(dernier-cours prix-d-exercice monnaie duree-de-vie support type)
+                                   'expert-en-intuition)
+(setf (get-slot-facet-value 'option 'dernier-cours 'question-to-ask) "quelle est le prix de marche ? :")
+(setf (get-slot-facet-value 'option 'prix-d-exercice 'question-to-ask) "quelle est le prix d d exercice preconise ? :")
+(setf (get-slot-facet-value 'option 'monnaie 'question-to-ask) "quelle est la monnaie preconise ? :")
+(setf (get-slot-facet-value 'option 'duree-de-vie 'question-to-ask) "quelle est la duree de vie  preconise ? :")
+(setf (get-slot-facet-value 'option 'support 'question-to-ask) "quelle est le support  preconise ? :")
+(setf (get-slot-facet-value 'option 'type 'question-to-ask) "quelle est le type  preconise ? :")
+
+(de option-duree-de-vie (option slot)
+    (- (convert-time (get-slot-value option 'echeance))
+       (convert-time *date-des-calculs*))
+    )
+
+
+(de option-ticker (option slot)
+    (let ((tsup (get-slot-value  option 'support))
+          (exercice (get-slot-value option 'prix-d-exercice))
+          (echeance (get-slot-value option 'echeance))
+          (type (get-slot-value option 'type))
+          )
+      (concat (string type)
+              "/"
+              (string tsup)
+              "/"
+              (string exercice)
+              "/"
+              (cond ((equal (cadr echeance) 1) "janvier")
+                    ((equal (cadr echeance) 2) "fevrier")
+                    ((equal (cadr echeance) 3) "mars")
+                    ((equal (cadr echeance) 4) "avril")
+                    ((equal (cadr echeance) 5) "mai")
+                    ((equal (cadr echeance) 6) "juin")
+                    ((equal (cadr echeance) 7) "juillet")
+                    ((equal (cadr echeance) 8) "aout")
+                    ((equal (cadr echeance) 9) "septembre")
+                    ((equal (cadr echeance) 10) "octobre")
+                    ((equal (cadr echeance) 11) "novembre")
+                    ((equal (cadr echeance) 12) "decembre")
+                    )
+              (string (car echeance))
+              )))
+
+(de ticker-expect-option (ticker)
+    (prog ((bi-mot (ticker-expect-mot ticker)) type support exercice mois annee echeance monnaie opt opt1)
+      (when (or (eqstring (car bi-mot) "call")
+                (eqstring (car bi-mot) "put"))
+            (setq type (concat (car bi-mot)))
+            (setq bi-mot (ticker-expect-instrument-financier (cadr bi-mot)))
+            (when (null bi-mot)
+                  (return nil))
+            (setq support (concat (car bi-mot)))
+            (setq bi-mot (ticker-expect-mot (cadr bi-mot)))
+            (when (null bi-mot)
+                  (return nil))
+            (setq exercice (stratom (slength (car bi-mot)) (car bi-mot) nil))
+            (setq bi-mot (ticker-expect-mot (cadr bi-mot)))
+            (when (null bi-mot)
+                  (return nil))
+            (setq mois (concat (car bi-mot)))
+            (setq bi-mot (ticker-expect-mot (cadr bi-mot)))
+            (when (null bi-mot)
+                  (return nil))
+            (setq annee (stratom (slength (car bi-mot)) (car bi-mot) nil))
+            (setq echeance 
+                  (append (list annee)
+                          (cond ((eq mois 'janvier) '(1 31))
+                                ((eq mois 'fevrier) '(2 28))
+                                ((eq mois 'mars) '(3 31))
+                                ((eq mois 'avril) '(4 30))
+                                ((eq mois 'mai) '(5 31))
+                                ((eq mois 'juin) '(6 30))
+                                ((eq mois 'juillet) '(7 31))
+                                ((eq mois 'aout) '(8 31))
+                                ((eq mois 'septembre) '(9 30))
+                                ((eq mois 'octobre) '(10 31))
+                                ((eq mois 'novembre) '(11 30))
+                                ((eq mois 'decembre) '(12 31))
+                                )
+                          '(16 0 0)))
+            (setq monnaie 'f)
+            (setq opt (prog ((options (get-all-instances 'option)))
+                            loop
+                            (when (null options) (return nil))
+                            (when (and  (eq (get-slot-value (car options) 'support) support)
+                                        (equal (get-slot-value (car options) 'echeance) echeance)
+                                        (eq (get-slot-value (car options) 'prix-d-exercice) exercice)
+                                        (eq (get-slot-value (car options) 'type) type)
+                                        (eq (get-slot-value (car options) 'monnaie) monnaie))
+                                  (return (car options)))
+                            (setq options (cdr options))
+                            (go loop)))
+            (when opt (return (list opt (cadr bi-mot))))
+            (setq opt (user-instanciate 'option nil nil))
+            (setf (get-slot-value opt 'prix-d-exercice ) exercice)
+            (setf (get-slot-value opt 'echeance) echeance)
+            (setf (get-slot-value opt 'support) support)
+            (setf (get-slot-value opt 'type) type)
+            (setf (get-slot-value opt 'monnaie) monnaie)
+            (setf (get-slot-value opt 'support-action) (get-slot-value support 'support-action))
+            (setq opt1 (user-instanciate 'option nil nil))
+            (setf (get-slot-value opt1 'prix-d-exercice ) exercice)
+            (setf (get-slot-value opt1 'echeance) echeance)
+            (setf (get-slot-value opt1 'support) support)
+            (setf (get-slot-value opt1 'type) (cond ((eq type 'call) 'put)
+                                                    ((eq type 'put) 'call)))
+            (setf (get-slot-value opt1 'monnaie) monnaie)
+            (setf (get-slot-value opt 'option-contraire-associee) opt1)
+            (setf (get-slot-value opt1 'option-contraire-associee) opt)
+            (setf (get-slot-value opt1 'support-action) (get-slot-value support 'support-action))
+            (setf (get-slot-value support 'instruments-derives) 
+                  (append (list opt opt1) 
+                          (get-slot-value support 'instruments-derives)))
+            (return (list opt (cadr bi-mot))))
+      (return nil)
+      ))
+                              
+            
+          
+
+(de option-volatilite-implicite-courante (option slot)
+    0.20)
+
+(de option-taux-utilisable (option slot)
+    (let ((echeance (user-get-value option 'duree-de-vie))
+          (monnaie (monnaie-normalisation-a-l-entree option 'monnaie)))
+       (interpole-par-la-courbe-des-taux *conjoncture-principale* echeance monnaie)))
+
+
+
+;(de option-valeur-theorique-nue (option)
+;  (let ((exercice (user-get-value option 'prix-d-exercice)) 
+;         (echeance (user-get-value option 'duree-de-vie))
+;         (prix-du-support (user-get-value (user-get-value option 'support) 'dernier-cours))
+;         (volatilite (user-get-value  option 'volatilite-implicite-courante))
+;         (taux (user-get-value option 'taux-utilisable))
+;         v)
+;     (setq v (+ (/ (log (/ prix-du-support (* exercice (power taux (/ echeance 365.)))))
+;                   (* volatilite (sqrt echeance)))
+;                (* 0.5 volatilite (sqrt echeance))))
+;     (- (* exercice (loi-normale-integree v))
+;        (* exercice (power taux (/ echeance 365.)) (loi-normale-integree (- v (* volatilite (sqrt echeance))))))
+;         
+;     ))
+
+(de option-delta-local (option)
+    (let ((cours (get-slot-value  (get-slot-value option 'support) 'dernier-cours)) val1 val2 delta-cours)
+      (setf  (get-slot-value  (get-slot-value option 'support) 'dernier-cours) (* 0.99 cours))
+      (setq val1 ($ option 'valeur-theorique-en-francs))
+      (setf  (get-slot-value  (get-slot-value option 'support) 'dernier-cours) (* 1.01 cours))
+      (setq val2 ($ option 'valeur-theorique-en-francs))
+      (setf  (get-slot-value  (get-slot-value option 'support) 'dernier-cours) cours)
+      (setq delta-cours (* 0.02 cours))
+      (/ (- val2 val1) delta-cours))) 
+      
+
+(de option-delta-30+ (option)
+    (let ((cours (get-slot-value  (get-slot-value option 'support) 'dernier-cours)) val2 val )
+      (setq val ($ option 'valeur-theorique-en-francs))
+      (setf  (get-slot-value  (get-slot-value option 'support) 'dernier-cours) (* 1.3 cours))
+      (setq val2 ($ option 'valeur-theorique-en-francs))
+      (setf  (get-slot-value  (get-slot-value option 'support) 'dernier-cours) cours)
+      (- val2 val)))
+      
+(de option-delta-30- (option)
+    (let ((cours (get-slot-value  (get-slot-value option 'support) 'dernier-cours)) val2 val)
+      (setq val ($ option 'valeur-theorique-en-francs))
+      (setf  (get-slot-value  (get-slot-value option 'support) 'dernier-cours) (* 0.7 cours))
+      (setq val2 ($ option 'valeur-theorique-en-francs))
+      (setf  (get-slot-value  (get-slot-value option 'support) 'dernier-cours) cours)
+      (- val2 val)))
+      
+
+      
+
+(de option-delta-asymtotique (option)
+    (cond ((eq (get-slot-value option 'type) 'call) (list 0 1))
+          ((eq (get-slot-value option 'type) 'put) (list -1 0))
+          ))
+
+
+
+
+
+
+(de option-valeur-theorique-nue (option)
+    (prog ((k (user-get-value option 'prix-d-exercice)) 
+           (tech (/ (user-get-value option 'duree-de-vie) 365.))
+           (vol (user-get-value  option 'volatilite-implicite-courante))
+           (taux (/ (user-get-value option 'taux-utilisable) 100.))
+           (type (user-get-value option 'type))
+           (tdiv (user-get-value (user-get-value option 'support) 'liste-des-versements-de-dividendes))
+           (mu (user-get-value (user-get-value option 'support) 'rendement))
+           (s (user-get-value (user-get-value option 'support) 'dernier-cours))
+           u d r aux1 n cur cur.1)
+          (setq n 10)                    ;nombre d iterations
+          (setq u (exp (* (sqrt (/ tech n) ) vol)))
+          (setq d (/ 1 u))
+          (setq r (power (1+ taux) (/ tech n)))
+          (setq aux1 (/ r (exp (*  (/ tech n) (/ (square vol) 2)))))
+          (setq u (* u aux1))
+          (setq d (* d aux1))
+          (when (<= tech 0) (return 0))
+          (setq cur (makevector (1+ n) 0))
+          (for (j 0 1 n) (setf (vref cur  j)
+                               (max 0 
+                                    (* (cond (( eq type 'call) 1)
+                                             (t -1))
+                                       (- (* (power u j) 
+                                             (power d (- n j)) 
+                                             (power (- 1 mu) (option-n-div n 0 tdiv tech) )
+                                             s)
+                                          k)
+                                       ))))
+        
+          (for (i 1 1 n) 
+               (setq cur.1 (makevector n 0))
+               (for (j 0 1 (- n i))
+                    (setf (vref cur.1  j)
+                          (max 
+                           (/ (+ (* (vref cur j) (- u r))
+                                 (* (vref cur (+ j 1)) (- r d)))
+                              (* (- u d) r))
+                     
+                           (max 0 
+                                (* (cond (( eq type 'call) 1)
+                                         (t -1))
+                                   (- (* (power u j) 
+                                         (power d (- (- n i) j)) 
+                                         (power (- 1 mu) (option-n-div n i tdiv tech) )
+                                         s)
+                                      k)
+                                   )))))
+               (bltvector cur 0 cur.1 0 (1+ (- n i)))
+               )
+          (return (vref cur.1 0))
+          ))
+             
+
+(de option-n-div (n i tdiv tech)
+    (let ((q 0))
+      (mapc '(lambda (x) (when (and (<= x tech )
+                                    (>= x
+                                        (/ (* (- n i) n)
+                                           (/ tech 365.))
+                                        ))
+                               (setq q (1+ q))))
+            tdiv)
+      q))

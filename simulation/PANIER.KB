@@ -1,0 +1,182 @@
+;fichier des objects et fonctions relatifs aux paniers d instruments financier
+
+
+(add-knowledge-base 'panier-kb
+                    'object-de-base
+                    '(panier)
+                    nil)
+
+;******************************************************************************************
+;                                    PANIER
+;******************************************************************************************
+
+
+(user-instanciate 'metaclass 'panier  nil)
+(add-attribute-user 'panier 'composition 'panier-composition 'instance)
+(add-attribute-user 'panier 'liquidites 'panier-liquidites 'instance)
+(add-slot-user 'panier 'liste-des-actions-incluses 'instance)
+(add-slot-user 'panier 'poids-relatifs-ideals 'instance)
+(add-slot-user 'panier 'date-courante 'instance)
+(add-slot-user 'panier 'somme-de-reference 'instance)
+(add-slot-user 'panier 'ri-ou-rm 'instance)
+(add-method 'panier 'panier-set-date 'set-date 'superseed)
+(add-method 'panier 'panier-ordres-d-achat-equivalents 'ordres-d-achat-equivalents 'superseed)
+(add-method 'panier 'panier-s-poids-relatifs-ideals 's-poids-relatifs-ideals 'superseed)
+(add-method 'panier 'panier-initialize 'initialize 'superseed)
+
+(de panier-initalize (panier)
+    (undetermine panier 'composition)
+    (undetermine panier 'liquidites)
+    )
+
+(de panier-s-poids-relatifs-ideals (panier)
+    (mapcar '(lambda (x) (list (get-slot-value (car x) 'nom) (cadr x)))
+            (get-slot-value panier 'poids-relatifs-ideals)))
+
+
+(de panier-ordres-d-achat-equivalents (panier montant)
+    (prog (jour-d-aujourdhui qte-ri qte-rm qte investi-ri investi-rm investi
+                              ponderations cours quotites dividendes montants-essayes taux-monetaire jour-d-aujourdhui
+                              (poids-relatifs-ideals (user-get-value panier 'poids-relatifs-ideals))
+                              (liste-des-actions-incluses (user-get-value panier 'liste-des-actions-incluses))
+                              (jour-d-aujourdhui (user-get-value panier 'date-courante))
+                              (ri-ou-rm (user-get-value panier 'ri-ou-rm))
+                              somme-des-ponderations)
+          (setq somme-des-ponderations (apply '+ (mapcar 'cadr poids-relatifs-ideals)))
+          (setq ponderations (mapcar '(lambda (x) (list (car x) (*  100. 
+                                                                    (/ (cadr x) 
+                                                                       somme-des-ponderations))))
+                                     poids-relatifs-ideals))
+          (setq cours (mapcar '(lambda (x) (list x (user-get-value x 'premier-cours))) liste-des-actions-incluses))
+          (setq quotites (mapcar '(lambda (x) (list x (user-get-value x 'quotite))) liste-des-actions-incluses))
+          (setq dividendes (mapcar '(lambda (x) (list x (user-get-value x 'dernier-dividende))) liste-des-actions-incluses))
+          
+          (setq qte-ri (mapcar '(lambda (x) (list (car x) (truncate* (/ (* (/ montant 100.) (cadr x)) 
+                                                                       (cadr (assoc (car x) cours))))))
+                               ponderations))
+          (setq qte-rm (mapcar '(lambda (x) (list (car x) (* (truncate* (/ (cadr x) 
+                                                                          (cadr (assoc (car x) quotites))))
+                                                             
+                                                             (cadr (assoc (car x) quotites)))))
+                               qte-ri))
+          (setq investi-ri (apply '+ (mapcar '(lambda (x) (* (cadr x) 
+                                                           (cadr (assoc (car x) cours))))
+                                           qte-ri)))
+          (setq investi-rm (apply '+ (mapcar '(lambda (x) (* (cadr x) 
+                                                           (cadr (assoc (car x) cours))))
+                                           qte-rm)))
+          (cond ((eq ri-ou-rm 'ri)
+                 (setq qte qte-ri)
+                 (setq investi investi-ri))
+                (t (setq qte qte-rm)
+                   (setq investi investi-rm)))
+          (return (mapcar '(lambda (x) (list 'achat (cadr x) (car x)  (get-slot-value (car x) 'premier-cours)))
+                          qte))))
+                             
+
+
+
+
+(de panier-ordres-equivalents (sens marche panier montant heure)
+    (prog (jour-d-aujourdhui qte-ri qte-rm qte investi-ri investi-rm investi
+                             ponderations cours quotites dividendes montants-essayes taux-monetaire jour-d-aujourdhui
+                             (poids-relatifs-ideals (user-get-value panier 'poids-relatifs-ideals))
+                             (liste-des-actions-incluses (user-get-value panier 'liste-des-actions-incluses))
+                             (jour-d-aujourdhui (user-get-value panier 'date-courante))
+                             (ri-ou-rm (user-get-value panier 'ri-ou-rm))
+                             (modele (get-slot-value marche 'modele-de-marche))
+                             somme-des-ponderations)
+          (setq somme-des-ponderations (apply '+ (mapcar 'cadr poids-relatifs-ideals)))
+          (setq ponderations (mapcar '(lambda (x) (list (car x) (*  100. 
+                                                                    (/ (cadr x) 
+                                                                       somme-des-ponderations))))
+                                     poids-relatifs-ideals))
+          (setq dividendes (mapcar '(lambda (x) (list x (user-get-value x 'dernier-dividende))) liste-des-actions-incluses))
+          (setq cours (mapcar '(lambda (x) (list x (user-get-value x 'premier-cours))) liste-des-actions-incluses))
+          (setq quotites (mapcar '(lambda (x) (list x (user-get-value x 'quotite))) liste-des-actions-incluses))          
+          (setq qte-ri (mapcar '(lambda (x) (list (car x) (truncate* (/ (* (/ montant 100.) (cadr x)) 
+                                                                       (cadr (assoc (car x) cours))))))
+                               ponderations))
+          (setq qte-rm (mapcar '(lambda (x) (list (car x) (* (truncate* (/ (cadr x) 
+                                                                          (cadr (assoc (car x) quotites))))
+                                                             
+                                                             (cadr (assoc (car x) quotites)))))
+                               qte-ri))
+          (setq cours (mapcar '(lambda (x) (list x (funcall modele sens (cadr (assoc x 
+                                                                                     (cond ((eq ri-ou-rm 'ri) qte-ri)
+                                                                                           (t qte-rm))))
+                                                            x heure)))
+                              liste-des-actions-incluses))
+          (setq qte-ri (mapcar '(lambda (x) (list (car x) (truncate* (/ (* (/ montant 100.) (cadr x)) 
+                                                                       (cadr (assoc (car x) cours))))))
+                               ponderations))
+          (setq qte-rm (mapcar '(lambda (x) (list (car x) (* (truncate* (/ (cadr x) 
+                                                                          (cadr (assoc (car x) quotites))))
+                                                             
+                                                             (cadr (assoc (car x) quotites)))))
+                               qte-ri))
+          (setq investi-ri (apply '+ (mapcar '(lambda (x) (* (cadr x) 
+                                                             (cadr (assoc (car x) cours))))
+                                             qte-ri)))
+          (setq investi-rm (apply '+ (mapcar '(lambda (x) (* (cadr x) 
+                                                             (cadr (assoc (car x) cours))))
+                                             qte-rm)))
+          (cond ((eq ri-ou-rm 'ri)
+                 (setq qte qte-ri)
+                 (setq investi investi-ri))
+                (t (setq qte qte-rm)
+                   (setq investi investi-rm)))
+          (return (mapcar '(lambda (x) (list sens (cadr x) (car x)  (cadr (assoc (car x) cours))))
+                          qte))))
+
+
+
+
+
+(de panier-set-date (panier date)
+    (mapc '(lambda (a) ($ a 'set-date date))
+          (get-slot-value panier 'liste-des-actions-incluses)))
+
+
+
+                            
+(de panier-portefeuille-equivalent (marche panier montant)
+    (prog (jour-d-aujourdhui qte-ri qte-rm qte investi-ri investi-rm investi
+                             ponderations cours quotites dividendes montants-essayes taux-monetaire jour-d-aujourdhui
+                             (poids-relatifs-ideals (user-get-value panier 'poids-relatifs-ideals))
+                             (liste-des-actions-incluses (user-get-value panier 'liste-des-actions-incluses))
+                             (jour-d-aujourdhui (user-get-value panier 'date-courante))
+                             (ri-ou-rm (user-get-value panier 'ri-ou-rm))
+                            
+                             somme-des-ponderations)
+          (setq somme-des-ponderations (apply '+ (mapcar 'cadr poids-relatifs-ideals)))
+          (setq ponderations (mapcar '(lambda (x) (list (car x) (*  100. 
+                                                                    (/ (cadr x) 
+                                                                       somme-des-ponderations))))
+                                     poids-relatifs-ideals))
+          (setq dividendes (mapcar '(lambda (x) (list x (user-get-value x 'dernier-dividende))) liste-des-actions-incluses))
+          (setq cours (mapcar '(lambda (x) (list x (user-get-value x 'premier-cours))) liste-des-actions-incluses))
+          (setq quotites (mapcar '(lambda (x) (list x (user-get-value x 'quotite))) liste-des-actions-incluses))          
+          (setq qte-ri (mapcar '(lambda (x) (list (car x) (truncate* (/ (* (/ montant 100.) (cadr x)) 
+                                                                       (cadr (assoc (car x) cours))))))
+                               ponderations))
+          (setq qte-rm (mapcar '(lambda (x) (list (car x) (* (truncate* (/ (cadr x) 
+                                                                          (cadr (assoc (car x) quotites))))
+                                                             
+                                                             (cadr (assoc (car x) quotites)))))
+                               qte-ri))
+          
+          (setq investi-ri (apply '+ (mapcar '(lambda (x) (* (cadr x) 
+                                                             (cadr (assoc (car x) cours))))
+                                             qte-ri)))
+          (setq investi-rm (apply '+ (mapcar '(lambda (x) (* (cadr x) 
+                                                             (cadr (assoc (car x) cours))))
+                                             qte-rm)))
+          (cond ((eq ri-ou-rm 'ri)
+                 (setq qte qte-ri)
+                 (setq investi investi-ri))
+                (t (setq qte qte-rm)
+                   (setq investi investi-rm)))
+          (return qte)))
+
+     

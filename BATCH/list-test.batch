@@ -1,0 +1,6 @@
+(mapc '(lambda (x) (rafraichit-cours-quotidien x)
+		   (rafraichit-cours-hebdomadaire x)
+	           )
+	'(cac cac40 ai ca cl sq or ac aq en ly lg lr cs bn ri mt ff mc cw ml ho cb ex ug cu mi du ef pn lh ar
+	  sgo pm cap co cge aj rs cr gle fs ))
+

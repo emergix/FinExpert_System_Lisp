@@ -1,0 +1,98 @@
+;objects et fonctions associes aux instruments financiers
+(add-knowledge-base 'instrument-financier-kb
+                    'object-de-base
+                    '(instrument-financier)
+                    nil)
+
+
+;******************************************************************************************
+;                           INSTRUMENT-FINANCIER
+;******************************************************************************************
+(user-instanciate 'metaclass 'instrument-financier nil)
+(add-slot-user 'instrument-financier 'liste-d-instruments-inseparables 'instance)
+(add-slot-user 'instrument-financier 'liste-d-instruments-separables 'instance)
+(add-attribute-user 'instrument-financier 'valeur-theorique 
+                    '(lambda (instrument slot) ($ instrument 'valeur-theorique)) 'instance)
+
+(add-method  'instrument-financier 'instrument-financier-valeur-theorique  'valeur-theorique 'merge-after)
+(add-method  'instrument-financier 'instrument-financier-valeur-theorique-en-francs  'valeur-theorique-en-francs 'merge-after)
+
+(de instrument-financier-valeur-theorique (instrument)
+    (let  ((liste-separable (get-slot-value instrument 'liste-d-instruments-separables))
+           (liste-inseparable (get-slot-value  instrument 'liste-d-instruments-inseparables))
+           valeur-theorique)
+      (setq valeur-theorique
+            (+ ($ instrument 'valeur-theorique-nue)
+               (apply '+ (mapcar '(lambda (x) ($ x 'valeur-theorique)) liste-separable))
+               (apply '+ (mapcar '(lambda (x) ($ x 'valeur-theorique)) liste-inseparable))))
+      (setf (get-slot-value instrument 'valeur-theorique) valeur-theorique)
+      (setf (get-slot-facet-value instrument 'valeur-theorique 'determined) t)
+      valeur-theorique))
+
+(de instrument-financier-valeur-theorique-en-francs (instrument)
+    ($  *conjoncture-principale* 'equivalent-en-francs instrument ($ instrument 'valeur-theorique)))
+
+(de ticker-expect-instrument-financier (ticker)
+    (prog (bi-mot)
+          (setq bi-mot (ticker-expect-rga ticker))
+          (when bi-mot (return bi-mot))
+          (setq bi-mot (ticker-expect-action ticker))
+          (when bi-mot (return bi-mot))
+          (setq bi-mot (ticker-expect-convertible ticker))
+          (when bi-mot (return bi-mot))
+          (setq bi-mot (ticker-expect-option ticker))
+          (when bi-mot (return bi-mot))
+          (return nil)))
+
+(de ticker-expect-mot (ticker)
+    (prog ((limit (slength ticker)) (n 0) (stop-list (list 47 46 95)))  ; ce sont les caracteres "/" , "." et "_"
+          loop
+          (when (>= n limit) (return (list ticker  "")))
+          (when (memq (sref ticker n) stop-list)
+                (return (list (substring ticker 0 n) (substring ticker (1+ n)))))
+          (setq n (1+ n))
+          (go loop)
+          ))
+           
+
+
+(de ticker-expect-rga (ticker)
+    (prog (rga bi-rga liste-i type-i nom-i tik)
+          (when (and (>= (slength ticker ) 4)
+                     (eqstring (substring ticker 0 4) "/rga")
+                     (setq bi-rga (ticker-expect-mot (substring ticker 1 )))
+                     (setq rga (substring (car bi-rga) 3))
+                     (setq rga (stratom (slength rga) rga nil))
+                     (assoc rga *rga-list*))
+                (setq list-i  (assoc rga *rga-list*))
+                (setq nom-i (cadr list-i))
+                (setq type-i (caddr list-i))
+                (cond ((eq type-i 'action)
+                       (return 
+                        (prog ((actions (get-all-instances 'action)))
+                              loop
+                              (when (null actions) (go essai-2))
+                              (when   (equal(get-slot-value (car actions) 'code-rga) rga)        
+                                      (return (print (list (string (car actions)) (cadr bi-rga)))))
+                              (setq actions (cdr actions))
+                              (go loop)
+                              essai-2
+                              (setq action (user-instanciate 'action nil nil))
+                              (setf (get-slot-value action 'support-action) action)
+                              (setf (get-slot-value action 'code-rga) rga)
+                              (setf (get-slot-value action 'nom) nom-i)
+                              (when (caddr list-i)
+                                    (setq tik (cadddr list-i))
+                                    (setf (get-slot-value action 'ticker) tik)
+                                    (user-get-value action 'ponderation-dans-le-cac40))
+                             
+                              (return (print (list   action (cadr bi-rga))))))
+                       )
+                      (t (return nil)))
+                
+                )))
+                       
+      
+; le principe des fonctions expect est que on leur passe une chaine de caracteres et si elles reconnaissent
+;quelque chose elles retournent une liste formee de ce qu elles ont reconnu avec ce qui reste a reconnaitre
+; sinon elles renvoient nil

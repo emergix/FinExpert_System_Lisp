@@ -1,0 +1,667 @@
+;  object et fonction associe a la simulation de fond indiciel
+
+(add-knowledge-base 'simulation-fond-indiciel-kb
+                    'object-de-base
+                    '(simulation-fond-indiciel  trading-rule-01  trading-rule-02  ajustement-final
+                              trading-rules-set1 trading-rules-set2 trading-rules-set3
+                              ajustement-final valorisation-du-fond valorisation-a-l-ouverture-du-fond
+                              investissement-total-du-fond performance-du-fond-comparee-au-cac40
+                              performance-o-du-fond-comparee-au-cac40 cac-40 cac-40-o
+                              nombre-de-parts-du-fond pourcentage-de-liquidite-du-fond
+                              volume-des-transactions-du-fond somme-des-commissions-versees-au-fond
+                              valeur-de-la-part-du-fond compte-du-fond-indiciel
+                              panier-cac marche-des-actions
+                              )
+                    nil)
+
+(user-instanciate 'simulation 'simulation-fond-indiciel nil)
+(add-slot-user 'simulation-fond-indiciel 'nombre-de-parts-du-fond 'class)
+(add-slot-user 'simulation-fond-indiciel 'nombre-de-parts-investies 'class)
+(add-slot-user 'simulation-fond-indiciel 'valeur-de-la-part-du-fond 'class)
+
+(setq *liste-d-actions-de-base* '(cac40
+                                  ai ca 
+                                  ;cl sq or ac aq en ly lg lr cs bn ri mt ff mc cw ml ho cb 
+                                  ;ex ug cu mi du ef pn lh ar sgo pm cap co cge aj rs cr gle fs
+                                  ; ah lps pfa def jj
+                                  ))
+(setq *chargement-des-historiques* t)
+
+(setq *conjoncture-principale* (initialisation-de-la-conjoncture))
+
+
+(setq list-action-poids (mapcar '(lambda (x) 
+                                   (let (a)
+                                     (setq a (user-instanciate 'action nil nil))
+                                     (setf (get-slot-value a 'ticker) x)
+                                     (print "action " x)
+                                     (setq poid (user-get-value a 'ponderation-dans-le-cac40))
+                                     (list a poid)))
+                                '(
+                                  ai ca
+                                     ;cl sq or
+                                     ;ac aq en ly lg lr 
+                                     ;cs bn ri mt ff mc cw ml ho cb 
+                                     ;ex ug cu mi du ef pn lh ar sgo
+                                     ;pm cap co cge aj rs cr gle fs 
+                                     )))
+(setq aref (user-instanciate 'action nil nil))
+(setf (get-slot-value aref 'ticker) 'cac40)
+(user-get-value aref 'nom)
+(print "action " 'cac40)
+(user-get-value aref 'ponderation-dans-le-cac40)
+(setf (get-slot-value 'simulation-fond-indiciel 'liste-des-comptes) (list 'compte-du-fond-indiciel))
+(setf (get-slot-value 'simulation-fond-indiciel 'moyen-de-financement) 'marche-monetaire)
+(setf (get-slot-value 'simulation-fond-indiciel 'fonction-de-trace) 'fonction-de-trace-1)
+(setf (get-slot-value 'simulation-fond-indiciel 'nombre-de-parts-du-fond) 0.)
+(setf (get-slot-value 'simulation-fond-indiciel 'valeur-de-la-part-du-fond) 1000000.)
+(setf (get-slot-value 'simulation-fond-indiciel 'liste-des-marches) (list 'marche-des-actions))
+(setf (get-slot-value 'simulation-fond-indiciel 'liste-des-acteurs ) (cons aref  (mapcar 'car list-action-poids)))
+(setf (get-slot-value 'simulation-fond-indiciel 'step-by-step) t)
+
+(setf (get-slot-value 'simulation-fond-indiciel 'date-de-debut) 
+      (car ($ (get-slot-value (get-slot-value aref 'historique-quotidien) 'premier-cours) 'premier-point)))
+(setf (get-slot-value 'simulation-fond-indiciel 'date-de-fin) 
+      
+      (car ($ (get-slot-value (get-slot-value aref 'historique-quotidien) 'premier-cours) 'dernier-point))
+      ;         (time+  (car ($ (get-slot-value (get-slot-value aref 'historique-quotidien) 'premier-cours) 'premier-point)) 4.)
+      )
+(setf (get-slot-value 'simulation-fond-indiciel 'action-de-reference) aref)
+
+(user-instanciate 'parametre 'valorisation-du-fond nil)
+(setf (get-slot-value 'valorisation-du-fond 'simulation) 'simulation-fond-indiciel)
+(setf (get-slot-value 'valorisation-du-fond 'fonction-de-calcul)
+      'valorisation-du-fond-compute)
+
+
+(user-instanciate 'parametre 'valorisation-a-l-ouverture-du-fond nil)
+(setf (get-slot-value 'valorisation-a-l-ouverture-du-fond 'simulation) 'simulation-fond-indiciel)
+(setf (get-slot-value 'valorisation-a-l-ouverture-du-fond 'fonction-de-calcul)
+      'valorisation-a-l-ouverture-du-fond-compute)
+
+(user-instanciate 'parametre 'investissement-total-du-fond nil)
+(setf (get-slot-value 'investissement-total-du-fond 'simulation) 'simulation-fond-indiciel)
+(setf (get-slot-value 'investissement-total-du-fond 'fonction-de-calcul)
+      'investissement-total-du-fond-compute)
+
+(user-instanciate 'parametre 'performance-du-fond-comparee-au-cac40 nil)
+(setf (get-slot-value 'performance-du-fond-comparee-au-cac40 'simulation) 'simulation-fond-indiciel)
+(setf (get-slot-value 'performance-du-fond-comparee-au-cac40 'fonction-de-calcul)
+      'performance-du-fond-comparee-au-cac40-compute)
+
+
+
+(user-instanciate 'parametre 'performance-o-du-fond-comparee-au-cac40 nil)
+(setf (get-slot-value 'performance-o-du-fond-comparee-au-cac40 'simulation) 'simulation-fond-indiciel)
+(setf (get-slot-value 'performance-o-du-fond-comparee-au-cac40 'fonction-de-calcul)
+      'performance-o-du-fond-comparee-au-cac40-compute)
+
+(user-instanciate 'parametre 'cac-40 nil)
+(setf (get-slot-value 'cac-40 'simulation) 'simulation-fond-indiciel)
+(setf (get-slot-value 'cac-40 'fonction-de-calcul)
+      'cac-40-compute)
+
+(user-instanciate 'parametre 'cac-40-o nil)
+(setf (get-slot-value 'cac-40-o 'simulation) 'simulation-fond-indiciel)
+(setf (get-slot-value 'cac-40-o 'fonction-de-calcul)
+      'cac-40-o-compute)
+
+(user-instanciate 'parametre 'nombre-de-parts-du-fond nil)
+(setf (get-slot-value 'nombre-de-parts-du-fond 'simulation) 'simulation-fond-indiciel)
+(setf (get-slot-value 'nombre-de-parts-du-fond 'fonction-de-calcul)
+      'nombre-de-parts-du-fond-compute)
+
+
+(user-instanciate 'parametre 'pourcentage-de-liquidite-du-fond nil)
+(setf (get-slot-value 'pourcentage-de-liquidite-du-fond 'simulation) 'simulation-fond-indiciel)
+(setf (get-slot-value 'pourcentage-de-liquidite-du-fond 'fonction-de-calcul)
+      'pourcentage-de-liquidite-du-fond-compute)
+
+(user-instanciate 'parametre 'volume-des-transactions-du-fond nil)
+(setf (get-slot-value 'volume-des-transactions-du-fond 'simulation) 'simulation-fond-indiciel)
+(setf (get-slot-value 'volume-des-transactions-du-fond 'fonction-de-calcul)
+      'volume-des-transactions-du-fond-compute)
+
+(user-instanciate 'parametre 'somme-des-commissions-versees-au-fond nil)
+(setf (get-slot-value 'somme-des-commissions-versees-au-fond 'simulation) 'simulation-fond-indiciel)
+(setf (get-slot-value 'somme-des-commissions-versees-au-fond 'fonction-de-calcul)
+      'somme-des-commissions-versees-au-fond-compute)
+
+(user-instanciate 'parametre 'valeur-de-la-part-du-fond nil)
+(setf (get-slot-value 'valeur-de-la-part-du-fond 'simulation) 'simulation-fond-indiciel)
+(setf (get-slot-value 'valeur-de-la-part-du-fond 'fonction-de-calcul) 'valeur-de-la-part-du-fond-compute)
+
+(setf (get-slot-value 'simulation-fond-indiciel 'liste-des-parametres)
+      (list 'valorisation-du-fond
+            'valorisation-a-l-ouverture-du-fond
+            'investissement-total-du-fond
+            'performance-du-fond-comparee-au-cac40
+            'performance-o-du-fond-comparee-au-cac40
+            'cac-40
+            'cac-40-o
+            'nombre-de-parts-du-fond
+            'volume-des-transactions-du-fond
+            'somme-des-commissions-versees-au-fond
+            'valeur-de-la-part-du-fond
+            'pourcentage-de-liquidite-du-fond
+            ))
+
+(user-instanciate 'compte 'compte-du-fond-indiciel nil)
+
+(user-instanciate 'panier 'panier-cac nil)
+(setf (get-slot-value 'panier-cac 'liste-des-actions-incluses) (mapcar 'car list-action-poids))
+(setf (get-slot-value 'panier-cac 'poids-relatifs-ideals) list-action-poids)
+(setf (get-slot-value 'panier-cac 'ri-ou-rm) 'rm)
+
+(user-instanciate 'marche 'marche-des-actions nil)
+(setf (get-slot-value 'marche-des-actions 'modele-de-marche) 'modele-standart-de-marche)
+
+(new-trace-file "nouvelle simulation "  "/usr/jupiter/olivier/expert/tmp/trace-file-simu.log" nil)
+
+
+
+(de valeur-de-la-part-du-fond-compute (parametre)
+    (let ((old-value (parametre-get-value-n-1 parametre))
+          (transaction-courante (get-slot-value  'compte-du-fond-indiciel 'versement-courant))
+          (simulation (get-slot-value parametre 'simulation)))
+      (/ ($ 'compte-du-fond-indiciel 'valorisation-a-l-ouverture) 
+         (get-slot-value 'simulation-fond-indiciel 'nombre-de-parts-du-fond) )
+      ))
+    
+
+
+(de volume-des-transactions-du-fond-compute (parametre)
+    (let ((old-value (parametre-get-value-n-1 parametre))
+          (transaction-courante (get-slot-value  'compte-du-fond-indiciel 'versement-courant))
+          (simulation (get-slot-value parametre 'simulation))
+          delta-date
+          )
+      (setq delta-date (get-slot-value simulation 'delta-date))
+      (cond ((null old-value) transaction-courante)
+            (t 
+             (+ (*  (+ 1. (cond (delta-date (* delta-date (/ (get-slot-value 
+                                                              (get-slot-value simulation 'moyen-de-financement)
+                                                              'taux-courant) 
+                                                             36500.)))
+                                (t 0.)))
+                    old-value)
+                (abs transaction-courante))))))
+
+
+(de somme-des-commissions-versees-au-fond-compute (parametre)
+    (let ((old-value (parametre-get-value-n-1 parametre))
+          (transaction-courante (get-slot-value  'compte-du-fond-indiciel 'versement-courant))
+          (simulation (get-slot-value parametre 'simulation))
+          delta-date
+          )
+      (setq delta-date (get-slot-value simulation 'delta-date))
+      (cond ((null old-value) 0.)
+            (t
+             (+ (*  (+ 1. (cond (delta-date (* delta-date (/ (get-slot-value 
+                                                              (get-slot-value simulation 'moyen-de-financement)
+                                                              'taux-courant) 
+                                                             36500.)))
+                                (t 0.)))
+                    old-value)
+                (* *nb-x* (abs transaction-courante)))))))
+
+(de valorisation-du-fond-compute (parametre)
+    ($ 'compte-du-fond-indiciel 'valorisation))
+
+(de valorisation-a-l-ouverture-du-fond-compute (parametre)
+    ($ 'compte-du-fond-indiciel 'valorisation-a-l-ouverture))
+
+(de investissement-total-du-fond-compute (parametre)
+    (user-get-value 'marche-des-actions 'investissements-net-cummule-courant ))
+
+
+(de pourcentage-de-liquidite-du-fond-compute (parametre)
+    (let ((transaction-courante (get-slot-value  'compte-du-fond-indiciel 'versement-courant))
+          (liquidites (get-slot-value  'compte-du-fond-indiciel 'liquidites))
+          (valorisation ($ 'compte-du-fond-indiciel 'valorisation))
+          (instance-reglement-espece (compte-suspens-a-payer 'compte-du-fond-indiciel))
+          (emprunts (get-slot-value 'compte-du-fond-indiciel 'emprunts))
+          (suspens-a-payer (compte-suspens-a-payer 'compte-du-fond-indiciel))
+          )
+
+      (cond ((equal valorisation 0.) 0.)
+            (t
+             (* 100. 
+                (/ (- liquidites  suspens-a-payer
+                                    )
+                   valorisation))))))
+
+
+
+
+(de performance-du-fond-comparee-au-cac40-compute (parametre)
+    (let ((base-cac40  (courbe-2d-interpolation 
+                        (get-slot-value 
+                         (get-slot-value 
+                          (get-slot-value 'simulation-fond-indiciel 'action-de-reference)
+                          'historique-quotidien)
+                         'dernier-cours)
+                        (get-slot-value 'simulation-fond-indiciel 'date-de-debut))))                        
+    (* (/ base-cac40 1000000.)   (/ ($ 'compte-du-fond-indiciel 'valorisation) 
+                                    (get-slot-value 'simulation-fond-indiciel 'nombre-de-parts-du-fond) ))))
+
+
+
+(de performance-o-du-fond-comparee-au-cac40-compute (parametre)
+    (let ((base-cac40  (courbe-2d-interpolation 
+                        (get-slot-value 
+                         (get-slot-value 
+                          (get-slot-value 'simulation-fond-indiciel 'action-de-reference)
+                          'historique-quotidien)
+                         'dernier-cours)
+                        (get-slot-value 'simulation-fond-indiciel 'date-de-debut))))                        
+    (* (/ base-cac40 1000000.)   (/ ($ 'compte-du-fond-indiciel 'valorisation-a-l-ouverture) 
+                                    (get-slot-value 'simulation-fond-indiciel 'nombre-de-parts-du-fond) ))))
+
+
+(de nombre-de-parts-du-fond-compute (parametre)
+     (get-slot-value 'simulation-fond-indiciel 'nombre-de-parts-du-fond) )
+     
+  
+
+
+
+(add-forward-chainer 'trading-rules-set1 '(simulation))
+(add-forward-chainer 'trading-rules-set2 '(simulation))
+(add-forward-chainer 'trading-rules-set3 '(simulation))
+(add-forward-chainer 'ajustement-final '(simulation))
+
+
+
+
+(de cac-40-compute (parameter)
+    (get-slot-value (get-slot-value 'simulation-fond-indiciel 'action-de-reference) 'dernier-cours))
+
+
+(de cac-40-o-compute (parameter)
+    (get-slot-value (get-slot-value 'simulation-fond-indiciel 'action-de-reference) 'premier-cours))
+
+
+(add-forward-rule 
+ 'trading-rule-01
+ 'trading-rules-set1
+ '(existing (s 'simulation)  (and (eq s simulation{trading-rules-set1})
+                                  (not (eq date-courante{s} date-de-debut{s}))))
+            
+                                                                             
+ '(prog (valeur-de-la-part
+         investissements commissions nombre-de-parts-investies valeur-de-la-part)
+        (setq valeur-de-la-part (/ ($ 'compte-du-fond-indiciel 'valorisation-a-l-ouverture) 
+                                   (get-slot-value 'simulation-fond-indiciel 'nombre-de-parts-du-fond) ))
+        (setq nombre-de-parts-investies (truncate 
+                                         (/ 
+                                          (loi-de-comportement-1  
+                                           (get-slot-value 
+                                            (get-slot-value 'simulation-fond-indiciel 'action-de-reference)
+                                            'premier-cours)
+                                           (- 
+                                            (get-slot-value 
+                                             (get-slot-value 'simulation-fond-indiciel 'action-de-reference)
+                                             'premier-cours)
+                                            (parametre-get-value-n-1 'cac-40)))
+                                          valeur-de-la-part)))
+        (setf (get-slot-value 'simulation-fond-indiciel 'nombre-de-parts-investies) nombre-de-parts-investies)
+        (setf (get-slot-value 'simulation-fond-indiciel 'nombre-de-parts-du-fond) 
+              (+ (get-slot-value 'simulation-fond-indiciel 'nombre-de-parts-du-fond) 
+                 nombre-de-parts-investies))
+        (setq investissements (* nombre-de-parts-investies valeur-de-la-part))
+;(print " investissement = "  nombre-de-parts-investies " * " valeur-de-la-part)
+;(print "liquidites = "  (get-slot-value 'compte-du-fond-indiciel 'liquidites ) " + " investissements " = "
+;              (+ investissements (get-slot-value 'compte-du-fond-indiciel 'liquidites )))
+        (setf (get-slot-value 'compte-du-fond-indiciel 'liquidites )
+              (+ investissements (get-slot-value 'compte-du-fond-indiciel 'liquidites )))
+        (setf (get-slot-value  'compte-du-fond-indiciel 'versement-courant) investissements)
+        (setq commissions (* (abs investissements) *nb-x*))
+
+        (setf (get-slot-value 'compte-du-fond-indiciel 'liquidites )
+              (+ commissions (get-slot-value 'compte-du-fond-indiciel 'liquidites )))
+        )
+ 
+ "regle 1 de simulation")
+
+
+
+
+(add-forward-rule
+ 'trading-rule-02
+ '(trading-rules-set1 trading-rules-set2 trading-rules-set3)
+ '(existing (s 'simulation)  (and (eq s simulation{trading-rules-set1})
+                                  (eq date-courante{s} date-de-debut{s})))
+                                  
+
+                                                                             
+ '(prog (investissements nombre-de-parts-investies valeur-de-la-part)
+        (setq valeur-de-la-part 1000000.)
+        (setq nombre-de-parts-investies 100.)
+        (setf (get-slot-value 'simulation-fond-indiciel 'nombre-de-parts-investies) nombre-de-parts-investies)
+        (setf (get-slot-value 'simulation-fond-indiciel 'nombre-de-parts-du-fond) 
+              (+ (get-slot-value 'simulation-fond-indiciel 'nombre-de-parts-du-fond) 
+                 nombre-de-parts-investies))
+        (setq investissements (* nombre-de-parts-investies valeur-de-la-part))
+        
+        (setf (get-slot-value 'compte-du-fond-indiciel 'liquidites )
+              (+ investissements (get-slot-value 'compte-du-fond-indiciel 'liquidites )))
+        (setf (get-slot-value  'compte-du-fond-indiciel 'versement-courant) investissements)
+        
+        )
+ 
+ "regle 1b de simulation")
+
+
+                
+     
+;(add-forward-rule
+; '(trading-rules-set1 trading-rules-set2 trading-rules-set3)
+;; '(existing (s 'simulation)  (and (eq s simulation{trading-rules-set1})
+;                                  (> (-  liquidites{compte-du-fond-indiciel} 
+;                                         (compte-suspens-a-payer 'compte-du-fond-indiciel)
+;                                         )
+;                                         1000000.)))
+;                                     
+; '(progn  
+;    (print "avant operation suspend a payer : " (compte-suspens-a-payer 'compte-du-fond-indiciel))
+;    (print "liquidites : "  liquidites{compte-du-fond-indiciel} )
+;    (print " difference "  (- (-   (compte-suspens-a-payer 'compte-du-fond-indiciel)
+;                                 liquidites{compte-du-fond-indiciel} )))
+;    (print "valorisation : "   ($  'compte-du-fond-indiciel 'valorisation-a-l-ouverture))
+;    (print " port = "   ($ 'compte-du-fond-indiciel 'portefeuille-total))
+;    (print "ideal ="   (panier-portefeuille-equivalent 
+;                        'marche-des-actions
+;                        'panier-cac
+;                        ($  'compte-du-fond-indiciel 'valorisation-a-l-ouverture)))
+;    ($ 'marche-des-actions 
+;       'achat-au-mieux 
+;       'compte-du-fond-indiciel 
+;       (-  liquidites{compte-du-fond-indiciel} 
+ ;          
+;           (compte-suspens-a-payer 'compte-du-fond-indiciel)
+;           )
+;       'panier-cac 
+;       10.)                           ; a 10. heures
+ ;   (print "apres operation suspend a payer : " (compte-suspens-a-payer 'compte-du-fond-indiciel))
+;    (print "liquidites : "  liquidites{compte-du-fond-indiciel} )
+;    (print " difference " (-  (-   (compte-suspens-a-payer 'compte-du-fond-indiciel)
+;                                   liquidites{compte-du-fond-indiciel} )))
+;    (print "valorisation : "   ($  'compte-du-fond-indiciel 'valorisation-a-l-ouverture))
+;    (print " port = "   ($ 'compte-du-fond-indiciel 'portefeuille-total))
+;    (print "ideal ="   (panier-portefeuille-equivalent 
+;                        'marche-des-actions
+;                        'panier-cac
+;                        ($  'compte-du-fond-indiciel 'valorisation-a-l-ouverture)))
+;      )
+;    
+; "regle 2 de simulation")
+             
+ 
+
+             
+     
+;(add-forward-rule
+; '(trading-rules-set1 trading-rules-set2 trading-rules-set3)
+; '(existing (s 'simulation)  (and (eq s simulation{trading-rules-set1})
+;                                  (<   liquidites{compte-du-fond-indiciel} 
+;                                       (compte-suspens-a-payer 'compte-du-fond-indiciel)
+;                                       
+;                                       )))
+; '(progn   
+;    (print "avant operation suspend a payer : " (compte-suspens-a-payer 'compte-du-fond-indiciel))
+;    (print "liquidites : "  liquidites{compte-du-fond-indiciel} )
+;    (print " difference "   (-  (- (compte-suspens-a-payer 'compte-du-fond-indiciel)
+;                                   liquidites{compte-du-fond-indiciel} )))
+;    (print "valorisation : "   ($  'compte-du-fond-indiciel 'valorisation-a-l-ouverture))
+ ;   (print " port = "   ($ 'compte-du-fond-indiciel 'portefeuille-total))
+;    (print "ideal ="   (panier-portefeuille-equivalent 
+;                        'marche-des-actions
+;                        'panier-cac
+;                        ($  'compte-du-fond-indiciel 'valorisation-a-l-ouverture)))
+;    ($ 'marche-des-actions 
+;       'vente-au-mieux 
+;       'compte-du-fond-indiciel 
+;       (-   (compte-suspens-a-payer 'compte-du-fond-indiciel)
+;            liquidites{compte-du-fond-indiciel} )
+;         
+;       'panier-cac 
+;       10.)                         ; a 10. heures
+;    
+;      (print "apres operation suspend a payer : " (compte-suspens-a-payer 'compte-du-fond-indiciel))
+;      (print "liquidites : "  liquidites{compte-du-fond-indiciel} )
+;      (print " difference "   (- (-  (compte-suspens-a-payer 'compte-du-fond-indiciel)
+;                                     liquidites{compte-du-fond-indiciel} )))
+;      (print "valorisation : "   ($  'compte-du-fond-indiciel 'valorisation-a-l-ouverture))
+;      (print " port = "   ($ 'compte-du-fond-indiciel 'portefeuille-total))
+;      (print "ideal ="   (panier-portefeuille-equivalent 
+;                          'marche-des-actions
+;                          'panier-cac
+;                          ($  'compte-du-fond-indiciel 'valorisation-a-l-ouverture)))
+;      )
+; "regle 2b de simulation")
+             
+  
+
+(add-forward-rule
+ 'ajustement-final-01
+ 'ajustement-final
+ '(existing (s 'simulation)  (and (eq s simulation{trading-rules-set1})
+                                  (portefeuille-moins 
+                                   (panier-portefeuille-equivalent 
+                                    'marche-des-actions
+                                    'panier-cac
+                                    ($  'compte-du-fond-indiciel 'valorisation-a-l-ouverture))
+                                   ($ 'compte-du-fond-indiciel 'portefeuille-total))))
+ 
+ '(prog (pp)
+      ;  (print "avant operation suspend a payer : " (compte-suspens-a-payer 'compte-du-fond-indiciel))
+      ;  (print "liquidites : "  liquidites{compte-du-fond-indiciel} )
+      ;  (print " difference "   (- (-  (compte-suspens-a-payer 'compte-du-fond-indiciel)
+      ;                                 liquidites{compte-du-fond-indiciel} )))
+      ;  (print "valorisation : "   ($  'compte-du-fond-indiciel 'valorisation-a-l-ouverture))
+      ;  (print " port = "   ($ 'compte-du-fond-indiciel 'portefeuille-total))
+      ;  (print "ideal ="   (panier-portefeuille-equivalent 
+      ;                      'marche-des-actions
+      ;                      'panier-cac
+      ;                      ($  'compte-du-fond-indiciel 'valorisation-a-l-ouverture)))
+        (setq pp (portefeuille-moins (panier-portefeuille-equivalent 
+                                      'marche-des-actions
+                                      'panier-cac
+                                      ($  'compte-du-fond-indiciel 'valorisation-a-l-ouverture))
+                                     ($ 'compte-du-fond-indiciel 'portefeuille-total)))
+     ;   (print " modification du portefeuille de  : " pp)
+     ;   (print  "ordres-courants avant: " (get-slot-value 'marche-des-actions 'liste-des-ordres-courants))
+        ($ 'marche-des-actions
+           'portefeuille-au-mieux 
+           'compte-du-fond-indiciel 
+           pp
+           10.)
+     ;   (print  "ordres-courants apres: " (get-slot-value 'marche-des-actions 'liste-des-ordres-courants))
+     ;   (print "apres operation suspend a payer : " (compte-suspens-a-payer 'compte-du-fond-indiciel))
+     ;   (print "liquidites : "  liquidites{compte-du-fond-indiciel} )
+     ;   (print " difference "   (- (-  (compte-suspens-a-payer 'compte-du-fond-indiciel)
+     ;                                  liquidites{compte-du-fond-indiciel} )))
+     ;   (print "valorisation : "   ($  'compte-du-fond-indiciel 'valorisation-a-l-ouverture))
+     ;   (print " port = "   ($ 'compte-du-fond-indiciel 'portefeuille-total))
+     ;   (print "ideal ="   (panier-portefeuille-equivalent 
+     ;                       'marche-des-actions
+     ;                       'panier-cac
+     ;                      ($  'compte-du-fond-indiciel 'valorisation-a-l-ouverture)))
+        )
+        
+
+ "regle 3 de simulation")
+
+
+
+
+(de loi-de-comportement-1 (niveau-du-cac variation-du-cac)
+  
+    (* variation-du-cac 1000000.))
+
+
+
+
+(de loi-de-comportement-2 (niveau-du-cac variation-du-cac)
+  
+    (* (+ variation-du-cac 5) 1000000.))
+
+
+(de loi-de-comportement-3 (niveau-du-cac variation-du-cac)
+  
+    5000000.)
+
+
+(dmd p+ (xlist) `(apply '+ (mapcar '(lambda (xxx) (cond ((null xxx) 0.) 
+                                                        (t xxx)))
+                                   ,xlist)))
+(dmd p* (xlist) `(apply '* (mapcar '(lambda (xxx) (cond ((null xxx) 0.) 
+                                                        (t xxx)))
+                                   ,xlist)))
+
+
+(de fonction-de-trace-1 (simulation i date-courante delta-date)
+    (prog (ww ww1)
+          (setq ww (get-slot-value simulation 'step-by-step) )
+          (simu-print "----------------------------------" "nouveau jour de bourse")
+          (simu-print "action-1 premier :" (get-slot-value 'action-1 'premier-cours))
+          (simu-print "action-1 dernier :" (get-slot-value 'action-1 'dernier-cours))
+          (simu-print "action-2 premier :" (get-slot-value 'action-2 'premier-cours))
+          (simu-print "action-2 dernier :" (get-slot-value 'action-2 'dernier-cours))
+          (simu-print "*nb-x* = " *nb-x*)
+          (simu-print "ordres-courants : " (get-slot-value 'marche-des-actions 'liste-des-ordres-courants))
+         ;  (simu-print "taux-emprunt : " (get-slot-value 'marche-monetaire 'taux-courant-d-emprunt))
+         ;  (simu-print "taux-placement : " (get-slot-value 'marche-monetaire 'taux-courant-de-placement))
+          (simu-print "emprunts : " (get-slot-value 'compte-du-fond-indiciel 'emprunts))
+          (simu-print "liquidites du compte " (get-slot-value 'compte-du-fond-indiciel 'liquidites))
+          (simu-print "pourcentage de liquidites du compte " (get-slot-value 'pourcentage-de-liquidite-du-fond 'valeur-courante))
+          
+          (simu-print "valorisation-du-portefeuille au premier cours : " 
+                      (let ((portefeuille (get-slot-value 'compte-du-fond-indiciel 'portefeuille))
+                            (ev 0.))
+                        (mapc '(lambda (x1) 
+                                 (setq ev (+ ev
+                                             (* (get-slot-value (car x1) 'premier-cours)
+                                                (cadr x1)))))
+                              portefeuille)
+                        ev))
+          (simu-print "valorisation-du-portefeuille-latent au premier cours : " 
+                      (let ((portefeuille (get-slot-value 'compte-du-fond-indiciel 'instance-liquidation))
+                            (ev 0.))
+                        (mapc '(lambda (x1) 
+                                 (setq ev (+ ev
+                                             (* (cond ((eq (car x1) 'achat) 1.)
+                                                      (t -1.))
+                                                (- (get-slot-value (caddr x1) 'premier-cours) 
+                                                   (cadddr x1))
+                                                (cadr x1)))))
+                         
+                              portefeuille)
+                        ev))
+          (simu-print "valorisation du portefeuille total" 
+                      (let ((portefeuille ($ 'compte-du-fond-indiciel 'portefeuille-total))
+                            (ev 0.))
+                        (mapc '(lambda (x1) 
+                                 (setq ev (+ ev
+                                             (* (get-slot-value (car x1) 'premier-cours)
+                                                (cadr x1)))))
+                              portefeuille)
+                        ev))
+          (simu-print "suspens a payer :" (compte-suspens-a-payer 'compte-du-fond-indiciel))
+          (simu-print " date = " (get-slot-value 'valorisation-du-fond 'date-courante))
+       ;   (simu-print "valorisation au dernier cours= " (get-slot-value 'valorisation-du-fond 'valeur-courante))
+          (simu-print "valorisation a l ouverture = " (get-slot-value 'valorisation-a-l-ouverture-du-fond 'valeur-courante))
+          (simu-print "investissement courant= " (get-slot-value 'marche-des-actions 'investissements-net-courant))
+       ;   (simu-print "investissements cummules= " (get-slot-value 'marche-des-actions 'investissements-net-cummule-courant))
+          (simu-print "nombre de parts du fond = " (get-slot-value 'nombre-de-parts-du-fond 'valeur-courante))
+          (simu-print "valeur de la part du fond  = " (get-slot-value 'valeur-de-la-part-du-fond 'valeur-courante))
+                                        ;  (simu-print " cac40 = " (get-slot-value 'cac-40  'valeur-courante))
+          (simu-print " cac40 (ouverture) = " (get-slot-value 'cac-40-o  'valeur-courante))
+          
+                                        ;    (simu-print "performance comparee du fond (fermeture) = " 
+                                        ;                (get-slot-value 'performance-du-fond-comparee-au-cac40 'valeur-courante))
+          (simu-print "performance comparee du fond (ouverture) = " 
+                      (get-slot-value 'performance-o-du-fond-comparee-au-cac40 'valeur-courante))
+          (simu-print "volume des transactions cummulees :" (get-slot-value 'volume-des-transactions-du-fond 'valeur-courante))
+          (simu-print "somme des commissions versees au fond :" 
+                      (get-slot-value 'somme-des-commissions-versees-au-fond 'valeur-courante))
+          (when  ww (setq ww1 (read))
+                 (cond ((eq ww1 'cc) (setf (get-slot-value simulation 'step-by-step) nil))
+                       (t nil)))
+          ))
+
+    
+        
+      
+
+
+
+
+(de simu-print (e1 e2)
+    (print e1 e2)
+    (trace-file (list e1 e2) "/usr/jupiter/olivier/expert/tmp/trace-file-simu.log" nil)
+    )
+
+
+(de zz ()
+    (let (id direct)
+      (mapc '(lambda (y)               
+               (mapc '(lambda (x)
+                        (setq *nb-x* x)
+                        (setq id (* x 1000.))
+                        (setf (get-slot-value 'simulation-fond-indiciel 'forward-chainer)  (list y 'ajustement-final))
+                        ($ 'simulation-fond-indiciel 'initialize)
+                        (setf (get-slot-value 'simulation-fond-indiciel 'nombre-de-parts-du-fond) 0.)
+                        (setf (get-slot-value 'simulation-fond-indiciel 'valeur-de-la-part-du-fond) 1000000.)
+                        ($ 'simulation-fond-indiciel 'start)
+                        (cond ((eq y  'trading-rules-set1) (setq direct   "/usr/jupiter/olivier/expert/tmp"))
+                              ((eq y  'trading-rules-set2) (setq direct   "/usr/jupiter/olivier/expert/tmp2"))
+                              ((eq y  'trading-rules-set3) (setq direct   "/usr/jupiter/olivier/expert/tmp3"))
+                              )
+                        (complete-courbe-2d-save (get-slot-value 'valorisation-du-fond 'courbe-resultat)
+                                                 (catenate (string id) "valorisation-du-fond") 
+                                                 direct)
+                        (complete-courbe-2d-save (get-slot-value 'investissement-total-du-fond 'courbe-resultat) 
+                                                 (catenate (string id)"investissement-total-du-fond" )
+                                                 direct)
+                        (complete-courbe-2d-save (get-slot-value 'performance-du-fond-comparee-au-cac40 'courbe-resultat)
+                                                 (catenate (string id) "performance-du-fond-comparee-au-cac40" )
+                                                 direct)
+                        (complete-courbe-2d-save (get-slot-value 'nombre-de-parts-du-fond 'courbe-resultat) 
+                                                 (catenate (string id) "nombre-de-parts-du-fond" )
+                                                 direct)
+                        (complete-courbe-2d-save  (get-slot-value 'somme-des-commissions-versees-au-fond 'courbe-resultat)
+                                                  (catenate (string id) "somme-des-commissions-versees-au-fond" )
+                                                  direct)
+                        (complete-courbe-2d-save  (get-slot-value 'volume-des-transactions-du-fond 'courbe-resultat)
+                                                  (catenate (string id) "volume-des-transactions-du-fond" )
+                                                  direct)
+                        
+                        )
+                     '(0.0  0.0025 0.0075))
+               )
+            '(trading-rules-set1 trading-rules-set2 trading-rules-set3))))
+      
+
+    
+(de zz2 (str n-tmp)
+    (let (dir)
+      (cond ((eq n-tmp 1) (setq dir  "/usr/jupiter/olivier/expert/tmp"))
+            ((eq n-tmp 2) (setq dir  "/usr/jupiter/olivier/expert/tmp2"))
+            ((eq n-tmp 3) (setq dir  "/usr/jupiter/olivier/expert/tmp3"))
+            (t  (setq dir  "/usr/jupiter/olivier/expert/tmp")))
+      (setq iz (charge-courbe-2d-date (concat str "investissement-total-du-fond") nil dir))
+      (setq nz (charge-courbe-2d-date (concat str "nombre-de-parts-du-fond") nil dir))
+      (setq sz (charge-courbe-2d-date (concat str "somme-des-commissions-versees-au-fond") nil dir))
+      (setq vz (charge-courbe-2d-date (concat str "volume-des-transactions-du-fond") nil dir))
+      (setq pz (charge-courbe-2d-date (concat str "performance-du-fond-comparee-au-cac40") nil dir))
+      (setq cac40 ($ (get-slot-value (get-slot-value aref 'historique-quotidien) 'cours-de-fermeture) 'counvert-time))
+      (setq dpz ($  p1 '- cac40))
+      (setq lpz (list p1 cac40))
+      (display-courbe-b (list dpz) "titre 1")
+      (display-courbe-c lpz "titre 2")
+      (display-courbe-d (list dpz) "titre 3")
+    ))
+
+;(zz)

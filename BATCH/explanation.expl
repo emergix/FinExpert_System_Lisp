@@ -1,0 +1,51 @@
+(0 debut-de-consultation)
+(7 fondamental moving-average-parameters pulsation-longue)
+(7 fondamental moving-average-parameters pulsation-moyenne)
+(7 fondamental moving-average-parameters pulsation-courte)
+(7 fondamental moving-average-parameters periode-courte)
+(7 fondamental moving-average-parameters periode-longue)
+(7 fondamental moving-average-parameters plus-haut-extremum-du-spectre)
+(7 fondamental moving-average-parameters 
+deuxieme-plus-haut-extremum-du-spectre)
+(7 fondamental moving-average-parameters 
+troisieme-plus-haut-extremum-du-spectre)
+(7 fondamental moving-average-parameters 
+liste-classee-des-3-maximums-du-spectre)
+(7 fondamental moving-average-parameters last-derivee-average-longue)
+(7 fondamental moving-average-parameters last-derivee-average-courte)
+(7 fondamental moving-average-parameters last-average-longue)
+(7 fondamental moving-average-parameters last-average-courte)
+(7 fondamental moving-average-parameters last-courbe-value)
+(1 fondamental backward-rule-8 select-parameters 
+diviseur-de-distribution 
+"nombre de case de rangement des cours lors du calcul de distribution")
+(1 fondamental backward-rule-22 moving-average-parameters 
+plus-haut-extremum-du-spectre 
+"calcul du maximum des maximums du spectre")
+(1 fondamental backward-rule-23 moving-average-parameters 
+deuxieme-plus-haut-extremum-du-spectre 
+"calcul du deuxieme maximum des maximums du spectre")
+(1 fondamental backward-rule-24 moving-average-parameters 
+troisieme-plus-haut-extremum-du-spectre 
+"calcul du troisieme maximum des maximums du spectre")
+(1 fondamental backward-rule-25 moving-average-parameters 
+liste-classee-des-3-maximums-du-spectre 
+"classement des trois extremums du spectre")
+(1 fondamental backward-rule-26 moving-average-parameters 
+pulsation-courte " la pulsation de la moyenne courte ")
+(1 fondamental backward-rule-19 moving-average-parameters 
+periode-longue "calcul de la periode longue")
+(1 fondamental backward-rule-21 moving-average-parameters 
+periode-courte "calcul de la periode courte 2")
+(3 fondamental moving-average-analysis sature)
+(2 fondamental forward-rule-19 
+" sur-achat classique par rapport a la moyenne longue")
+(2 fondamental forward-rule-17 
+" sur-achat classique par rapport a la moyenne courte")
+(4 fondamental moving-average-analysis sature)
+(0 fin-de-consultation)
+(3 fondamental meta-analysis sature)
+(2 fondamental forward-rule-2 
+"interpretation grossiere de l analyse technique")
+(4 fondamental meta-analysis sature)
+(0 fin-de-consultation)

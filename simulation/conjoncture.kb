@@ -1,0 +1,145 @@
+; objects et fonctions associes a la conjoncture
+(add-knowledge-base 'conjoncture-kb
+                    'object-de-base
+                    '(expert-en-intuition conjoncture-generale)
+                    nil)
+
+;*********************************************************************************************
+;                                               FONCTIONS ANNEXES
+;*********************************************************************************************
+
+(de monnaie-normalisation-a-l-entree  (object slot)
+    (let ((ov (get-slot-value object slot))
+          nv)
+      (cond ((memq ov '(f ff frf franc francs francs-francais franc-francais))
+             (setq nv 'francs))
+            ((memq ov '(ecu ecus))
+             (setq nv 'ecus))
+            ((memq ov '(dm dem deutche-mark deutche-marks mark 
+                           deustche-mark deustche-marks 
+                           deutsche-mark deutsche-marks 
+                           marks mark-allemand marks-allemands
+                           mark-allemands deutch-mark deutch-marks))
+             (setq nv 'deutche-marks))
+            ((memq ov '(y yen yens yen-japonais yens-japonais)) 
+             (setq nv 'yens))
+            ((memq ov '(l lstg bpnd livre livres livre-sterling 
+                          livres-sterlings livre-sterlings
+                          livre-anglaise livres-anglaises livre-anglaises))
+             (setq nv 'livre-sterlings))
+            ((memq ov '(usd d dollar dollars us-dollar us-dollars 
+                            dollar-americain dollars-americains 
+                            dollar-americains))
+             (setq nv 'dollar-americains))
+            )
+      (when nv (setf (get-slot-value object slot) nv)
+            nv)
+      ))
+
+
+
+(de loi-normale-integree (z)
+    (let ((b1 0.4361836) 
+          (b2 -0.1201676)
+          (b3 0.9372980)
+          (p 0.33267)
+          (racine-de-2-pi 2.5066287463) k)
+      (setq k (/ 1 (1+ (* p z))))
+      (- 1 (* (exp (- (* z z .5))) (/ (+ (* b1 k) (* b2 k k) (* b3 k k k)) racine-de-2-pi)))
+      ))
+
+(de genere-sequence-de-nombres (n)
+    (cond ((<= n 0) nil)
+          (t 
+           (cons n (genere-sequence-de-nombres (1- n))))))
+
+(add-backward-chainer 'expert-en-intuition nil)
+
+
+
+(de test ()
+    (initialisation-de-la-conjoncture)
+    (setq a (user-instanciate 'obligation-a-taux-fixe nil nil))
+    ($ a 'determine 'taux-fixe)
+    ($ a 'determine 'duree)
+    ($ a 'determine 'monnaie)
+    ($ a 'determine 'emetteur)
+    ($ a 'determine 'nominal)
+    (print " la valeur  de " a " est :" ($ a 'valeur-theorique))
+    )
+
+
+(user-instanciate 'metaclass 'conjoncture-generale nil)
+(add-slot-user 'conjoncture-generale 'courbe-des-taux-francais 'instance)
+(add-slot-user 'conjoncture-generale 'courbe-des-taux-anglais 'instance)
+(add-slot-user 'conjoncture-generale 'courbe-des-taux-allemands 'instance)
+(add-slot-user 'conjoncture-generale 'courbe-des-taux-americains 'instance)
+(add-slot-user 'conjoncture-generale 'courbe-des-taux-japonais 'instance)
+(add-slot-user 'conjoncture-generale 'courbe-des-taux-en-ecus 'instance)
+(add-slot-user 'conjoncture-generale 'cours-de-change-du-franc 'instance)
+(add-slot-user 'conjoncture-generale 'cours-de-change-de-l-ecu 'instance)
+(add-slot-user 'conjoncture-generale 'cours-de-change-du-yen 'instance)
+(add-slot-user 'conjoncture-generale 'cours-de-change-du-deutche-mark 'instance)
+(add-slot-user 'conjoncture-generale 'cours-de-change-de-la-livre-sterling 'instance)
+(add-slot-user 'conjoncture-generale 'cours-de-change-du-dollar-americain 'instance)
+
+
+
+(add-method 'conjoncture-generale 'conjoncture-generale-equivalent-en-francs 'equivalent-en-francs  'superseed)
+
+(de initialisation-de-la-conjoncture ()
+    (prog (c)
+          (setq c (user-instanciate 'conjoncture-generale nil nil))
+          (initialisation-d-une-courbe-de-taux c 'courbe-des-taux-allemands 
+                                               #[(0 4.5) (1 5.4) (5 5.5) (10 5.9)])
+          (initialisation-d-une-courbe-de-taux c 'courbe-des-taux-francais
+                                               #[(0 7.9) (1 8.0) (5 8.1) (10 8.5)])
+          (initialisation-d-une-courbe-de-taux c 'courbe-des-taux-anglais
+                                               #[(0 9.9) (1 10.0) (5 10.1) (10 10.5)])
+          (initialisation-d-une-courbe-de-taux c 'courbe-des-taux-americains
+                                               #[(0 8.9) (1 9.0) (5 9.1) (10 9.5)])
+          (initialisation-d-une-courbe-de-taux c 'courbe-des-taux-japonais
+                                               #[(0 2.9) (1 3.0) (5 3.1) (10 3.5)])
+          (initialisation-d-une-courbe-de-taux c 'courbe-des-taux-en-ecus
+                                               #[(0 8.1) (1 8.2) (5 8.5) (10 9.)])
+          
+          (setf (get-slot-value c 'cours-de-change-du-franc) 1.)
+          (setf (get-slot-value c 'cours-de-change-de-l-ecu) 7.08)
+          (setf (get-slot-value c 'cours-de-change-du-deutche-mark) 3.41)
+          (setf (get-slot-value c 'cours-de-change-du-dollar-americain) 5.90)
+          (setf (get-slot-value c 'cours-de-change-du-yen) 0.0486)
+          (setf (get-slot-value c 'cours-de-change-de-la-livre-sterling) 10.78)
+          (return c)
+          ))
+
+(de initialisation-d-une-courbe-de-taux (conjoncture slot h)
+    (prog (c1)
+          (setq c1 ($ 'courbe-2d 'instanciate nil nil))
+	  (setf (get-slot-value c1 'body ) h)
+	  (setf (get-slot-value c1 'pointeur ) 0)
+	  (setf (get-slot-value c1 'pointeur-max)  (1- (vlength h)))
+	  (setf (get-slot-value c1 'xtype) 'real)
+	  (setf (get-slot-value c1 'ytype) 'real)
+          (setf (get-slot-value c1 'courbe-origine ) nil)
+	  (setf (get-slot-value c1 'transformation) 'generated-from-scratch)
+          (setf (get-slot-value conjoncture slot) c1)))
+
+(de interpole-par-la-courbe-des-taux (conjoncture duree monnaie)
+    (let ((courbe-des-taux (cond ((eq monnaie 'francs) 'courbe-des-taux-francais)
+                                ((eq monnaie 'ecus) 'courbe-des-taux-en-ecus)
+                                 ((eq monnaie 'deutche-marks) 'courbe-des-taux-allemands)
+                                 ((eq monnaie 'livre-sterlings) 'courbe-des-taux-anglais)
+                                 ((eq monnaie 'dollar-americains) 'courbe-des-taux-americains)
+                                 ((eq monnaie 'yens) 'courbe-des-taux-japonais))))
+          (courbe-2d-interpolation (get-slot-value conjoncture courbe-des-taux) duree)))
+           
+
+(de conjoncture-generale-equivalent-en-francs (conjoncture instrument valeur)
+    (let ((monnaie  (monnaie-normalisation-a-l-entree instrument 'monnaie))
+          slot)
+      (setq slot (cond ((eq monnaie 'francs) 'cours-de-change-du-franc)
+                       ((eq monnaie 'ecus) 'cours-de-change-de-l-ecu)
+                       ((eq monnaie 'deutche-marks) 'cours-de-change-du-deutche-mark)
+                       ((eq monnaie 'dollar-americain) 'cours-de-de-change-du-dollar-americain)
+                       ((eq monnaie 'yens) 'cours-de-change-du-yen)))
+      (* valeur (get-slot-value conjoncture slot))))

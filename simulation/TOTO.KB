@@ -1,0 +1,86 @@
+(de modif ()
+    (prog ((file-list (directory-list "/usr/jupiter/olivier/expert/donnees"))
+           file-list-filtree)
+          (setq file-list-filtree file-list)
+          (when (null file-list-filtree) (go end))
+          (setq savechan (outchan))
+          loop
+          (when (null file-list-filtree) (return))
+          (setq file (car file-list-filtree))
+          (setq name (catenate "/usr/jupiter/olivier/expert/donnees/" (string file)))
+          (setq chan (opena name))
+          (outchan chan)
+          (print '(beta 1.00))
+          (outchan savechan)
+          (close)
+          (setq file-list-filtree (cdr file-list-filtree))
+          (go loop)
+          end
+          ))
+           
+
+
+
+(de ticker-expect-mot-1 (ticker)
+    (prog ((limit (slength ticker)) (n 0) (stop-list (list 45 47 95)))  ; ce sont les caracteres "-" , "/"  et "_" 
+          loop
+          (when (>= n limit) (return (list ticker  "")))
+          (when (memq (sref ticker n) stop-list)
+                (return (list (substring ticker 0 n) (substring ticker (1+ n)))))
+          (setq n (1+ n))
+          (go loop)
+          ))
+
+
+(de ticker-expect-mot-2 (ticker)
+    (prog ((limit (slength ticker)) (n 0) (stop-list (list 47 95)))  ; ce sont les caracteres  "/"  et "_" 
+          loop
+          (when (>= n limit) (return (list ticker  "")))
+          (when (memq (sref ticker n) stop-list)
+                (return (list (substring ticker 0 n) (substring ticker (1+ n)))))
+          (setq n (1+ n))
+          (go loop)
+          ))
+
+        
+(de ticker-expect-convertible (ticker)
+    (prog ((convertibles (get-all-instances 'obligation-convertible)) tik bi-mot convertible)
+          (setq bi-mot (ticker-expect-mot-2 ticker))
+          (when (null bi-mot) (return nil))
+          (setq tik (concat (car bi-mot)))
+          loop
+          (when (null convertibles) (go essai-2))
+          (when (or (eq (car convertibles) tik)
+                    (eq (get-slot-value (car convertibles) 'ticker) tik))
+                (return (list (string (car convertibles)) (cadr bi-mot))))
+          (setq convertibles (cdr convertibles))
+          (go loop)
+          essai-2
+          (when (< (slength tik) 4) (return nil))
+          (setq action (extract-cv-from-ticker-convertible tik))
+          (when (null action) (return nil))
+          (setq action (extract-action-from-ticker-convertible action))
+          (when (memq tik  *liste-de-convertibles-de-base*)
+                
+                (setq convertible (user-instanciate 'obligation-convertible nil nil))
+                (setf (get-slot-value convertible 'support-action) action)
+                (setf (get-slot-value convertible 'ticker) tik)
+                (setq marche (user-get-value convertible 'marche))
+                (return (list   convertible (cadr bi-mot))))
+          (when (memq tik '(put call cv)) (return nil))
+          (setq convertible (user-instanciate 'obligation-convertible nil nil))
+          (setf (get-slot-value convertible 'support-action) action)
+          (setf (get-slot-value convertible 'ticker) tik)
+          (return (list convertible (cadr bi-mot)))
+                          ))
+    
+(de extract-cv-from-ticker-convertible (tik)
+    (let ((bi-mot (ticker-expect-mot-1 (string tik)))
+          )
+      (cond ((eqstring (string (car bi-mot)) "cv")
+             (cadr bi-mot))
+            (t nil))))
+
+
+(de extract-action-from-ticker-convertible (tik)
+    (car (ticker-expect-mot-1 (string tik))))

@@ -1,0 +1,291 @@
+(setq liste-de-liquidation '((janvier . (88 1 21 0 0 0))
+                             (fevrier . (88 2 19 0 0 0))
+                             (mars . (88 3 23 0 0 0))
+                             (avril . (88 4 21 0 0 0))
+                             (mai . (88 5 20 0 0 0))
+                             (juin . (88 6 22 0 0 0))
+                             (juillet . (88 7 21 0 0 0))
+                             (aout . (88 8 23 0 0 0))
+                             (septembre . (88 9 22 0 0 0))
+                             (octobre . (88 10 20 0 0 0))
+                             (novembre . (88 11 22 0 0 0))
+                             (decembre . (88 12 21 0 0 0))
+                             (janvier-2 . (89 1 23 0 0 0))
+                             (fevrier-2 . (89 2 20 0 0 0))
+                             (mars-2 . (89 3 21 0 0 0))
+                             (avril-2 . (89 4 20 0 0 0))
+                             (mai-2 . (89 5 23 0 0 0))
+                             (juin-2 . (89 6 22 0 0 0))
+                             (juillet-2 . (89 7 21 0 0 0))
+                             (aout-2 . (89 8 23 0 0 0))
+                             (septembre-2 . (89 9 21 0 0 0))
+                             (octobre-2 . (89 10 23 0 0 0))
+                             (novembre-2 . (89 11 22 0 0 0))
+                             (decembre-2 . (89 12 20 0 0 0))
+                             ))
+(setq matrice-elementaire '((janvier . 0.)
+                            (fevrier . 0.)
+                            (mars . 0.)
+                            (avril . 0.)
+                            (mai . 0.)
+                            (juin . 0.)
+                            (juillet . 0.)
+                            (aout . 0.)
+                            (septembre . 0.)
+                            (octobre . 0.)
+                            (novembre . 0.)
+                            (decembre . 0.)
+                            (janvier-2 . 0.)
+                            (fevrier-2 . 0.)
+                            (mars-2 . 0.)
+                            (avril-2 . 0.)
+                            (mai-2 . 0.)
+                            (juin-2 . 0.)
+                            (juillet-2 . 0.)
+                            (aout-2 . 0.)
+                            (septembre-2 . 0.)
+                            (octobre-2 . 0.)
+                            (novembre-2 . 0.)
+                            (decembre-2 . 0.)
+                            ))
+
+(de liquidation-concernee (date)
+    (prog ((lst liste-de-liquidation))
+          loop
+          (when (null lst) (return nil))
+          (when (time-> (cdar lst) date) (return (caar lst)))
+          (setq lst (cdr lst))
+          (go loop)))
+
+
+;format du fichier d-ordre liste-des-ordres.lisp
+
+;  (11 1 88 a  1200  aq 231 achat d aquitaine pour couverture truc.)
+
+; (jour mois annee "a = achat v = vente"  quantite code prix libelle)
+
+
+;format du fichier de composition initiale du portefeuille portefeuille-initial.lisp 
+;ainsi que la composition final du portefeuille final portefeuille-final.lisp
+
+; (1200 aq 231.50)
+
+;format du fichier de prix finaux a la date date-de-calcul prix-finaux.lisp
+
+; (aq 231.50)
+
+
+(de calcul (compte-directory)
+    (prog (liste-des-codes liste-des-prix-de-revient-initiaux liste-des-prix-finaux
+                           savechan chan input qte code prix date liquidation-concernee epsilon prix-finaux ww 
+                           besoin-maximal-de-tresorerie date-de-depart date-de-fin  delta-latent
+                           treso1 treso2 ff ww delta-tresorerie portefeuille-final 
+                           (tresorerie nil) (latent 0) (latent-de-depart 0))
+          (setq liste-des-codes '())
+          (setq liste-des-prix-de-revient-initiaux '())
+          (setq liste-des-prix-finaux '())
+          (setq portefeuille-final nil)
+          (setq delta-tresorerie  '((janvier . 0.)
+                                    (fevrier . 0.)
+                                    (mars . 0.)
+                                    (avril . 0.)
+                                    (mai . 0.)
+                                    (juin . 0.)
+                                    (juillet . 0.)
+                                    (aout . 0.)
+                                    (septembre . 0.)
+                                    (octobre . 0.)
+                                    (novembre . 0.)
+                                    (decembre . 0.)
+                                    (janvier-2 . 0.)
+                                    (fevrier-2 . 0.)
+                                    (mars-2 . 0.)
+                                    (avril-2 . 0.)
+                                    (mai-2 . 0.)
+                                    (juin-2 . 0.)
+                                    (juillet-2 . 0.)
+                                    (aout-2 . 0.)
+                                    (septembre-2 . 0.)
+                                    (octobre-2 . 0.)
+                                    (novembre-2 . 0.)
+                                    (decembre-2 . 0.)
+                                    ))
+                                        ; saisie des parametres
+      
+                                        ;premiere passe pour fabriquer la liste des codes : 
+          (setq savechan (inchan))
+          (setq chan (openi  (catenate "/usr/jupiter/olivier/expert/comptes/"
+                                       (string compte-directory) "/liste-des-ordres.lisp")))
+          (inchan chan)
+          (untilexit eof 
+                     (setq input (read))
+                     (when (not (memq (caddr (cdddr input)) liste-des-codes))
+                           (setq liste-des-codes (cons (caddr (cdddr input)) liste-des-codes)))
+                     )
+          (inchan savechan)
+          (close)
+          (setq savechan (inchan))
+          (setq chan (openi   (catenate "/usr/jupiter/olivier/expert/comptes/"
+                                       (string compte-directory) "/portefeuille-initial.lisp")))
+          (inchan chan)
+          (untilexit eof 
+                     (setq input (read))
+                     (when (not (memq (cadr input) liste-des-codes))
+                           (setq liste-des-codes (cons (cadr input) liste-des-codes)))
+                     )
+          (inchan savechan)
+          (close)
+                                        ;creation du portefeuille final
+          (mapc '(lambda (x) 
+                   (setq portefeuille-final (cons (cons x 0.)
+                                                  portefeuille-final)))
+                liste-des-codes)
+                                        ;initialisation du portefeuille final par le portefeuille initial 
+          (setq savechan (inchan))
+          (setq chan (openi  (catenate "/usr/jupiter/olivier/expert/comptes/"
+                                       (string compte-directory) "/portefeuille-initial.lisp")))
+          (inchan chan)
+          (untilexit eof 
+                     (setq input (read))
+                     (setq qte (car  input))
+                     (setq code (cadr input))
+                     (setq prix (caddr input))
+                     
+                     (setf (cdr (assoc code portefeuille-final))
+                           (+  (cdr (assoc  code portefeuille-final))
+                               qte)))
+          
+          (inchan savechan)
+          (close)
+                                        ;deuxieme passe des ordres pour calculer la tresorerie
+          (setq savechan (inchan))
+          (setq chan (openi   (catenate "/usr/jupiter/olivier/expert/comptes/"
+                                       (string compte-directory) "/liste-des-ordres.lisp")))
+          (inchan chan)
+          (untilexit eof 
+                     (setq input (read))
+                     (setq epsilon (cond ((eq (car (cdddr input)) 'a) 1.)
+                                         ((eq (car (cdddr input)) 'v) -1.)))
+                     (setq qte (cadr (cdddr input)))
+                     (setq code (caddr (cdddr input)))
+                     (setq prix (car (cdddr (cdddr input))))
+                     (setq date (list (caddr input) (cadr input) (car input) 0 0 0))
+                     (setq liquidation-concernee (liquidation-concernee date))
+                     (print liquidation-concernee)
+                     (setf (cdr (assoc liquidation-concernee delta-tresorerie))
+                           (+  (cdr (assoc liquidation-concernee delta-tresorerie))
+                               (* (- epsilon) qte prix)))
+                     (setf (cdr (assoc code portefeuille-final))
+                           (+  (cdr (assoc  code portefeuille-final))
+                               (* epsilon qte)))
+                     )
+          (inchan savechan)
+          (close)
+          ;(go point1)
+                                        ;lecture des prix finaux
+          (setq savechan (inchan))
+          (setq chan (openi  (catenate "/usr/jupiter/olivier/expert/comptes/"
+                                       (string compte-directory) "/prix-finaux.lisp")))
+          (inchan chan)
+          (setq prix-finaux nil)
+          (untilexit eof 
+                     (setq input (read))
+                     (setq prix-finaux (cons input prix-finaux))
+                     )
+          (inchan savechan)
+          (close)
+                                        ;evaluation du latent-final
+          (setq ww (mapcar '(lambda (x) 
+                              (let (qq)
+                                (setq qq  (assoc (car x) prix-finaux))
+                                (cond 
+                                 ((null qq)
+                                  (cond ((equal (cdr x) 0.) (setq qq 0.))
+                                        (t
+                                         (print "valeur actuelle de " (car x))
+                                         (setq qq (read))
+                                         (setq prix-finaux (cons (list (car x) qq) prix-finaux))
+                                         )))
+                                 (t (setq qq (cadr qq))))
+                                (* qq (cdr x))))
+                           portefeuille-final))
+          (setq latent (apply '+ ww))
+          
+                                        ;latent de depart 
+          
+       
+          (setq latent-de-depart 0)
+          (setq savechan (inchan))
+          (setq chan (openi  (catenate "/usr/jupiter/olivier/expert/comptes/"
+                                         (string compte-directory)
+                                         "/portefeuille-initial.lisp")))
+          (inchan chan)
+          (untilexit eof 
+                     (setq input (read))
+                     (setq latent-de-depart (+ (* (car input) (caddr input)) 
+                                               latent-de-depart))
+                     )
+          (inchan savechan)
+          (close)
+          point1
+                                        ;calcul de la tresorerie
+          (setq tresorerie nil)
+          (setq treso1 (copy delta-tresorerie))
+          (setq treso2 nil)
+          loop
+          (when (null treso1) (go fin))
+          (setq treso2 (cons (car treso1) treso2))
+          (setq mois (caar treso1))
+          (setq treso1 (cdr treso1))
+          (setq ff (apply '+ (mapcar '(lambda (x) (cdr x)) treso2)))
+          (setq tresorerie (append (list (cons mois ff)) tresorerie))
+          (go loop)
+          fin
+          
+                                        ;sortie finale 
+   (setq savechan (outchan))
+          (setq chan (openo  (catenate "/usr/jupiter/olivier/expert/comptes/"
+                                       (string compte-directory) "/resultat-finaux.lisp")))
+          (outchan chan)
+          (print "le latent final  est " latent)
+          (print "le latent-de-depart est " latent-de-depart)
+          (print "les variation de tresorerie mensuelle sont : ")
+          (pprint delta-tresorerie)
+          (print "la tresorerie mensuelle est : ")
+          (pprint (reverse tresorerie))
+          (setq besoin-de-tresorerie (apply 'min (mapcar '(lambda (x) (cdr x)) tresorerie)))
+          (cond ((< besoin-de-tresorerie 0.)
+                 (print "le besoin maximal de tresorerie est :" (-  besoin-de-tresorerie)))
+                (t (print " l exedent minimal de tresorerie est "  besoin-de-tresorerie)))
+                                   
+          
+          (outchan savechan)
+          (close)
+              
+
+
+          (setq savechan (outchan))
+          (setq chan (openo  (catenate "/usr/jupiter/olivier/expert/comptes/"
+                                       (string compte-directory) "/portefeuille-final.lisp")))
+          (outchan chan)
+          (mapc '(lambda (x) (cond ((equal (cdr x) 0.) nil)
+                                   (t
+                                    (let ((cours (cadr (assoc (car x) prix-finaux))))
+                                      (print (list (cdr x) (car x) cours))))))
+                portefeuille-final)
+          (outchan savechan)
+          (close)
+              
+          (setq savechan (outchan))
+          (setq chan (openo  (catenate "/usr/jupiter/olivier/expert/comptes/"
+                                       (string compte-directory) "/prix-finaux.lisp")))
+          (outchan chan)
+          (mapc '(lambda (x) (print x))
+                prix-finaux)
+          (outchan savechan)
+          (close)
+              
+          nil
+          ))
+
+
